@@ -442,7 +442,9 @@ body.has-dock .app {
   inset: 0;
   display: block;
   background: var(--session);
-  opacity: 0.94;
+  /* 원본 PNG의 명암·질감을 그대로 두고 색상만 투영한다. */
+  opacity: .64;
+  mix-blend-mode: color;
   -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
   mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
   pointer-events: none;
@@ -454,7 +456,8 @@ body.has-dock .app {
   position: absolute;
   display: block;
   background: var(--session);
-  opacity: .94;
+  opacity: .64;
+  mix-blend-mode: color;
   -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
   mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
   pointer-events: none;
