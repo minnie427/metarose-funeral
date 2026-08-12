@@ -489,6 +489,12 @@ function globalHeader() {
       el('span', {}, '2026'),
     ),
     el('div', { class: 'global-actions' },
+      isTestMode() ? el('button', {
+        class: 'dev-reset-button',
+        type: 'button',
+        'aria-label': tr('개발용: 처음부터 다시 보기', 'Developer: reset to arrival'),
+        onclick: resetCurrentBrowserSession,
+      }, 'RESET') : null,
       el('button', {
         class: 'language-button',
         type: 'button',

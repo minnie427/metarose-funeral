@@ -118,6 +118,16 @@ body.has-dock .app {
   gap: 18px;
 }
 
+.dev-reset-button {
+  min-height: 30px;
+  padding: 0 7px;
+  border: 1px solid rgba(255,255,255,.7);
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: .1em;
+}
+
 .language-button {
   min-height: 42px;
   color: var(--ink-dim);
