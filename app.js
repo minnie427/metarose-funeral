@@ -17,6 +17,7 @@ import {
   fetchMyArtifacts,
   fetchMyCaptureArtifacts,
   createCaptureSignedUrl,
+  setRuntimeActive as setDbRuntimeActive,
 } from './db.js';
 import {
   beginRead,
@@ -32,12 +33,116 @@ const $bar = document.getElementById('statusbar');
 const STORAGE_KEY = 'meta_rose_phone_hub_v1';
 const EVENTS_KEY = 'meta_rose_phone_hub_events_v1';
 const ARTIST_INSTAGRAM_URL = 'https://www.instagram.com/minniepark.studio/';
+const ACTIVE_TAB_KEY = 'meta_rose_phone_hub_active_tab_v1';
+const ACTIVE_TAB_LEASE_MS = 10000;
+const TAB_INSTANCE_ID = crypto.randomUUID
+  ? crypto.randomUUID()
+  : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 // 투명 배경 PNG. 색은 CSS mask로 장미의 alpha 영역에만 입힌다.
 const ROSE_SPECIMEN_IMAGE = './assets/images/rose_specimen.png';
 
 let currentView = { name: 'arrival', data: {} };
 let activeReadKey = null;
 let uiTrackingStarted = false;
+let tabRuntimeActive = true;
+let tabHeartbeatTimer = null;
+let tabRecoveryTimer = null;
+let tabChannel = null;
+
+function readActiveTabLease() {
+  try {
+    return JSON.parse(localStorage.getItem(ACTIVE_TAB_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function activeTabOverlay() {
+  let overlay = document.getElementById('inactive-tab-overlay');
+  if (overlay) return overlay;
+  overlay = document.createElement('section');
+  overlay.id = 'inactive-tab-overlay';
+  overlay.className = 'inactive-tab-overlay';
+  overlay.setAttribute('role', 'alert');
+  overlay.setAttribute('aria-live', 'assertive');
+  overlay.innerHTML = `
+    <div class="inactive-tab-card">
+      <span>PHONE HUB / ACTIVE SCREEN</span>
+      <h1>새로 태깅한 화면을 이용해주세요</h1>
+      <p>이전 화면은 중복 기록을 막기 위해 자동으로 멈췄습니다. Safari의 가장 최근 탭으로 이동해주세요.</p>
+    </div>`;
+  document.body.append(overlay);
+  return overlay;
+}
+
+function setTabRuntimeActive(active) {
+  const next = Boolean(active);
+  tabRuntimeActive = next;
+  setDbRuntimeActive(next);
+  document.body.classList.toggle('inactive-phone-hub-tab', !next);
+  if (next) {
+    if (tabRecoveryTimer) clearTimeout(tabRecoveryTimer);
+    tabRecoveryTimer = null;
+    document.getElementById('inactive-tab-overlay')?.remove();
+  } else {
+    stopCapturePolling();
+    stopActiveRead();
+    activeTabOverlay();
+    if (tabRecoveryTimer) clearTimeout(tabRecoveryTimer);
+    tabRecoveryTimer = setTimeout(() => {
+      const lease = readActiveTabLease();
+      const leaseAlive = lease?.id
+        && Date.now() - Number(lease.heartbeat || 0) <= ACTIVE_TAB_LEASE_MS;
+      if (!leaseAlive) claimActiveTab();
+    }, ACTIVE_TAB_LEASE_MS + 500);
+  }
+}
+
+function announceActiveTab() {
+  const lease = {
+    id: TAB_INSTANCE_ID,
+    heartbeat: Date.now(),
+    station: stationFromQuery(),
+    via: stationViaFromQuery(),
+  };
+  localStorage.setItem(ACTIVE_TAB_KEY, JSON.stringify(lease));
+  tabChannel?.postMessage(lease);
+}
+
+function claimActiveTab() {
+  setTabRuntimeActive(true);
+  announceActiveTab();
+  if (tabHeartbeatTimer) clearInterval(tabHeartbeatTimer);
+  tabHeartbeatTimer = setInterval(() => {
+    if (tabRuntimeActive) announceActiveTab();
+  }, 2000);
+}
+
+function observeActiveTabLease(lease) {
+  if (!lease?.id || lease.id === TAB_INSTANCE_ID) return;
+  if (Date.now() - Number(lease.heartbeat || 0) <= ACTIVE_TAB_LEASE_MS) {
+    setTabRuntimeActive(false);
+  }
+}
+
+function initializeActiveTabGuard() {
+  if ('BroadcastChannel' in window) {
+    tabChannel = new BroadcastChannel('meta_rose_phone_hub_tabs_v1');
+    tabChannel.addEventListener('message', (event) => observeActiveTabLease(event.data));
+  }
+  window.addEventListener('storage', (event) => {
+    if (event.key !== ACTIVE_TAB_KEY || !event.newValue) return;
+    try { observeActiveTabLease(JSON.parse(event.newValue)); } catch { /* ignore */ }
+  });
+
+  const taggedEntry = Boolean(stationFromQuery());
+  const lease = readActiveTabLease();
+  const leaseAlive = lease?.id && Date.now() - Number(lease.heartbeat || 0) <= ACTIVE_TAB_LEASE_MS;
+  // NFC/QR로 새로 열린 탭은 언제나 즉시 주도권을 갖는다. 일반 HOME 탭은
+  // 살아 있는 Phone Hub가 없을 때만 주도권을 갖는다.
+  if (taggedEntry || !leaseAlive || lease.id === TAB_INSTANCE_ID) claimActiveTab();
+  else setTabRuntimeActive(false);
+}
 
 // Phone Hub은 TD의 raw interaction을 읽거나 실시간으로 구독하지 않는다.
 // 각 TD가 결과 확정 시 기록한 trace_summary만, MY SPECIMEN / FINAL을
@@ -65,6 +170,7 @@ function startUiActionTracking() {
   if (uiTrackingStarted) return;
   uiTrackingStarted = true;
   document.addEventListener('click', (event) => {
+    if (!tabRuntimeActive) return;
     const control = event.target.closest('button, summary, a');
     if (!control || control.closest('#debug')) return;
     const label = String(control.getAttribute('aria-label') || control.textContent || '')
@@ -345,6 +451,7 @@ async function refreshRemoteTraceSummaries() {
 }
 
 function logEvent(eventType, payload = {}, stationId = null, suppliedSession = null) {
+  if (!tabRuntimeActive) return null;
   const session = suppliedSession || ensureSession();
   let existing = [];
 
@@ -2296,6 +2403,7 @@ function renderCurrentView() {
 }
 
 function boot() {
+  initializeActiveTabGuard();
   // SDK 로드·네트워크 실패는 이 흐름을 막지 않는다. db.js가 local queue로 폴백한다.
   void initDB();
   startIdleTracking();

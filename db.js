@@ -21,6 +21,18 @@ const LS = {
 let sb = null;               // Supabase client
 let ready = false;
 let online = navigator.onLine;
+// iOS NFC/QR은 새 Safari 탭을 열 수 있다. Phone Hub의 최신 탭 하나만
+// DB 기록·전송을 수행하게 app.js의 cross-tab guard가 이 값을 제어한다.
+let runtimeActive = true;
+
+export function setRuntimeActive(active) {
+  runtimeActive = Boolean(active);
+  if (runtimeActive && online && ready) {
+    setTimeout(() => flushQueue(true), 0);
+  }
+}
+
+export const isRuntimeActive = () => runtimeActive;
 
 // 관객은 계정을 만들지 않는다. Supabase Anonymous Auth가 기기 안에만
 // 익명 UUID를 보관하고, RLS가 이 UUID의 세션만 읽고 쓰도록 제한한다.
@@ -254,6 +266,7 @@ export function logEvent(type, {
   payload = {},
   occurredAt = null,
 } = {}) {
+  if (!runtimeActive) return null;
   const s = loadSession();
   const row = {
     session_id: s ? s.id : null,
@@ -282,6 +295,7 @@ export function logAnalyticsEvent(type, {
   payload = {},
   occurredAt = null,
 } = {}) {
+  if (!runtimeActive) return null;
   const s = loadSession();
   const row = {
     session_id: s ? s.id : null,
@@ -327,11 +341,21 @@ export function flushAnalyticsEvents(reason = 'checkpoint') {
 // ------------------------------------------------------------
 export async function enterStation(stationId, via = 'qr') {
   const s = loadSession();
-  if (!s) return null;
+  if (!s || !runtimeActive) return null;
   const now = new Date().toISOString();
 
   // 이전 스테이션을 닫는다
   const st = getState();
+  // 같은 태그를 다시 읽거나 새 Safari 탭으로 동일 URL이 열려도 열린
+  // presence를 중복 생성하지 않는다. 태깅 자체만 별도 event로 남긴다.
+  if (st.presenceId && st.station === stationId) {
+    logEvent('station_tag_repeat', {
+      station: stationId,
+      payload: { via },
+      occurredAt: now,
+    });
+    return stationId;
+  }
   if (st.presenceId && st.station && st.station !== stationId) {
     enqueue({
       table: 'station_presence', op: 'update',
@@ -559,6 +583,7 @@ function writeQueue(q) {
 }
 
 function enqueue(job) {
+  if (!runtimeActive) return null;
   const q = readQueue();
   q.push({ ...job, _id: uuid(), _tries: 0, _nextAt: 0 });
   writeQueue(q);
@@ -590,7 +615,7 @@ function startFlushLoop() {
 // wake=true — 재연결 순간 backoff를 무시하고 즉시 재전송
 // (11 로그 8/5 S11-H `upload_reconnect_wake` 와 같은 처리)
 export async function flushQueue(wake = false) {
-  if (flushing || !ready || !online) return;
+  if (!runtimeActive || flushing || !ready || !online) return;
   let q = readQueue();
   if (!q.length) return;
   flushing = true;
