@@ -96,6 +96,18 @@ body.inactive-phone-hub-tab {
   text-align: left;
 }
 
+.inactive-tab-takeover {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 30px;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
 button,
 input {
   color: inherit;

@@ -34,7 +34,9 @@ const STORAGE_KEY = 'meta_rose_phone_hub_v1';
 const EVENTS_KEY = 'meta_rose_phone_hub_events_v1';
 const ARTIST_INSTAGRAM_URL = 'https://www.instagram.com/minniepark.studio/';
 const ACTIVE_TAB_KEY = 'meta_rose_phone_hub_active_tab_v1';
-const ACTIVE_TAB_LEASE_MS = 10000;
+// 새 Safari 탭이 opener의 sessionStorage를 복제하는 구현도 있으므로
+// 탭 ID는 page load마다 새로 만든다. 같은 탭 새로고침·NFC 재진입은
+// station URL이 다시 주도권을 가져가므로 세션 연속성에는 영향이 없다.
 const TAB_INSTANCE_ID = crypto.randomUUID
   ? crypto.randomUUID()
   : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -45,8 +47,6 @@ let currentView = { name: 'arrival', data: {} };
 let activeReadKey = null;
 let uiTrackingStarted = false;
 let tabRuntimeActive = true;
-let tabHeartbeatTimer = null;
-let tabRecoveryTimer = null;
 let tabChannel = null;
 
 function readActiveTabLease() {
@@ -70,7 +70,11 @@ function activeTabOverlay() {
       <span>PHONE HUB / ACTIVE SCREEN</span>
       <h1>새로 태깅한 화면을 이용해주세요</h1>
       <p>이전 화면은 중복 기록을 막기 위해 자동으로 멈췄습니다. Safari의 가장 최근 탭으로 이동해주세요.</p>
+      <button type="button" class="inactive-tab-takeover">이 화면을 다시 사용합니다</button>
     </div>`;
+  overlay.querySelector('.inactive-tab-takeover')?.addEventListener('click', () => {
+    claimActiveTab();
+  });
   document.body.append(overlay);
   return overlay;
 }
@@ -81,20 +85,11 @@ function setTabRuntimeActive(active) {
   setDbRuntimeActive(next);
   document.body.classList.toggle('inactive-phone-hub-tab', !next);
   if (next) {
-    if (tabRecoveryTimer) clearTimeout(tabRecoveryTimer);
-    tabRecoveryTimer = null;
     document.getElementById('inactive-tab-overlay')?.remove();
   } else {
     stopCapturePolling();
     stopActiveRead();
     activeTabOverlay();
-    if (tabRecoveryTimer) clearTimeout(tabRecoveryTimer);
-    tabRecoveryTimer = setTimeout(() => {
-      const lease = readActiveTabLease();
-      const leaseAlive = lease?.id
-        && Date.now() - Number(lease.heartbeat || 0) <= ACTIVE_TAB_LEASE_MS;
-      if (!leaseAlive) claimActiveTab();
-    }, ACTIVE_TAB_LEASE_MS + 500);
   }
 }
 
@@ -112,15 +107,16 @@ function announceActiveTab() {
 function claimActiveTab() {
   setTabRuntimeActive(true);
   announceActiveTab();
-  if (tabHeartbeatTimer) clearInterval(tabHeartbeatTimer);
-  tabHeartbeatTimer = setInterval(() => {
-    if (tabRuntimeActive) announceActiveTab();
-  }, 2000);
 }
 
 function observeActiveTabLease(lease) {
   if (!lease?.id || lease.id === TAB_INSTANCE_ID) return;
-  if (Date.now() - Number(lease.heartbeat || 0) <= ACTIVE_TAB_LEASE_MS) {
+  setTabRuntimeActive(false);
+}
+
+function enforceActiveTabOwnership() {
+  const lease = readActiveTabLease();
+  if (lease?.id && lease.id !== TAB_INSTANCE_ID) {
     setTabRuntimeActive(false);
   }
 }
@@ -134,13 +130,21 @@ function initializeActiveTabGuard() {
     if (event.key !== ACTIVE_TAB_KEY || !event.newValue) return;
     try { observeActiveTabLease(JSON.parse(event.newValue)); } catch { /* ignore */ }
   });
+  // Safari가 background tab을 freeze/BFCache에 넣으면 storage/Broadcast
+  // 알림을 놓칠 수 있다. 다시 보이는 순간 localStorage 소유권을 재검증한다.
+  window.addEventListener('pageshow', enforceActiveTabOwnership);
+  window.addEventListener('focus', enforceActiveTabOwnership);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') enforceActiveTabOwnership();
+  });
 
   const taggedEntry = Boolean(stationFromQuery());
   const lease = readActiveTabLease();
-  const leaseAlive = lease?.id && Date.now() - Number(lease.heartbeat || 0) <= ACTIVE_TAB_LEASE_MS;
   // NFC/QR로 새로 열린 탭은 언제나 즉시 주도권을 갖는다. 일반 HOME 탭은
-  // 살아 있는 Phone Hub가 없을 때만 주도권을 갖는다.
-  if (taggedEntry || !leaseAlive || lease.id === TAB_INSTANCE_ID) claimActiveTab();
+  // 아직 소유자가 없거나 같은 탭을 새로고침한 경우에만 주도권을 갖는다.
+  // 이전 탭 자동 복구는 하지 않는다. iOS가 백그라운드 타이머를 중단해도
+  // 두 탭이 동시에 활성화되지 않게 하는 것이 전시 데이터에는 더 안전하다.
+  if (taggedEntry || !lease?.id || lease.id === TAB_INSTANCE_ID) claimActiveTab();
   else setTabRuntimeActive(false);
 }
 
