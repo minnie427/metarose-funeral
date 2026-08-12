@@ -29,7 +29,7 @@ const $bar = document.getElementById('statusbar');
 
 const STORAGE_KEY = 'meta_rose_phone_hub_v1';
 const EVENTS_KEY = 'meta_rose_phone_hub_events_v1';
-const ARTIST_INSTAGRAM_URL = 'https://www.instagram.com/minniepark/';
+const ARTIST_INSTAGRAM_URL = 'https://www.instagram.com/minniepark.studio/';
 // 투명 배경 PNG. 색은 CSS mask로 장미의 alpha 영역에만 입힌다.
 const ROSE_SPECIMEN_IMAGE = './assets/images/rose_specimen.png';
 
@@ -588,6 +588,21 @@ function seedTestSession(completedStations = ['01']) {
   applySessionColor(demo.color);
 }
 
+// 개발 중 현재 브라우저의 Phone Hub 상태만 초기화한다.
+// Supabase에 이미 전송된 익명 전시 기록을 삭제하거나 변경하지 않는다.
+function resetCurrentBrowserSession() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(EVENTS_KEY);
+  resetDbSession();
+  remoteTraceCache = {
+    sessionId: null,
+    fingerprint: '',
+    summaries: [],
+    request: null,
+  };
+  screenArrival();
+}
+
 function testPreview(label, action) {
   return el('button', {
     class: 'test-preview-button',
@@ -608,6 +623,7 @@ function testPreviewPanel({ home = false } = {}) {
       'Open tagged, exit, and final specimen states directly.',
     )) : null,
     el('div', { class: 'test-preview-grid' },
+      testPreview(tr('처음부터 다시 보기', 'RESET TO ARRIVAL'), resetCurrentBrowserSession),
       testPreview('TAGGED 01', () => { seedTestSession(); screenModule('01', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 02', () => { seedTestSession(); screenModule('02', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 03', () => { seedTestSession(); screenModule('03', { enter: true, via: 'test' }); }),
@@ -669,9 +685,9 @@ function openRoseMenu() {
           href: ARTIST_INSTAGRAM_URL,
           target: '_blank',
           rel: 'noopener noreferrer',
-          'aria-label': 'Instagram @minniepark',
-          onclick: () => logEvent('artist_instagram_open', { handle: '@minniepark' }, null),
-        }, '@MINNIEPARK', el('span', { 'aria-hidden': 'true' }, '↗')),
+          'aria-label': 'Instagram @minniepark.studio',
+          onclick: () => logEvent('artist_instagram_open', { handle: '@minniepark.studio' }, null),
+        }, '@MINNIEPARK.STUDIO', el('span', { 'aria-hidden': 'true' }, '↗')),
         el('span', {}, 'META ROSE SPECIMEN / SEOUL 2026'),
         el('span', { class: 'menu-copyright' }, '© 2026 MINNIE PARK. ALL RIGHTS RESERVED.'),
       ),
@@ -968,15 +984,10 @@ function floorplanViewer(session) {
   const actualPlan = el('img', {
     class: 'actual-floorplan-image',
     src: './assets/floorplan/gallery-room-1-plan.webp',
-    alt: tr(
-      '제1전시실을 강조한 실제 갤러리 평면도',
-      'Actual gallery floor plan emphasizing Exhibition Room 1',
-    ),
+    alt: tr('제1전시실', 'EXHIBITION ROOM 1'),
   });
   const placeholder = el('div', { class: 'floorplan-asset-placeholder' },
-    el('span', {}, 'ACTUAL FLOOR PLAN / ROOM 1'),
-    el('strong', {}, 'EXHIBITION ROOM 1'),
-    el('small', {}, '360° READY / floorplan_360_00.webp — 35.webp'),
+    el('strong', {}, tr('제1전시실', 'EXHIBITION ROOM 1')),
   );
 
   image.addEventListener('load', () => {
