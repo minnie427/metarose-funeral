@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="color-scheme" content="dark">
+<title>META ROSE SPECIMEN</title>
+
+<!-- iOS 홈화면 추가 시 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<!-- 공유 미리보기 (⬜ 이미지 경로는 배포 후 채울 것) -->
+<meta property="og:title" content="META ROSE SPECIMEN">
+<meta property="og:description" content="Phone Hub · META ROSE SPECIMEN">
+<meta property="og:type" content="website">
+
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<!-- 상태 표시줄 — 연결·저장 상태. 관객에게 최소한만 보인다 -->
+<div id="statusbar" class="statusbar" aria-live="polite"></div>
+
+<!-- 화면이 여기 그려진다 -->
+<main id="app" class="app"></main>
+
+<!-- 하단 고정 액션 -->
+<div id="dock" class="dock"></div>
+
+<!-- 디버그 패널 (CONFIG.DEBUG = true 일 때만) -->
+<div id="debug" class="debug" hidden></div>
+
+<script type="module" src="./app.js"></script>
+
+<noscript>
+  <div style="padding:2rem;color:#e8e4dd;font-family:system-ui">
+    브라우저에서 자바스크립트가 꺼져 있습니다.<br>
+    설정에서 켜주시거나, 스태프에게 말씀해주세요.
+  </div>
+</noscript>
+</body>
+</html>

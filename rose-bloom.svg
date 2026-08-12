@@ -1,0 +1,71 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 580) rotate(90) scale(620 620)">
+      <stop offset="0" stop-color="#FFB9E5" stop-opacity="0.55"/>
+      <stop offset="0.38" stop-color="#FF8BC9" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="petalA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 420) rotate(90) scale(420 300)">
+      <stop offset="0" stop-color="#FFF7FF"/>
+      <stop offset="0.22" stop-color="#F9C4E7"/>
+      <stop offset="0.5" stop-color="#F78CCB"/>
+      <stop offset="0.8" stop-color="#D24DAA"/>
+      <stop offset="1" stop-color="#8E2D6E"/>
+    </radialGradient>
+    <radialGradient id="petalB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 500) rotate(90) scale(390 280)">
+      <stop offset="0" stop-color="#F6F6FF"/>
+      <stop offset="0.18" stop-color="#F3BDE9"/>
+      <stop offset="0.6" stop-color="#EBA8D9"/>
+      <stop offset="1" stop-color="#A63F7E"/>
+    </radialGradient>
+    <linearGradient id="stemGrad" x1="600" y1="860" x2="600" y2="1200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ECF7FF"/>
+      <stop offset="0.22" stop-color="#C3F7FF"/>
+      <stop offset="0.55" stop-color="#F5D0EB"/>
+      <stop offset="1" stop-color="#B981B0"/>
+    </linearGradient>
+    <filter id="blurGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="600" cy="600" rx="470" ry="470" fill="url(#bgGlow)"/>
+
+  <g filter="url(#blurGlow)" opacity="0.8">
+    <path d="M600 250C684 250 738 320 734 406C729 489 663 545 600 590C534 545 470 489 465 406C461 320 516 250 600 250Z" fill="#FFD7F3"/>
+    <path d="M510 318C594 286 664 302 722 362C680 406 646 426 600 455C555 425 522 405 478 365C485 343 495 329 510 318Z" fill="#F9D7F9"/>
+  </g>
+
+  <g>
+    <path d="M565 325C612 293 694 296 760 350C725 447 664 521 600 586C532 521 473 447 435 349C502 294 540 295 565 325Z" fill="url(#petalA)"/>
+    <path d="M483 442C550 396 608 395 668 437C640 532 590 596 600 668C563 620 505 566 468 505C465 487 471 463 483 442Z" fill="url(#petalB)"/>
+    <path d="M704 447C762 482 801 549 812 620C742 639 686 610 643 568C675 534 692 493 704 447Z" fill="url(#petalA)"/>
+    <path d="M425 473C378 512 341 579 331 648C381 663 439 648 484 612C465 560 454 519 425 473Z" fill="url(#petalB)"/>
+    <path d="M595 452C632 436 668 447 716 495C664 545 620 613 600 660C576 612 535 542 495 499C534 457 563 451 595 452Z" fill="url(#petalA)"/>
+    <path d="M603 253C675 289 718 332 738 399C681 395 640 370 600 322C560 370 520 395 462 399C483 332 528 289 603 253Z" fill="url(#petalB)"/>
+    <path d="M600 318C646 362 662 434 631 502C604 531 571 552 600 608C629 551 594 529 568 500C539 430 555 368 600 318Z" fill="#F9C8E7" opacity="0.9"/>
+  </g>
+
+  <g opacity="0.9">
+    <path d="M600 486C680 486 742 549 735 626C727 699 666 750 600 794C533 750 472 700 465 627C457 548 522 486 600 486Z" fill="#F39DCC"/>
+    <path d="M560 586C590 623 600 677 600 736C600 677 611 623 640 586C647 650 634 716 600 760C566 716 553 651 560 586Z" fill="#F7E9FF" opacity="0.9"/>
+  </g>
+
+  <g opacity="0.9">
+    <path d="M595 800C598 873 597 950 596 1054" stroke="url(#stemGrad)" stroke-width="38" stroke-linecap="round"/>
+    <path d="M565 896C505 926 457 984 436 1036" stroke="url(#stemGrad)" stroke-width="24" stroke-linecap="round"/>
+    <path d="M629 896C694 933 742 989 770 1043" stroke="url(#stemGrad)" stroke-width="24" stroke-linecap="round"/>
+    <path d="M548 960C493 972 447 1008 417 1044" stroke="url(#stemGrad)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M653 960C706 973 751 1008 784 1048" stroke="url(#stemGrad)" stroke-width="18" stroke-linecap="round"/>
+  </g>
+
+  <g opacity="0.8" filter="url(#blurGlow)">
+    <circle cx="455" cy="445" r="18" fill="#FFFFFF"/>
+    <circle cx="760" cy="360" r="20" fill="#FFF7FF"/>
+    <circle cx="820" cy="635" r="18" fill="#FEE8FF"/>
+    <circle cx="385" cy="630" r="16" fill="#F8F0FF"/>
+    <circle cx="607" cy="240" r="14" fill="#FFF0FA"/>
+    <circle cx="532" cy="780" r="10" fill="#FFF7FF"/>
+    <circle cx="688" cy="780" r="10" fill="#FFF7FF"/>
+  </g>
+</svg>
