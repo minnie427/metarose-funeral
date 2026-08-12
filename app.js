@@ -15,6 +15,8 @@ import {
   flushAnalyticsEvents,
   resetSession as resetDbSession,
   fetchMyArtifacts,
+  fetchMyCaptureArtifacts,
+  createCaptureSignedUrl,
 } from './db.js';
 import {
   beginRead,
@@ -46,6 +48,9 @@ let remoteTraceCache = {
   summaries: [],
   request: null,
 };
+
+let capturePollTimer = null;
+const captureUrlCache = new Map();
 
 // 전시 작동에 필요한 데이터만 즉시 보낸다. 나머지는 analytics buffer에
 // 모았다가 작품 종료·백그라운드·재접속·Exit에서 batch로 백업한다.
@@ -111,6 +116,7 @@ function el(tag, props = {}, ...children) {
 }
 
 function render(nodes, actions = []) {
+  stopCapturePolling();
   stopActiveRead();
   closeRoseMenu();
   $app.replaceChildren(...[].concat(nodes).filter(Boolean), siteFooter());
@@ -123,6 +129,12 @@ function render(nodes, actions = []) {
 
   document.body.classList.toggle('has-dock', visibleActions.length > 0);
   window.scrollTo(0, 0);
+}
+
+function stopCapturePolling() {
+  if (!capturePollTimer) return;
+  clearTimeout(capturePollTimer);
+  capturePollTimer = null;
 }
 
 function siteFooter() {
@@ -1519,6 +1531,113 @@ function moduleHero(stationId, module) {
   );
 }
 
+function captureResultPanel(stationId) {
+  if (!['01', '02', '03'].includes(stationId)) return null;
+  const isSub1 = stationId === '02';
+  return el('section', {
+    class: 'module-capture-panel',
+    id: `module-capture-${stationId}`,
+    'data-station': stationId,
+    'aria-live': 'polite',
+  },
+    el('span', { class: 'micro-label' }, 'MY CAPTURE'),
+    el('h2', {}, tr('내가 남긴 장면', 'MY CAPTURED MOMENT')),
+    el('div', { class: 'capture-result-stage' },
+      el('div', { class: 'capture-empty' },
+        el('span', { class: 'capture-empty-mark', 'aria-hidden': 'true' }, '＋'),
+        el('p', {}, tr(
+          isSub1
+            ? '이 작품에서 눈을 감아 남긴 장면이 이곳에 나타납니다.'
+            : '이 작품에서 남긴 장면이 이곳에 나타납니다.',
+          'The moment you leave in this work will appear here.',
+        )),
+        isSub1 ? el('small', {}, tr('연결 중에는 새 장면을 자동으로 확인합니다.', 'New captures are checked automatically while connected.')) : null,
+      ),
+    ),
+  );
+}
+
+function captureStoragePath(artifact) {
+  if (artifact?.image_path) return artifact.image_path;
+  if (artifact?.meta?.storage_path) return artifact.meta.storage_path;
+  return null;
+}
+
+async function captureDisplayUrl(artifact) {
+  const path = captureStoragePath(artifact);
+  if (!path) return artifact?.image_url || null;
+  const cached = captureUrlCache.get(path);
+  if (cached && cached.expiresAt > Date.now()) return cached.url;
+  const url = await createCaptureSignedUrl(path, 1800);
+  if (url) captureUrlCache.set(path, { url, expiresAt: Date.now() + 25 * 60 * 1000 });
+  return url;
+}
+
+async function refreshCaptureResultPanel(stationId) {
+  const panel = document.getElementById(`module-capture-${stationId}`);
+  if (!panel || !panel.isConnected) return false;
+  const artifacts = await fetchMyCaptureArtifacts(stationId);
+  if (!panel.isConnected || !artifacts.length) return false;
+
+  const resolved = (await Promise.all(artifacts.map(async (artifact) => ({
+    artifact,
+    url: await captureDisplayUrl(artifact),
+  })))).filter((item) => item.url);
+  if (!panel.isConnected || !resolved.length) return false;
+
+  const fingerprint = resolved.map(({ artifact }) => artifact.id || captureStoragePath(artifact) || artifact.value).join('|');
+  if (panel.dataset.fingerprint === fingerprint) return true;
+  panel.dataset.fingerprint = fingerprint;
+
+  let index = 0;
+  const stage = el('div', { class: 'capture-result-stage has-capture' });
+  const image = el('img', { class: 'capture-result-image', alt: tr('내가 작품에서 남긴 장면', 'My captured moment from the work') });
+  const count = el('span', { class: 'capture-result-count' });
+  const openLink = el('a', {
+    class: 'capture-result-open',
+    target: '_blank',
+    rel: 'noopener',
+  }, tr('이미지 열기', 'OPEN IMAGE'), el('span', { 'aria-hidden': 'true' }, '↗'));
+
+  const show = (nextIndex) => {
+    index = (nextIndex + resolved.length) % resolved.length;
+    image.src = resolved[index].url;
+    openLink.href = resolved[index].url;
+    count.textContent = `${index + 1} / ${resolved.length}`;
+  };
+
+  stage.append(
+    image,
+    el('div', { class: 'capture-result-meta' },
+      count,
+      resolved.length > 1 ? el('div', { class: 'capture-result-nav' },
+        el('button', { type: 'button', 'aria-label': tr('이전 장면', 'Previous capture'), onclick: () => show(index - 1) }, '←'),
+        el('button', { type: 'button', 'aria-label': tr('다음 장면', 'Next capture'), onclick: () => show(index + 1) }, '→'),
+      ) : null,
+    ),
+    openLink,
+  );
+  panel.querySelector('.capture-result-stage')?.replaceWith(stage);
+  show(0);
+  logEvent('capture_result_available', { count: resolved.length }, stationId);
+  return true;
+}
+
+function startModuleCapturePolling(stationId, connected) {
+  if (!['01', '02', '03'].includes(stationId)) return;
+  stopCapturePolling();
+  const poll = async () => {
+    if (currentView.name !== 'module' || currentView.data.stationId !== stationId) return;
+    await refreshCaptureResultPanel(stationId);
+    // 현재는 SUB1만 자동 반환이 연결된다. 다른 모듈은 페이지 진입 때 한 번만
+    // 확인하고, 각 TD adapter가 완성되면 같은 계약으로 반복 확인을 켠다.
+    if (stationId === '02' && connected && currentView.name === 'module') {
+      capturePollTimer = setTimeout(poll, 4000);
+    }
+  };
+  capturePollTimer = setTimeout(poll, 0);
+}
+
 function leaveStation(stationId) {
   markStationComplete(stationId);
   const session = ensureSession();
@@ -1573,6 +1692,7 @@ function screenModule(stationId, options = {}) {
         el('p', { class: 'module-korean-title' }, tr(module.phaseKo, module.en)),
       ),
       moduleHero(stationId, module),
+      captureResultPanel(stationId),
       needsName ? el('section', { class: 'naming-prerequisite' },
         el('span', { class: 'instruction-level' }, 'EMOTIONAL NAMING / REQUIRED'),
         el('h2', {}, tr('이 작품에는 당신이 지은 이름이 필요합니다', 'THIS WORK NEEDS YOUR NAME')),
@@ -1637,6 +1757,7 @@ function screenModule(stationId, options = {}) {
       }
     }),
   ] : []);
+  startModuleCapturePolling(stationId, connected && !needsName);
 }
 
 function screenMySpecimen({ returnTo = null } = {}) {
@@ -1986,7 +2107,7 @@ function specimenReference(stationId, session) {
     '03': 'result_03_mourning_capture.webp',
     '04': 'result_04_archive_reference.webp',
   }[stationId];
-  return el('article', { class: `specimen-reference ${visited ? 'is-visited' : ''}` },
+  return el('article', { class: `specimen-reference ${visited ? 'is-visited' : ''}`, 'data-station': stationId },
     el('div', { class: 'reference-line', 'aria-hidden': 'true' }),
     el('div', { class: 'reference-image' },
       assetFrame(referenceFile, {
@@ -2001,6 +2122,33 @@ function specimenReference(stationId, session) {
       el('small', {}, visited ? `CAPTURE / ${stationId}` : 'ARCHIVE / EMPTY'),
     ),
   );
+}
+
+async function refreshSpecimenCaptureReferences() {
+  const artifacts = await fetchMyCaptureArtifacts();
+  const latestByStation = new Map();
+  for (const artifact of artifacts) {
+    const stationId = String(artifact.station_id || '').padStart(2, '0');
+    if (['01', '02', '03'].includes(stationId) && !latestByStation.has(stationId)) {
+      latestByStation.set(stationId, artifact);
+    }
+  }
+  for (const [stationId, artifact] of latestByStation) {
+    const card = document.querySelector(`.specimen-reference[data-station="${stationId}"]`);
+    if (!card) continue;
+    const url = await captureDisplayUrl(artifact);
+    if (!url || !card.isConnected) continue;
+    const imageWrap = card.querySelector('.reference-image');
+    if (!imageWrap) continue;
+    imageWrap.replaceChildren(el('img', {
+      class: 'result-reference-asset asset-image',
+      src: url,
+      alt: tr(`${stationId}에서 내가 남긴 장면`, `My captured moment from ${stationId}`),
+    }));
+    card.classList.add('is-visited', 'has-remote-capture');
+    const status = card.querySelector('.reference-copy strong');
+    if (status) status.textContent = tr('남겨진 장면', 'CAPTURE RECORDED');
+  }
 }
 
 function saveResultImage() {
@@ -2118,6 +2266,7 @@ function screenFinalSpecimen({ refresh = false } = {}) {
     el('button', { class: 'secondary-action', type: 'button', onclick: shareResult }, tr('공유하기', 'SHARE'), el('span', { 'aria-hidden': 'true' }, '↗')),
   ]);
   void refreshRemoteTraceSummaries();
+  void refreshSpecimenCaptureReferences();
 }
 
 function renderCurrentView() {

@@ -481,6 +481,31 @@ export async function fetchMyArtifacts() {
   }
 }
 
+// TD가 비공개 Storage에 올린 캡처는 영구 공개 URL을 만들지 않는다.
+// 현재 익명 관객 권한으로 짧게 유효한 URL만 발급해 자기 세션의 이미지에
+// 접근한다. Storage RLS가 session_id 폴더를 다시 검증한다.
+export async function createCaptureSignedUrl(storagePath, expiresIn = 1800) {
+  if (!storagePath || !ready || !online || !sb) return null;
+  try {
+    const { data, error } = await sb.storage
+      .from('session-captures')
+      .createSignedUrl(storagePath, expiresIn);
+    if (error) throw error;
+    return data?.signedUrl || null;
+  } catch (e) {
+    console.warn('[db] capture signed URL 실패', e);
+    return null;
+  }
+}
+
+export async function fetchMyCaptureArtifacts(stationId = null) {
+  const artifacts = await fetchMyArtifacts();
+  return artifacts
+    .filter((artifact) => artifact?.type === 'capture')
+    .filter((artifact) => !stationId || String(artifact.station_id).padStart(2, '0') === String(stationId).padStart(2, '0'))
+    .sort((a, b) => new Date(b.occurred_at || b.created_at || 0) - new Date(a.occurred_at || a.created_at || 0));
+}
+
 // TD가 올린 인터랙션 요약(장미 극성 비율 등)을 결과 화면에서 읽는다
 export async function fetchMyEvents(types = null) {
   const s = loadSession();

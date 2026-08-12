@@ -663,6 +663,111 @@ body.has-dock .app {
   border-top: 1px dotted var(--line);
 }
 
+.module-capture-panel {
+  margin: 36px 0 0;
+  padding: 28px 0 0;
+  border-top: 1px dotted var(--line);
+}
+
+.module-capture-panel h2 {
+  margin: 14px auto 18px;
+  font-family: var(--display);
+  font-size: 27px;
+  font-weight: 400;
+  letter-spacing: -.04em;
+  text-align: center;
+}
+
+.capture-result-stage {
+  position: relative;
+  display: grid;
+  min-height: 230px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dotted var(--line);
+  background: var(--bg);
+}
+
+.capture-empty {
+  display: grid;
+  max-width: 320px;
+  justify-items: center;
+  gap: 12px;
+  padding: 30px 22px;
+  text-align: center;
+}
+
+.capture-empty-mark {
+  font: 300 30px/1 var(--mono);
+}
+
+.capture-empty p,
+.capture-empty small {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.capture-empty small {
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+
+.capture-result-stage.has-capture {
+  display: block;
+  min-height: 0;
+}
+
+.capture-result-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: #000;
+}
+
+.capture-result-meta {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-top: 1px dotted var(--line);
+  font: 10px/1 var(--mono);
+  letter-spacing: .08em;
+}
+
+.capture-result-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.capture-result-nav button {
+  display: grid;
+  width: 36px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+}
+
+.capture-result-open {
+  display: flex;
+  width: calc(100% - 28px);
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 14px 14px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: 10px/1 var(--mono);
+  letter-spacing: .08em;
+  text-decoration: none;
+}
+
 .module-info-block h2 {
   margin: 14px auto 16px;
   font-family: var(--display);
