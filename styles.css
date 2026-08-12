@@ -60,8 +60,13 @@ button {
   border: 0;
   background: none;
   cursor: pointer;
+  text-align: center;
   appearance: none;
   -webkit-appearance: none;
+}
+
+a {
+  text-align: center;
 }
 
 button:focus-visible,
@@ -102,9 +107,9 @@ body.has-dock .app {
   flex-direction: column;
   gap: 1px;
   min-height: 42px;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  text-align: left;
+  text-align: center;
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 600;
@@ -428,8 +433,13 @@ body.has-dock .app {
 }
 
 .arrival-asset {
-  min-height: 420px;
+  min-height: 0;
+  aspect-ratio: 1;
   margin: 24px 0;
+}
+
+.arrival-asset .asset-image {
+  object-fit: contain;
 }
 
 .rose-asset {
@@ -615,7 +625,8 @@ body.has-dock .app {
 .disclosure summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 18px;
   min-height: 58px;
   color: var(--ink-dim);
   font-family: var(--mono);
@@ -623,6 +634,7 @@ body.has-dock .app {
   letter-spacing: 0.1em;
   list-style: none;
   text-transform: uppercase;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -825,6 +837,44 @@ body.has-dock .app {
   line-height: 1.7;
 }
 
+.emotional-naming-guide {
+  gap: 18px;
+}
+
+.emotional-naming-guide p {
+  line-height: 1.8;
+}
+
+.emotional-naming-example {
+  margin: 4px 0;
+  padding: 18px;
+  border: 1px solid #ffffff;
+  text-align: center;
+}
+
+.emotional-naming-example span {
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .16em;
+}
+
+.emotional-naming-example p,
+.emotional-naming-example strong {
+  display: block;
+  margin: 0;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.emotional-naming-example strong {
+  margin-top: 8px;
+  font-size: 16px;
+}
+
 .personal-header {
   display: grid;
   grid-template-columns: 60px minmax(0, 1fr) auto;
@@ -965,42 +1015,6 @@ body.has-dock .app {
 }
 
 .actual-floorplan-image[hidden] {
-  display: none;
-}
-
-.floorplan-asset-placeholder {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  top: 12px;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding-bottom: 8px;
-  border-bottom: 1px dotted rgba(255,255,255,.45);
-  color: #ffffff;
-  font-family: var(--mono);
-  pointer-events: none;
-}
-
-.floorplan-asset-placeholder span,
-.floorplan-asset-placeholder small {
-  font-size: 8px;
-  letter-spacing: .12em;
-}
-
-.floorplan-asset-placeholder small {
-  font-size: 6px;
-  white-space: nowrap;
-}
-
-.floorplan-asset-placeholder strong {
-  font-size: 9px;
-  font-weight: 500;
-}
-
-.floorplan-asset-placeholder[hidden] {
   display: none;
 }
 
@@ -1196,6 +1210,54 @@ body.has-dock .app {
   box-shadow: 0 0 9px var(--session);
 }
 
+.map-hotspot.is-visited,
+.map-hotspot.is-connected {
+  border-color: var(--session);
+  background: var(--session);
+  box-shadow:
+    0 0 0 4px rgba(255,255,255,.12),
+    0 0 20px var(--session),
+    0 10px 18px rgba(0,0,0,.7);
+}
+
+.map-hotspot.is-visited::before,
+.map-hotspot.is-connected::before {
+  background: #ffffff;
+  box-shadow: 0 0 10px #ffffff;
+}
+
+.map-hotspot.is-visited .hotspot-number,
+.map-hotspot.is-connected .hotspot-number {
+  color: #000000;
+  font-weight: 700;
+}
+
+.map-hotspot.is-visited .hotspot-label,
+.map-hotspot.is-connected .hotspot-label {
+  padding: 4px 6px;
+  background: var(--session);
+  color: #000000;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.hotspot-complete {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  display: grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 1px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #000000;
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1;
+}
+
 .map-hotspot::after {
   content: '';
   position: absolute;
@@ -1353,6 +1415,66 @@ body.has-dock .app {
   line-height: 1.5;
 }
 
+.floorplan-route-order {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.2fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 5px;
+  align-items: center;
+  margin: 20px 0 14px;
+  padding: 14px 0;
+  border-top: 1px dotted #ffffff;
+  border-bottom: 1px dotted #ffffff;
+}
+
+.route-order-step {
+  display: flex;
+  min-width: 0;
+  min-height: 42px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 3px;
+  border: 1px solid rgba(255,255,255,.55);
+  text-align: center;
+}
+
+.route-order-step strong {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.route-order-step span {
+  overflow: hidden;
+  max-width: 100%;
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: .04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-order-step.is-visited {
+  border-color: var(--session);
+  background: var(--session);
+  color: #000000;
+  box-shadow: 0 0 14px var(--session);
+}
+
+.route-order-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.route-order-arrow {
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: center;
+}
+
 .route-note-primary {
   margin: 18px 0 28px;
   padding: 18px 12px;
@@ -1388,7 +1510,7 @@ body.has-dock .app {
 
 .module-index-key strong {
   line-height: 1.35;
-  text-align: left;
+  text-align: center;
 }
 
 .module-code {
@@ -1397,7 +1519,7 @@ body.has-dock .app {
   font-family: var(--mono);
   font-size: 7px;
   letter-spacing: .12em;
-  text-align: left;
+  text-align: center;
 }
 
 .module-index-key .visit-status {
@@ -1479,7 +1601,7 @@ body.has-dock .app {
   width: 100%;
   min-height: 66px;
   border-bottom: 1px dotted var(--line);
-  text-align: left;
+  text-align: center;
 }
 
 .home-work-about-link > span {
@@ -1528,7 +1650,7 @@ body.has-dock .app {
 }
 
 .text-button {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 22px;
@@ -1539,6 +1661,13 @@ body.has-dock .app {
   letter-spacing: .1em;
   text-align: center;
   text-transform: uppercase;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.screen a,
+.site-footer a {
+  text-align: center;
 }
 
 .module-screen {
@@ -1797,7 +1926,7 @@ body.has-dock .app {
   align-items: center;
   min-height: 54px;
   border-bottom: 1px dotted var(--line);
-  text-align: left;
+  text-align: center;
 }
 
 .about-anchor-nav button span {
@@ -1810,6 +1939,7 @@ body.has-dock .app {
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
+  text-align: center;
 }
 
 .about-section {
@@ -1927,7 +2057,9 @@ body.has-dock .app {
 }
 
 .return-home {
+  width: 100%;
   margin-top: 22px;
+  text-align: center;
 }
 
 .specimen-screen .rose-visual {
@@ -2023,7 +2155,7 @@ body.has-dock .app {
   width: 100%;
   min-height: 64px;
   border-bottom: 1px solid var(--line);
-  text-align: left;
+  text-align: center;
 }
 
 .missing-list span {
@@ -2743,6 +2875,23 @@ body.has-dock .app {
 
   .map-hotspot strong {
     font-size: 7px;
+  }
+
+  .floorplan-route-order {
+    gap: 3px;
+  }
+
+  .route-order-step {
+    min-height: 38px;
+  }
+
+  .route-order-step span {
+    font-size: 6px;
+    letter-spacing: 0;
+  }
+
+  .route-order-arrow {
+    font-size: 9px;
   }
 }
 

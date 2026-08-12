@@ -764,7 +764,7 @@ function screenArrival() {
         el('span', {}, tr('오늘 나는', 'TODAY I KILL')),
         el('span', {}, tr('죽인다, 나를', 'MY SELF')),
       ),
-      assetFrame('arrival_hero.webp', {
+      assetFrame('arrival_hero.png', {
         className: 'arrival-asset',
         label: 'META ROSE SPECIMEN arrival hero',
         type: 'ARRIVAL HERO / P0',
@@ -920,10 +920,33 @@ function screenPersonalSetup() {
         )),
         disclosure(
           tr('감정명명 더 알아보기', 'MORE ABOUT EMOTIONAL NAMING'),
-          el('p', {}, tr(
-            '시스템은 감정 단어를 추천하지 않습니다. 미워했던 한 면과 그 안의 다른 한 면을 함께 보고, 마지막 이름을 직접 적습니다.',
-            'The system does not suggest emotion words. The final name is yours to write.',
-          )),
+          el('div', { class: 'copy-stack emotional-naming-guide' },
+            el('p', {}, tr(
+              '감정명명은 이미 정해진 감정 단어를 고르는 과정이 아닙니다. 작품을 지나며 발견한 서로 다른 두 모습을 한 문장 안에 함께 남기고, 오늘의 나를 부를 임시적인 이름을 직접 만드는 과정입니다.',
+              'Emotional naming is not a matter of choosing from a fixed list. It brings two different sides you encounter into one sentence and lets you make a temporary name for yourself today.',
+            )),
+            el('p', {}, tr(
+              '먼저 내가 없애고 싶거나 미워했던 한 면을 적습니다. 예를 들면 “쉽게 겁먹는 나”, “자꾸 멈추는 나”처럼 지금 실제로 느껴지는 말이면 충분합니다. 그다음, 바로 그 모습 안에 동시에 존재했던 다른 한 면을 찾습니다. 두려워하면서도 자리를 지켰거나, 멈췄지만 다시 움직였던 나일 수 있습니다.',
+              'First, write one side of yourself that you wanted to erase or rejected. Then look for another side that existed inside it at the same time: perhaps the self that was afraid but stayed, or stopped and moved again.',
+            )),
+            el('p', {}, tr(
+              '두 번째 문장은 첫 번째를 지우거나 긍정적으로 고쳐 쓰기 위한 것이 아닙니다. 서로 모순되어 보이는 두 모습이 동시에 나였다는 사실을 그대로 두는 것이 중요합니다.',
+              'The second sentence does not erase, correct, or make the first one positive. What matters is allowing two seemingly contradictory sides to remain true at once.',
+            )),
+            el('div', { class: 'emotional-naming-example' },
+              el('span', {}, tr('예시', 'EXAMPLE')),
+              el('p', {}, tr('“겁이 많은 나” + “그래도 계속 가는 나”', '“The self who is afraid” + “The self who keeps going”')),
+              el('strong', {}, tr('→ 겁이 많지만 계속 가는 나', '→ THE SELF WHO IS AFRAID BUT KEEPS GOING')),
+            ),
+            el('p', {}, tr(
+              '정답이나 좋은 표현은 없습니다. 완전한 문장이 아니어도 되고, 타인에게 설명하기 어려운 말이어도 됩니다. 이 이름은 진단이나 성격 규정이 아니라, 오늘 이 전시를 통과한 나를 잠시 붙잡아 두는 표식입니다.',
+              'There is no correct or polished answer. It does not need to be a complete sentence or easy to explain. This is not a diagnosis or a fixed identity, but a marker for the self moving through the exhibition today.',
+            )),
+            el('p', {}, tr(
+              '01을 마친 뒤 이름을 붙이는 것을 권합니다. 완성한 감정명은 02와 03의 화면에 나타나고, 마지막에는 당신의 장미 번호와 함께 최종 기록에 남습니다. 원한다면 마지막 단계에서 다시 읽고 다듬을 수 있습니다.',
+              'We recommend naming after 01. Your completed name reappears in 02 and 03 and remains with your rose number in the final record. You can read and refine it again at the end.',
+            )),
+          ),
           'emotional_naming_intro',
         ),
       ),
@@ -951,8 +974,11 @@ function moduleStatus(session, stationId) {
 
 function floorplanHotspot(stationId, className, physicalLabel) {
   const label = stationLabel(stationId);
+  const session = ensureSession();
+  const visited = getCompletedStations(session).includes(stationId) || Boolean(traceSummaryForStation(stationId));
+  const connected = session.connected_station === stationId;
   return el('button', {
-    class: `map-hotspot ${className}`,
+    class: `map-hotspot ${className}${visited ? ' is-visited' : ''}${connected ? ' is-connected' : ''}`,
     type: 'button',
     'aria-label': `${stationId} ${label} ${physicalLabel}`,
     onclick: () => {
@@ -962,71 +988,56 @@ function floorplanHotspot(stationId, className, physicalLabel) {
   },
     el('span', { class: 'hotspot-number' }, String(Number(stationId))),
     el('span', { class: 'hotspot-label' }, workTitle(stationId)),
+    visited ? el('span', { class: 'hotspot-complete', 'aria-hidden': 'true' }, '✓') : null,
+  );
+}
+
+function floorplanRouteOrder(session) {
+  const routeStep = (stationId) => {
+    const visited = getCompletedStations(session).includes(stationId) || Boolean(traceSummaryForStation(stationId));
+    return el('button', {
+      class: `route-order-step${visited ? ' is-visited' : ''}`,
+      type: 'button',
+      onclick: () => screenModule(stationId, { via: 'route_order' }),
+      'aria-label': `${stationId} ${workTitle(stationId)} ${moduleStatus(session, stationId)}`,
+    },
+      el('strong', {}, String(Number(stationId))),
+      el('span', {}, workTitle(stationId)),
+    );
+  };
+
+  return el('nav', { class: 'floorplan-route-order', 'aria-label': tr('권장 관람 순서', 'Suggested route') },
+    routeStep('01'),
+    el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
+    el('div', { class: 'route-order-pair' }, routeStep('02'), routeStep('03')),
+    el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
+    routeStep('04'),
+    el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
+    el('button', { class: 'route-order-step route-order-exit', type: 'button', onclick: screenExitJourney },
+      el('strong', {}, '⇅'),
+      el('span', {}, tr('출입구', 'IN / OUT')),
+    ),
   );
 }
 
 function floorplanViewer(session) {
-  const frameCount = 36;
-  let frame = 0;
   let dragging = false;
   let dragStartX = 0;
   let dragStartY = 0;
-  let dragStartFrame = 0;
   let planAngle = 0;
   let dragStartAngle = 0;
   let planTilt = 42;
   let dragStartTilt = 42;
   let activePointerId = null;
-  let turntableReady = false;
 
   const planViewCounter = () => `${String(Math.round(planAngle)).padStart(3, '0')}° · ${String(Math.round(planTilt)).padStart(2, '0')}°`;
-
-  const frameName = (index) => `floorplan_360_${String(index).padStart(2, '0')}.webp`;
-  const image = el('img', {
-    class: 'floorplan-turntable-image',
-    src: `./assets/floorplan/${frameName(0)}`,
-    alt: 'META ROSE exhibition floorplan 360 view',
-  });
   const actualPlan = el('img', {
     class: 'actual-floorplan-image',
     src: './assets/floorplan/gallery-room-1-plan.webp',
-    alt: tr('제1전시실', 'EXHIBITION ROOM 1'),
+    alt: '',
+    'aria-hidden': 'true',
+    onerror: (event) => { event.currentTarget.hidden = true; },
   });
-  const placeholder = el('div', { class: 'floorplan-asset-placeholder' },
-    el('strong', {}, tr('제1전시실', 'EXHIBITION ROOM 1')),
-  );
-
-  image.addEventListener('load', () => {
-    turntableReady = true;
-    image.hidden = false;
-    actualPlan.hidden = true;
-    placeholder.hidden = true;
-    stage.classList.add('has-turntable');
-    stage.style.setProperty('--plan-angle', '0deg');
-    stage.querySelector('.view-mode').textContent = 'DRAG TO ROTATE 360°';
-    stage.querySelector('.frame-counter').textContent = `01 / ${frameCount}`;
-  });
-  image.addEventListener('error', () => {
-    turntableReady = false;
-    image.hidden = true;
-    actualPlan.hidden = false;
-    placeholder.hidden = false;
-    stage?.classList.remove('has-turntable');
-    stage?.style.setProperty('--plan-angle', `${planAngle}deg`);
-    stage?.style.setProperty('--plan-tilt', `${planTilt}deg`);
-    if (stage) {
-      stage.querySelector('.view-mode').textContent = 'DRAG ↔ ROTATE · ↕ TILT';
-      stage.querySelector('.frame-counter').textContent = planViewCounter();
-    }
-  });
-
-  function showFrame(nextFrame) {
-    frame = (nextFrame + frameCount) % frameCount;
-    image.src = `./assets/floorplan/${frameName(frame)}`;
-    stage.style.setProperty('--turntable-progress', `${frame / (frameCount - 1)}`);
-    stage.style.setProperty('--turntable-angle', `${(frame / frameCount) * 360}deg`);
-    stage.querySelector('.frame-counter').textContent = `${String(frame + 1).padStart(2, '0')} / ${frameCount}`;
-  }
 
   function finishDrag(event) {
     if (activePointerId !== event.pointerId) return;
@@ -1039,10 +1050,10 @@ function floorplanViewer(session) {
     stage.classList.remove('is-dragging');
     if (didDrag) {
       logEvent('floorplan_rotate', {
-        turntable_ready: turntableReady,
-        frame: turntableReady ? frame : null,
-        angle: turntableReady ? Math.round((frame / frameCount) * 360) : Math.round(planAngle),
-        tilt: turntableReady ? null : Math.round(planTilt),
+        turntable_ready: false,
+        frame: null,
+        angle: Math.round(planAngle),
+        tilt: Math.round(planTilt),
       }, '00');
     }
   }
@@ -1084,7 +1095,6 @@ function floorplanViewer(session) {
       activePointerId = event.pointerId;
       dragStartX = event.clientX;
       dragStartY = event.clientY;
-      dragStartFrame = frame;
       dragStartAngle = planAngle;
       dragStartTilt = planTilt;
     },
@@ -1099,17 +1109,11 @@ function floorplanViewer(session) {
         stage.setPointerCapture?.(event.pointerId);
       }
       event.preventDefault();
-      if (turntableReady) {
-        const deltaFrames = Math.round(deltaX / 10);
-        const nextFrame = dragStartFrame - deltaFrames;
-        if (nextFrame !== frame) showFrame(nextFrame);
-      } else {
-        planAngle = (dragStartAngle + (deltaX * 0.9) + 3600) % 360;
-        planTilt = Math.max(18, Math.min(68, dragStartTilt - (deltaY * 0.28)));
-        stage.style.setProperty('--plan-angle', `${planAngle}deg`);
-        stage.style.setProperty('--plan-tilt', `${planTilt}deg`);
-        stage.querySelector('.frame-counter').textContent = planViewCounter();
-      }
+      planAngle = (dragStartAngle + (deltaX * 0.9) + 3600) % 360;
+      planTilt = Math.max(18, Math.min(68, dragStartTilt - (deltaY * 0.28)));
+      stage.style.setProperty('--plan-angle', `${planAngle}deg`);
+      stage.style.setProperty('--plan-tilt', `${planTilt}deg`);
+      stage.querySelector('.frame-counter').textContent = planViewCounter();
     },
     onpointerup: finishDrag,
     onpointercancel: finishDrag,
@@ -1119,9 +1123,7 @@ function floorplanViewer(session) {
       stage.classList.remove('is-dragging');
     },
   },
-    image,
     planRotor,
-    placeholder,
     el('div', { class: 'turntable-ui' },
       el('span', { class: 'view-mode' }, 'DRAG ↔ ROTATE · ↕ TILT'),
       el('span', { class: 'frame-counter' }, '000° · 42°'),
@@ -1165,6 +1167,7 @@ function screenHome() {
         ),
         el('span', { class: 'map-coordinate' }, '37.5665°N'),
       ),
+      floorplanRouteOrder(session),
       floorplanViewer(session),
       el('p', { class: 'route-note route-note-primary' }, tr(
         '01의 장미 정원에서 이름을 지은 뒤, 02와 03은 원하는 순서로 지나가셔도 됩니다. 04는 언제든 보실 수 있습니다.',
