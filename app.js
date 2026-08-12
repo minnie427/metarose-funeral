@@ -30,8 +30,8 @@ const $bar = document.getElementById('statusbar');
 const STORAGE_KEY = 'meta_rose_phone_hub_v1';
 const EVENTS_KEY = 'meta_rose_phone_hub_events_v1';
 const ARTIST_INSTAGRAM_URL = 'https://www.instagram.com/minniepark/';
-// 실제 전시 자산 파일명은 공백을 포함한다. URL에서는 명시적으로 인코딩한다.
-const ROSE_SPECIMEN_IMAGE = './assets/images/rose%20specimen.png';
+// 투명 배경 PNG. 색은 CSS mask로 장미의 alpha 영역에만 입힌다.
+const ROSE_SPECIMEN_IMAGE = './assets/images/rose_specimen.png';
 
 let currentView = { name: 'arrival', data: {} };
 let activeReadKey = null;
@@ -1481,10 +1481,10 @@ const MODULES = {
 
 function moduleHero(stationId, module) {
   const fileName = {
-    '01': 'module_01_naming_hero.webp',
-    '02': 'module_02_reenactment_hero.webp',
-    '03': 'module_03_mourning_hero.webp',
-    '04': 'module_04_archive_hero.webp',
+    '01': 'module_01_naming_hero.jpeg',
+    '02': 'module_02_reenactment_hero.png',
+    '03': 'module_03_mourning_hero.png',
+    '04': 'module_04_archive_hero.png',
   }[stationId];
 
   return el('div', { class: `module-hero module-${module.visual}` },

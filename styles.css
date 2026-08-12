@@ -425,7 +425,6 @@ body.has-dock .app {
 .rose-asset {
   position: absolute;
   inset: 16px;
-  overflow: hidden;
   transition: transform 480ms ease, inset 480ms ease;
 }
 
@@ -438,13 +437,26 @@ body.has-dock .app {
   filter: grayscale(1) contrast(1.06) brightness(0.92);
 }
 
-.rose-tint {
+.rose-asset .rose-tint {
   position: absolute;
   inset: 0;
   display: block;
   background: var(--session);
-  opacity: 0.9;
-  mix-blend-mode: color;
+  opacity: 0.94;
+  -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
+  pointer-events: none;
+}
+
+/* 작은 header/menu 장미도 같은 PNG의 투명 alpha 안에서만 색이 보인다. */
+.personal-rose .rose-tint,
+.rose-mark .rose-tint {
+  position: absolute;
+  display: block;
+  background: var(--session);
+  opacity: .94;
+  -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
   pointer-events: none;
 }
 
