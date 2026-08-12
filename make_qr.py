@@ -48,7 +48,8 @@ def build(url_base, out_dir='qr'):
 
     for sid, name in STATIONS:
         sep = '&' if '?' in url_base else '?'
-        url = f'{url_base}{sep}station={sid}'
+        qr_url = f'{url_base}{sep}station={sid}&via=qr'
+        nfc_url = f'{url_base}{sep}station={sid}&via=nfc'
 
         qr = qrcode.QRCode(
             version=None,
@@ -56,7 +57,7 @@ def build(url_base, out_dir='qr'):
             box_size=10,
             border=QUIET_MODULES,
         )
-        qr.add_data(url)
+        qr.add_data(qr_url)
         qr.make(fit=True)
 
         img = qr.make_image(fill_color='black', back_color='white')
@@ -64,8 +65,8 @@ def build(url_base, out_dir='qr'):
 
         path = os.path.join(out_dir, f'qr_{sid}.png')
         img.save(path, dpi=(DPI, DPI))
-        made.append((sid, name, url, path, qr.version))
-        print(f'  {sid}  v{qr.version:<2}  {url}')
+        made.append((sid, name, qr_url, nfc_url, path, qr.version))
+        print(f'  {sid}  v{qr.version:<2}  {qr_url}')
 
     # 대조 시트 — 인쇄 전에 눈으로 확인하고, 현장에서 폰으로 실제 테스트
     sheet_w, cell = 2480, 780          # A4 300dpi 폭
@@ -81,7 +82,7 @@ def build(url_base, out_dir='qr'):
     d.text((40, 40), f'서울 프린지 2026 — QR 대조 시트  /  {url_base}',
            fill=0, font=font)
 
-    for i, (sid, name, url, path, _) in enumerate(made):
+    for i, (sid, name, qr_url, nfc_url, path, _) in enumerate(made):
         x = 60 + (i % 3) * (cell + 20)
         y = 120 + (i // 3) * cell
         q = Image.open(path).resize((600, 600), Image.NEAREST)
@@ -97,8 +98,8 @@ def build(url_base, out_dir='qr'):
         f.write('NFC Tools → Write → Add a record → URL\n')
         f.write('URL 확정 후 읽기전용 잠금(lock). ⚠️ 잠그면 되돌릴 수 없음.\n')
         f.write('잠그기 전 다른 폰 2대로 읽기 테스트 필수.\n\n')
-        for sid, name, url, _, _ in made:
-            f.write(f'{sid}  {name}\n    {url}\n\n')
+        for sid, name, qr_url, nfc_url, _, _ in made:
+            f.write(f'{sid}  {name}\n    {nfc_url}\n\n')
 
     print(f'\n완료 → {out_dir}/')
     print(f'  · 스테이션별 PNG {len(made)}장 (50×50mm @300dpi)')

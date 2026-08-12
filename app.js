@@ -401,9 +401,15 @@ function stationFromQuery() {
   return new URLSearchParams(location.search).get('station');
 }
 
+function stationViaFromQuery() {
+  const via = new URLSearchParams(location.search).get('via');
+  return ['nfc', 'qr'].includes(via) ? via : 'qr';
+}
+
 function clearStationQuery() {
   const url = new URL(location.href);
   url.searchParams.delete('station');
+  url.searchParams.delete('via');
   history.replaceState({}, '', url);
 }
 
@@ -868,13 +874,15 @@ function openRegistrationConfirmation(color, selectionMeta = {}) {
         updateSession({ nickname: '', color, color_locked: true });
         logEvent('specimen_registered', { color, ...selectionMeta }, '00');
         overlay.remove();
-        const pendingStation = getSession()?.pending_station;
+        const pendingSession = getSession();
+        const pendingStation = pendingSession?.pending_station;
+        const pendingStationVia = pendingSession?.pending_station_via || 'qr';
         if (pendingStation === '05') {
-          updateSession({ pending_station: null });
+          updateSession({ pending_station: null, pending_station_via: null });
           screenExitJourney();
         } else if (pendingStation) {
-          updateSession({ pending_station: null });
-          screenModule(pendingStation, { enter: true, via: 'qr' });
+          updateSession({ pending_station: null, pending_station_via: null });
+          screenModule(pendingStation, { enter: true, via: pendingStationVia });
         } else {
           screenHome();
         }
@@ -1660,7 +1668,10 @@ function screenModule(stationId, options = {}) {
   }
 
   if (!isRegistered(session)) {
-    updateSession({ pending_station: options.enter ? stationId : null });
+    updateSession({
+      pending_station: options.enter ? stationId : null,
+      pending_station_via: options.enter ? (options.via || 'qr') : null,
+    });
     session.intro_seen ? screenPersonalSetup() : screenArrival();
     return;
   }
@@ -1668,7 +1679,7 @@ function screenModule(stationId, options = {}) {
   const via = options.via || 'floorplan';
   const needsName = ['02', '03'].includes(stationId) && !session.emotional_name;
   if (options.enter && needsName) {
-    updateSession({ pending_station: stationId });
+    updateSession({ pending_station: stationId, pending_station_via: via });
     logEvent('station_name_required', { via }, stationId);
   } else if (options.enter) {
     updateSession({ connected_station: stationId });
@@ -2089,8 +2100,9 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
         }, '05');
         screenFinalSpecimen();
       } else if (returnToStation) {
-        updateSession({ pending_station: null });
-        screenModule(returnToStation, { enter: true, via: 'emotional_naming' });
+        const pendingStationVia = ensureSession().pending_station_via || 'emotional_naming';
+        updateSession({ pending_station: null, pending_station_via: null });
+        screenModule(returnToStation, { enter: true, via: pendingStationVia });
       } else {
         screenHome();
       }
@@ -2302,9 +2314,10 @@ function boot() {
   $bar.replaceChildren();
 
   const station = stationFromQuery();
+  const stationVia = stationViaFromQuery();
   if (station === '05') {
     if (!session.intro_seen || !isRegistered(session)) {
-      updateSession({ pending_station: station });
+      updateSession({ pending_station: station, pending_station_via: stationVia });
       session.intro_seen ? screenPersonalSetup() : screenArrival();
     } else {
       screenExitJourney();
@@ -2314,10 +2327,10 @@ function boot() {
 
   if (station && MODULES[station]) {
     if (!session.intro_seen || !isRegistered(session)) {
-      updateSession({ pending_station: station });
+      updateSession({ pending_station: station, pending_station_via: stationVia });
       session.intro_seen ? screenPersonalSetup() : screenArrival();
     } else {
-      screenModule(station, { enter: true, via: 'qr' });
+      screenModule(station, { enter: true, via: stationVia });
     }
     return;
   }
