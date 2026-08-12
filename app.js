@@ -819,7 +819,10 @@ function openRegistrationConfirmation(color, selectionMeta = {}) {
         logEvent('specimen_registered', { color, ...selectionMeta }, '00');
         overlay.remove();
         const pendingStation = getSession()?.pending_station;
-        if (pendingStation) {
+        if (pendingStation === '05') {
+          updateSession({ pending_station: null });
+          screenExitJourney();
+        } else if (pendingStation) {
           updateSession({ pending_station: null });
           screenModule(pendingStation, { enter: true, via: 'qr' });
         } else {
@@ -2103,6 +2106,16 @@ function boot() {
   $bar.replaceChildren();
 
   const station = stationFromQuery();
+  if (station === '05') {
+    if (!session.intro_seen || !isRegistered(session)) {
+      updateSession({ pending_station: station });
+      session.intro_seen ? screenPersonalSetup() : screenArrival();
+    } else {
+      screenExitJourney();
+    }
+    return;
+  }
+
   if (station && MODULES[station]) {
     if (!session.intro_seen || !isRegistered(session)) {
       updateSession({ pending_station: station });
