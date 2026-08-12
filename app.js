@@ -30,6 +30,8 @@ const $bar = document.getElementById('statusbar');
 const STORAGE_KEY = 'meta_rose_phone_hub_v1';
 const EVENTS_KEY = 'meta_rose_phone_hub_events_v1';
 const ARTIST_INSTAGRAM_URL = 'https://www.instagram.com/minniepark/';
+// 실제 전시 자산 파일명은 공백을 포함한다. URL에서는 명시적으로 인코딩한다.
+const ROSE_SPECIMEN_IMAGE = './assets/images/rose%20specimen.png';
 
 let currentView = { name: 'arrival', data: {} };
 let activeReadKey = null;
@@ -447,12 +449,26 @@ function assetFrame(fileName, options = {}) {
   return el('div', { class: `asset-frame ${options.className || ''}`.trim() }, image, placeholder);
 }
 
+function roseSpecimenImage(label, className = '') {
+  const image = el('img', {
+    class: className,
+    src: ROSE_SPECIMEN_IMAGE,
+    alt: label,
+  });
+  // PNG가 아직 폴더에 없더라도 작품 화면은 멈추지 않는다. 파일을 넣으면
+  // 다음 새로고침부터 자동으로 실제 specimen 이미지가 사용된다.
+  image.addEventListener('error', () => {
+    if (image.dataset.fallback === 'true') return;
+    image.dataset.fallback = 'true';
+    image.src = './rose-bloom.svg';
+  });
+  return image;
+}
+
 function roseMark(className = '') {
   return el('span', { class: `rose-mark ${className}`.trim(), 'aria-hidden': 'true' },
-    el('i', { class: 'petal petal-a' }),
-    el('i', { class: 'petal petal-b' }),
-    el('i', { class: 'petal petal-c' }),
-    el('i', { class: 'rose-core' }),
+    roseSpecimenImage('', 'rose-mark-image'),
+    el('i', { class: 'rose-tint rose-mark-tint' }),
   );
 }
 
@@ -470,7 +486,7 @@ function globalHeader() {
       },
     },
       el('span', {}, 'META ROSE'),
-      el('span', {}, 'SPECIMEN'),
+      el('span', {}, '2026'),
     ),
     el('div', { class: 'global-actions' },
       el('button', {
@@ -510,7 +526,7 @@ function personalHeader(connectedStation = null) {
     'aria-label': tr('내 표본 보기', 'View my specimen'),
   },
     el('span', { class: 'personal-rose' },
-      el('img', { src: './rose-bloom.svg', alt: '' }),
+      roseSpecimenImage(''),
       el('i', { class: 'rose-tint' }),
     ),
     el('span', { class: 'personal-copy' },
@@ -675,7 +691,7 @@ function roseVisual(kind = 'specimen', label = 'MY ROSE', traceProfile = null) {
     el('div', { class: 'scan-corner corner-a' }),
     el('div', { class: 'scan-corner corner-b' }),
     el('div', { class: 'rose-asset' },
-      el('img', { src: './rose-bloom.svg', alt: label }),
+      roseSpecimenImage(label),
       el('i', { class: 'rose-tint' }),
       el('i', { class: 'scanline' }),
     ),
@@ -723,8 +739,8 @@ function screenArrival() {
         el('span', {}, '2026'),
       ),
       el('h1', { class: 'arrival-title' },
-        el('span', {}, 'META ROSE'),
-        el('span', {}, 'SPECIMEN'),
+        el('span', {}, tr('오늘 나는', 'TODAY I KILL')),
+        el('span', {}, tr('죽인다, 나를', 'MY SELF')),
       ),
       assetFrame('arrival_hero.webp', {
         className: 'arrival-asset',
@@ -797,7 +813,7 @@ function screenArrival() {
       logEvent('arrival_local_only_clicked', {}, '00');
       updateSession({ intro_seen: true, consent: false, local_only: true });
       screenPersonalSetup();
-    }, 'local-only-entry'),
+    }, 'local-only-entry quiet-entry'),
   ]);
   // 입장 전 읽기는 세션 발급 후 queue에서 해당 세션으로 귀속된다.
   startPageRead('arrival');
@@ -841,29 +857,22 @@ function screenPersonalSetup() {
   rememberView('setup');
   applySessionColor(session.color || '#F25C94');
 
-  let selectedColor = session.color_locked ? session.color : '';
+  let selectedColor = session.color_locked ? session.color : (session.color || '#F25C94');
   const openedAt = performance.now();
   let colorChangeCount = 0;
-  const colorButtons = CONFIG.PALETTE.map(({ hex }) => el('button', {
-    class: `palette-choice ${selectedColor === hex ? 'is-selected' : ''}`,
-    type: 'button',
+  const error = el('p', { class: 'field-error', 'aria-live': 'polite' });
+  const colorPicker = el('input', {
+    class: 'continuous-color-field',
+    type: 'color',
+    value: selectedColor,
     'aria-label': tr('나의 장미 색 선택', 'Choose my rose color'),
-    'aria-pressed': selectedColor === hex ? 'true' : 'false',
-    style: { '--choice-color': hex },
-    onclick: (event) => {
+    oninput: (event) => {
       colorChangeCount += 1;
-      selectedColor = hex;
-      applySessionColor(hex);
-      colorButtons.forEach((button) => {
-        const active = button === event.currentTarget;
-        button.classList.toggle('is-selected', active);
-        button.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
+      selectedColor = event.currentTarget.value.toUpperCase();
+      applySessionColor(selectedColor);
       error.textContent = '';
     },
-  }, el('span', { 'aria-hidden': 'true' })));
-
-  const error = el('p', { class: 'field-error', 'aria-live': 'polite' });
+  });
 
   render([
     globalHeader(),
@@ -876,8 +885,8 @@ function screenPersonalSetup() {
       roseVisual('registration', 'MY ROSE PREVIEW'),
       el('div', { class: 'input-group color-group' },
         el('label', {}, 'MY ROSE COLOR'),
-        el('div', { class: 'palette-grid', role: 'group', 'aria-label': tr('나의 장미 색', 'My rose color') }, ...colorButtons),
-        el('span', { class: 'input-note' }, tr('색의 이름은 정해두지 않았습니다. 지금 당신의 장미로 남기고 싶은 색을 골라주세요.', 'Choose the color you want to keep as your rose today.')),
+        colorPicker,
+        el('span', { class: 'input-note' }, tr('색의 이름은 정해두지 않았습니다. 팔레트에서 지금 당신의 장미로 남기고 싶은 색을 직접 골라주세요.', 'Choose the color you want to keep as your rose directly from the palette.')),
         error,
       ),
       el('section', { class: 'emotional-naming-intro' },
@@ -928,7 +937,10 @@ function floorplanHotspot(stationId, className, physicalLabel) {
       logEvent('floorplan_module_click', { station_id: stationId, via: 'floorplan' }, stationId);
       screenModule(stationId, { via: 'floorplan' });
     },
-  }, el('span', { class: 'hotspot-number' }, String(Number(stationId))));
+  },
+    el('span', { class: 'hotspot-number' }, String(Number(stationId))),
+    el('span', { class: 'hotspot-label' }, workTitle(stationId)),
+  );
 }
 
 function floorplanViewer(session) {
@@ -1127,6 +1139,7 @@ function screenHome() {
           '바니타스의 꽃과 해골은 삶이 사라진다는 사실을 말해왔습니다. 이 작품은 질문을 바꿉니다. 우리는 왜 살아 있는 동안에도 자기 안의 어떤 부분을 계속 죽일까요.',
           'The flowers and skulls of vanitas speak of life passing. This work asks what we keep killing while we are still alive.',
         )),
+        textButton(tr('프로젝트 상세 내용', 'PROJECT DETAILS'), () => screenAboutProject('about-intro'), 'home-about-primary'),
       ),
       el('div', { class: 'section-heading-row' },
         el('div', {},
@@ -1141,28 +1154,12 @@ function screenHome() {
         'Make your name in 01, then visit 02 and 03 in either order. 04 is open at any time.',
       )),
       el('div', { class: 'module-index-list' },
-        ...modules.map((stationId) => el('div', { class: 'module-index-row module-index-key' },
+        ...modules.map((stationId) => el('button', { class: 'module-index-row module-index-key', type: 'button', onclick: () => screenModule(stationId, { via: 'floorplan_list' }) },
           el('span', { class: 'module-number' }, stationId),
           el('strong', {}, workTitle(stationId)),
           el('span', { class: 'visit-status' }, moduleStatus(session, stationId)),
           el('span', { class: 'module-code' }, stationLabel(stationId)),
         )),
-      ),
-      el('section', { class: 'home-reading-links' },
-        el('span', { class: 'micro-label' }, 'READ THE WORK'),
-        el('h2', {}, tr('프로젝트에 대하여', 'ABOUT THE PROJECT')),
-        textButton(tr('프로젝트 전체 이야기 읽기', 'READ THE FULL PROJECT'), () => screenAboutProject('about-intro'), 'home-about-primary'),
-        el('div', { class: 'home-work-about-links' },
-          ...modules.map((stationId) => el('button', {
-            class: 'home-work-about-link',
-            type: 'button',
-            onclick: () => screenAboutProject(workAboutSection(stationId)),
-          },
-            el('span', {}, stationId),
-            el('strong', {}, workTitle(stationId)),
-            el('span', { 'aria-hidden': 'true' }, '↓'),
-          )),
-        ),
       ),
       isTestMode() ? testPreviewPanel({ home: true }) : null,
       el('div', { class: 'home-name-action' },
@@ -1436,37 +1433,49 @@ const MODULES = {
     en: 'NAMING', ko: '명명', phaseKo: '명명', visual: 'naming',
     essentialKo: '한 사람이 물에 손을 담급니다. 서로의 손을 이어 하나의 사슬을 만들고, 사슬 끝에 남은 손으로 장미를 만집니다. 장면을 남기려면 메인1이 내민 손과 악수합니다. 혼자서는 작동하지 않습니다.',
     essentialEn: 'Place one hand in the water and hold the person beside you. Touch the roses with your free hand to make today\'s resonance.',
-    helpKo: '손과 손이 끊어지면 소리도 멈춥니다. 물이 있는 자리에서 장미가 있는 자리까지 손을 이어주세요. 장미를 짧게 스치거나 오래 쥐어보세요.',
-    helpEn: 'The circuit cannot close alone. If there are several people, connect your hands like a chain. Brush or hold the roses.',
+    helpKo: '물에 손을 담근 사람부터 장미까지 손을 이어주세요. 연결된 상태에서 장미를 만지면 소리와 빛이 반응합니다.',
+    helpEn: 'Make a chain of hands from the water to the roses. Touch a rose while connected to activate sound and light.',
+    helpDetailKo: ['한 사람이 먼저 물에 한 손을 담급니다.', '그 사람의 다른 손을 다음 사람이 잡고, 같은 방식으로 손을 이어 장미가 있는 자리까지 연결합니다.', '사슬의 마지막 사람은 남은 손으로 장미를 만집니다. 짧게 스치거나 오래 쥐어도 됩니다.', '연결이 끊기면 소리도 멈춥니다. 다시 손을 잡으면 이어집니다.', '작품이 내민 손이 나타나면 악수해 장면을 남깁니다. 혼자서는 회로가 완성되지 않습니다.'],
+    helpDetailEn: ['One person begins with one hand in the water.', 'Hold hands in a chain until the final person reaches the roses.', 'The last person touches the roses with their free hand. A brief touch or a long hold both work.', 'If the chain breaks, the sound stops. Reconnect your hands to continue.', 'When the work offers a hand, shake it to leave the scene. The circuit cannot close alone.'],
     aboutKo: '생화와 기계가 한 정원 안에 연결되어 있습니다. 장미는 당신이 만지는 동안에만 소리를 얻고, 그 소리는 다른 사람의 손이 이어져 있을 때만 납니다. 여기서 만진 장미의 조합은 뒤이어 지을 감정명의 재료가 됩니다.',
     aboutEn: 'As different bodies become one circuit, the combination of roses becomes material for one emotional name.',
+    aboutDetailKo: ['이 정원에서 장미는 장식이 아니라 회로의 끝입니다. 물, 사람의 피부, 손, 생화, 센서와 소리가 하나의 연결 안에 놓입니다.', '누군가가 물에 손을 담그고 다른 사람과 손을 이어야만 장미의 반응이 지속됩니다. 한 사람이 만든 선택은 혼자만의 것이 아니라 잠시 함께 선 사람들의 감각을 통과합니다.', '여러 장미를 어떻게 만졌는지는 정답을 만들지 않습니다. 이후 감정명을 붙일 때, 손으로 먼저 만든 조합을 다시 말로 옮겨보게 합니다.'],
   },
   '02': {
     en: 'INTERVENTION', ko: '개입', phaseKo: '개입', visual: 'reenactment',
     essentialKo: '컨트롤러로 화면 속 존재를 대합니다. 손을 카메라 안에 펼치면 손과 마스크가 나타납니다. 스크린샷을 남기려면 카메라를 바라보고 두 눈을 2초 동안 감아주세요.',
     essentialEn: 'Open your hand toward the screen. Follow the hand and mask, then close both eyes for two seconds to be recorded.',
-    helpKo: '버튼마다 다른 변화가 일어납니다. 어떤 것은 살리고 어떤 것은 해칩니다. 한 방향만 반복하기보다 두 방향을 다르게 섞어보세요. 손 전체와 얼굴이 카메라에 보이도록 한 걸음 물러서면 스크린샷 인식이 더 안정적입니다.',
-    helpEn: 'Step back until your full hand is visible. Move slowly inside the scanner frame on screen.',
+    helpKo: '컨트롤러의 각 버튼을 눌러 화면 속 존재에 개입해보세요. 화면에 손과 마스크가 나타나면 카메라를 바라보고 두 눈을 감아 장면을 남깁니다.',
+    helpEn: 'Use the controller buttons to intervene in the figure. When the hand and mask appear, face the camera and close both eyes to leave a scene.',
+    helpDetailKo: ['컨트롤러의 버튼은 서로 다른 변화를 만듭니다. 무엇을 살리고 무엇을 해칠지는 화면의 반응을 보며 직접 발견합니다.', '한 방향의 행동만 반복할 필요는 없습니다. 서로 다른 행동을 섞었을 때 남는 변화도 관찰해보세요.', '손 전체와 얼굴이 카메라 화면 안에 들어오도록 한 걸음 물러섭니다.', '화면에 손과 마스크가 나타나면 카메라를 바라보고 두 눈을 약 2초 동안 감습니다. 눈을 감은 장면이 기록됩니다.'],
+    helpDetailEn: ['Each controller button makes a different change. Discover what it protects or harms by watching the response.', 'You do not need to repeat only one kind of action. Notice what remains when different actions are mixed.', 'Step back until your full hand and face are visible to the camera.', 'When the hand and mask appear, face the camera and close both eyes for about two seconds. That moment is recorded.'],
     aboutKo: '01에서 지은 이름이 이 화면으로 옵니다. 살릴 수도 있고 죽일 수도 있습니다. 죽어도 다시 일어나지만 이전의 흔적은 사라지지 않습니다. 여기에는 승리도 패배도 없습니다.',
     aboutEn: 'This scene does not restore a lost emotion exactly. It leaves another form by performing it again with the body.',
+    aboutDetailKo: ['이 작품은 자신을 돌보는 행동과 해치는 행동을 같은 손에 놓습니다. 무엇이 옳은 선택인지 알려주지 않으며, 어떤 결과도 승리나 패배로 판정하지 않습니다.', '화면 속 존재는 죽어도 다시 일어나지만, 이전의 흔적을 지우지는 못합니다. 돌봄과 손상은 서로를 취소하지 않고 같은 시간 안에 남습니다.', '마지막에 눈을 감아 남기는 이미지는 행위를 바라보는 자신까지 한 화면에 넣는 장면입니다.'],
   },
   '03': {
     en: 'WITNESS', ko: '목격', phaseKo: '목격', visual: 'mourning',
     essentialKo: '흰 장미 위에 손을 올려주세요. 손이 가까워질수록 시간이 느려집니다. 가장 느린 시간에 머문 뒤 화면을 비스듬히 바라보며 자신의 색을 찾고, 찾은 자리에서 흰 장미를 눌러주세요.',
     essentialEn: 'Place your hand above the flower. Move time with its height and slowly find your color inside the passing images.',
-    helpKo: '가장 느린 시간에 약 3초 머물면 짧은 소리가 나고, 손을 떼어도 그 속도가 유지됩니다. 정면에서 보이지 않는 형체는 비스듬히 바라보는 한 자리에서 모습을 드러냅니다. 되감기는 없습니다.',
-    helpEn: 'Moving too quickly can make you miss your scene. Press the marker when you believe you have found it.',
+    helpKo: '흰 장미 위에 손을 올려 시간을 늦추고, 가장 느린 시간에 머문 뒤 화면을 비스듬히 보며 자신의 색을 찾으세요.',
+    helpEn: 'Slow time by holding your hand over the white rose, then look from an angle to find your color.',
+    helpDetailKo: ['흰 장미 위에 손을 가까이 가져가면 화면의 시간이 느려집니다.', '가장 느린 속도에서 약 3초 머물면 짧은 소리가 납니다. 그 뒤 손을 떼어도 느려진 속도는 잠시 유지됩니다.', '정면에서는 보이지 않던 형체가 화면을 비스듬히 볼 때 나타납니다. 자신의 장미 색을 천천히 찾아보세요.', '찾은 자리에서 흰 장미를 눌러주세요. 이 영상은 되감기지 않으므로, 놓친 장면도 지나간 시간의 일부로 남습니다.'],
+    helpDetailEn: ['Bring your hand close to the white rose to slow the image.', 'Stay at the slowest speed for about three seconds to hear a short sound. The slowed speed remains briefly after you remove your hand.', 'A form invisible from the front appears when you look at the screen from an angle. Find your rose color slowly.', 'Press the white rose where you find it. The video does not rewind; a missed scene remains part of the passing time.'],
     aboutKo: '흐르는 장면은 모두 다른 사람들의 장례입니다. 당신이 오래 바라본 장면과 처음에 고른 색이 자신의 자리를 정합니다. 찾기는 목적이 아니라 천천히 보게 만드는 도구입니다.',
     aboutEn: 'Here, mourning is not a still scene but finding your trace again among other people\'s time.',
+    aboutDetailKo: ['여기에서 장례는 한 사람의 사건이 아니라 세계 안에서 반복되는 수많은 죽음의 언어입니다. 서로 다른 장면이 지나가고, 관객은 그 안에서 자신의 색을 찾습니다.', '자신의 색을 찾는 일은 정답을 맞히는 게임이 아닙니다. 시간을 늦추고, 정면이 아닌 각도에서 보고, 다른 사람의 시간 사이에 자신의 자리를 대입해 보는 행위입니다.', '되감기가 없다는 조건은 지나간 장면을 소유할 수 없게 합니다. 목격은 붙잡는 일이 아니라 지나감 속에서 잠시 알아보는 일입니다.'],
   },
   '04': {
     en: 'RECORD', ko: '기록', phaseKo: '기록', visual: 'archive',
     essentialKo: '헤드폰을 쓰고 편한 자리에서 보시면 됩니다. 영상에는 정해진 처음과 마지막이 없습니다. 어느 장면에서 들어와도 되고, 언제 나가셔도 됩니다.',
     essentialEn: 'Look slowly through the scenes and specimen records left behind.',
-    helpKo: '휴대폰을 연결하지 않아도 영상을 볼 수 있습니다. 장미에 휴대폰을 대면 이곳에 머문 시간이 당신의 장미 번호에 연결됩니다. 헤드폰은 사용 전후에 준비된 티슈로 닦아주세요.',
-    helpEn: 'This archive is viewed without a separate TouchDesigner connection. Select a record to see its details.',
+    helpKo: '헤드폰을 쓰고 편한 자리에서 영상을 보세요. 어느 장면에서 들어와도 되고, 언제 나가도 됩니다. 장미에 휴대폰을 대면 이곳에 머문 시간이 연결됩니다.',
+    helpEn: 'Put on the headphones and watch from any point for as long as you wish. Touch your phone to the rose to connect this stay.',
+    helpDetailKo: ['헤드폰을 쓰고 볼 수 있는 위치에 앉거나 섭니다. 사용 전후에는 준비된 티슈로 닦아주세요.', '영상에는 정해진 시작과 끝이 없습니다. 어느 장면에서 들어와도 되고, 한 장면만 보고 나가도 됩니다.', '이 장소를 당신의 장미 번호에 연결하려면 안내판의 장미에 휴대폰을 대거나 QR을 스캔합니다. 휴대폰을 연결하지 않아도 영상 감상은 가능합니다.'],
+    helpDetailEn: ['Put on the headphones and sit or stand where you can watch comfortably. Please use the supplied tissue before and after use.', 'The film has no fixed beginning or ending. You may enter at any scene and leave at any time.', 'To connect this visit to your rose number, hold your phone to the rose on the sign or scan the QR. The film can also be watched without connecting your phone.'],
     aboutKo: '장미, 해골, 전선과 센서가 하나의 몸이 되는 동안의 손을 기록했습니다. 완성된 작품 뒤에서 사라지는 절단과 연결, 실패와 반복의 시간도 이 장례의 일부로 남깁니다.',
     aboutEn: 'ARCHIVE is not a fourth distortion axis. It is the documentary frame around the other traces.',
+    aboutDetailKo: ['기록은 다른 작품의 결과를 설명하는 부록이 아닙니다. 장미, 해골, 전선, 센서와 사람이 하나의 몸이 되어 가는 제작의 시간을 보여줍니다.', '화면 뒤에는 수많은 절단과 연결, 실패와 반복이 있습니다. 완성된 작품만 남기지 않고 그 과정 자체를 장례의 일부로 놓습니다.', '이곳은 네 번째 점수를 만들지 않습니다. 앞선 경험들을 감싸는 기록의 자리입니다.'],
   },
 };
 
@@ -1570,9 +1579,27 @@ function screenModule(stationId, options = {}) {
         el('h2', {}, tr('지금 해야 할 것', 'WHAT TO DO NOW')),
         el('p', {}, tr(module.essentialKo, module.essentialEn)),
       ) : null,
-      disclosure(tr('도움이 필요하신가요?', 'NEED HELP?'), el('p', {}, tr(module.helpKo, module.helpEn)), 'help'),
-      disclosure(tr('이 작품에 대하여', 'ABOUT THIS WORK'), el('p', {}, tr(module.aboutKo, module.aboutEn)), 'about'),
-      textButton(tr('이 작품의 전체 이야기', 'READ THE FULL STORY'), () => screenAboutProject(workAboutSection(stationId)), 'module-full-story'),
+      el('section', { class: 'module-info-block' },
+        el('span', { class: 'micro-label' }, tr('HOW IT WORKS', 'HOW IT WORKS')),
+        el('h2', {}, tr('작동법', 'HOW TO USE THIS WORK')),
+        el('p', {}, tr(module.helpKo, module.helpEn)),
+        disclosure(
+          tr('더 자세히 알고 싶어요', 'SHOW DETAILED STEPS'),
+          el('ol', { class: 'detailed-step-list' }, ...tr(module.helpDetailKo, module.helpDetailEn).map((step) => el('li', {}, step))),
+          `how_to_${stationId}`,
+        ),
+      ),
+      el('section', { class: 'module-info-block' },
+        el('span', { class: 'micro-label' }, 'ABOUT THIS WORK'),
+        el('h2', {}, tr('이 작품에 대하여', 'ABOUT THIS WORK')),
+        el('p', {}, tr(module.aboutKo, module.aboutEn)),
+        disclosure(
+          tr('더 자세히 알아보기', 'READ MORE ABOUT THIS WORK'),
+          el('div', { class: 'copy-stack' }, ...tr(module.aboutDetailKo, module.aboutDetailEn).map((paragraph) => el('p', {}, paragraph))),
+          `about_${stationId}`,
+        ),
+      ),
+      textButton(tr('프로젝트 전체에서 이 작품 읽기', 'READ THIS WORK IN THE FULL PROJECT'), () => screenAboutProject(workAboutSection(stationId)), 'module-full-story'),
       !connected ? textButton(tr('HOME으로 돌아가기', 'RETURN HOME'), screenHome, 'return-home') : null,
     ),
   ], connected && !needsName ? [

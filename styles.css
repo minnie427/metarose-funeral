@@ -75,11 +75,11 @@ summary:focus-visible {
   width: min(100%, var(--max-width));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 0 16px 72px;
+  padding: 0 25px 72px;
 }
 
 body.has-dock .app {
-  padding-bottom: 132px;
+  padding-bottom: 150px;
 }
 
 .statusbar:empty {
@@ -93,7 +93,7 @@ body.has-dock .app {
   align-items: center;
   justify-content: space-between;
   min-height: 72px;
-  padding: max(8px, env(safe-area-inset-top)) 0 8px;
+  padding: max(16px, env(safe-area-inset-top)) 0 14px;
   border-bottom: 1px dotted var(--line);
 }
 
@@ -146,8 +146,26 @@ body.has-dock .app {
   display: inline-block;
   width: 22px;
   height: 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #050505;
 }
 
+.rose-mark-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.18) brightness(.84);
+}
+
+.rose-mark .rose-mark-tint {
+  inset: 0;
+  opacity: .82;
+}
+
+/* Legacy vector parts remain as a harmless fallback when the PNG cannot load. */
 .rose-mark .petal,
 .rose-mark .rose-core {
   position: absolute;
@@ -187,7 +205,7 @@ body.has-dock .app {
 }
 
 .screen {
-  padding: 30px 0 12px;
+  padding: 46px 0 34px;
 }
 
 .screen-kicker,
@@ -279,21 +297,29 @@ body.has-dock .app {
   margin: 0;
 }
 
-.local-only-entry {
-  flex: 0 1 auto;
-  min-height: 54px;
-  padding-inline: 12px;
-  border: 1px dotted var(--line);
+.quiet-entry.local-only-entry {
+  display: inline-flex;
+  width: auto;
+  min-height: auto;
+  margin: 2px auto 0;
+  padding: 10px 0 4px;
+  border: 0;
+  color: var(--ink-faint);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: .08em;
+  text-transform: none;
 }
 
 .arrival-cover {
-  padding-top: 26px;
+  padding-top: 42px;
 }
 
 .arrival-title {
   display: flex;
   flex-direction: column;
-  margin: 18px 0 8px;
+  align-items: center;
+  margin: 24px auto 10px;
   font-size: clamp(2.8rem, 13.5vw, 4rem);
   font-weight: 300;
   letter-spacing: -0.065em;
@@ -419,8 +445,7 @@ body.has-dock .app {
   background: var(--session);
   opacity: 0.9;
   mix-blend-mode: color;
-  -webkit-mask: url('./rose-bloom.svg') center / contain no-repeat;
-  mask: url('./rose-bloom.svg') center / contain no-repeat;
+  pointer-events: none;
 }
 
 .scanline,
@@ -593,6 +618,38 @@ body.has-dock .app {
 
 .disclosure-body p {
   margin: 0;
+}
+
+.module-info-block {
+  margin: 36px 0 0;
+  padding: 28px 0 0;
+  border-top: 1px dotted var(--line);
+}
+
+.module-info-block h2 {
+  margin: 14px auto 16px;
+  font-family: var(--display);
+  font-size: 27px;
+  font-weight: 400;
+  letter-spacing: -.04em;
+}
+
+.module-info-block > p {
+  margin: 0 0 16px;
+  color: var(--ink-dim);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.detailed-step-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 4px 0 0 1.5em;
+}
+
+.detailed-step-list li {
+  padding-left: .25em;
 }
 
 .registration-screen .rose-visual {
@@ -1136,6 +1193,30 @@ body.has-dock .app {
   line-height: 1;
 }
 
+.map-hotspot .hotspot-label {
+  position: absolute;
+  left: calc(100% + 9px);
+  top: 50%;
+  width: max-content;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  line-height: 1;
+  text-align: left;
+  text-shadow: 0 1px 10px #000000;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.hotspot-02 .hotspot-label,
+.hotspot-03 .hotspot-label {
+  right: calc(100% + 9px);
+  left: auto;
+  text-align: right;
+}
+
 .hotspot-01 { left: 22%; top: 67%; }
 .hotspot-02 { left: 69.5%; top: 52%; }
 .hotspot-03 { left: 68.8%; top: 28%; }
@@ -1436,7 +1517,7 @@ body.has-dock .app {
 }
 
 .module-screen {
-  padding-top: 18px;
+  padding-top: 40px;
 }
 
 .module-title-block {
@@ -2321,7 +2402,7 @@ body.has-dock .app {
   right: 0;
   bottom: 0;
   z-index: 30;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: 12px 25px calc(12px + env(safe-area-inset-bottom));
   background: var(--bg);
   pointer-events: none;
 }
@@ -2331,7 +2412,8 @@ body.has-dock .app {
 }
 
 .dock-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr;
   width: min(100%, var(--max-width));
   gap: 8px;
   margin: 0 auto;
@@ -2341,7 +2423,7 @@ body.has-dock .app {
 .primary-action,
 .secondary-action {
   display: flex;
-  flex: 1 1 auto;
+  width: 100%;
   align-items: center;
   justify-content: center;
   gap: 24px;
@@ -2359,7 +2441,6 @@ body.has-dock .app {
 }
 
 .secondary-action {
-  flex: 0 0 auto;
   border-color: var(--line-strong);
   background: var(--bg);
   color: #ffffff;
@@ -2385,7 +2466,7 @@ body.has-dock .app {
 .rose-menu-panel {
   width: min(100%, var(--max-width));
   min-height: 100%;
-  padding: max(20px, env(safe-area-inset-top)) 22px 24px;
+  padding: max(20px, env(safe-area-inset-top)) 25px 28px;
   overflow-y: auto;
   background: var(--bg);
 }
@@ -2432,8 +2513,8 @@ body.has-dock .app {
 
 .rose-menu-item {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
   align-items: center;
   width: 100%;
   min-height: 58px;
@@ -2450,6 +2531,14 @@ body.has-dock .app {
   color: var(--ink-faint);
   font-family: var(--mono);
   font-size: 9px;
+}
+
+.menu-index {
+  justify-self: start;
+}
+
+.menu-arrow {
+  justify-self: end;
 }
 
 .menu-label {
@@ -2558,13 +2647,13 @@ body.has-dock .app {
 
 .confirmation-overlay {
   align-items: center;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  padding: max(18px, env(safe-area-inset-top)) 25px max(18px, env(safe-area-inset-bottom));
 }
 
 .confirmation-card {
   width: min(100%, var(--max-width));
   max-height: min(720px, 92vh);
-  padding: 24px 22px;
+  padding: 28px 25px;
   overflow-y: auto;
   border: 1px solid var(--line-strong);
   background: var(--bg);
@@ -2614,10 +2703,6 @@ body.has-dock .app {
 }
 
 @media (max-width: 360px) {
-  .app {
-    padding-inline: 16px;
-  }
-
   .global-actions {
     gap: 10px;
   }
