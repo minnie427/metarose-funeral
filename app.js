@@ -798,9 +798,9 @@ function openRoseMenu() {
         menuAction(tr('개입', 'INTERVENTION'), () => guardedNavigation(() => screenModule('02', { via: 'menu' })), '02'),
         menuAction(tr('목격', 'WITNESS'), () => guardedNavigation(() => screenModule('03', { via: 'menu' })), '03'),
         menuAction(tr('기록', 'RECORD'), () => guardedNavigation(() => screenModule('04', { via: 'menu' })), '04'),
-        menuAction('MY SPECIMEN', () => guardedNavigation(screenMySpecimen)),
-        menuAction(tr('감정명 붙이기', 'EMOTIONAL NAMING'), () => guardedNavigation(() => screenFinalReflection({ exitFlow: false }))),
-        menuAction(tr('프로젝트에 대하여', 'ABOUT THE PROJECT'), () => guardedNavigation(() => screenAboutProject())),
+        menuAction(tr('현재 표본', 'MY SPECIMEN'), () => guardedNavigation(screenMySpecimen)),
+        menuAction(tr('오늘의 이름', 'NAME GIVEN TODAY'), () => guardedNavigation(() => screenFinalReflection({ exitFlow: false }))),
+        menuAction(tr('전체 프로젝트', 'ABOUT THE PROJECT'), () => guardedNavigation(() => screenAboutProject())),
       ),
       isTestMode() ? testPreviewPanel() : null,
       el('div', { class: 'rose-menu-foot' },
@@ -823,7 +823,7 @@ function openRoseMenu() {
           'aria-label': 'Instagram @minniepark.studio',
           onclick: () => logEvent('artist_instagram_open', { handle: '@minniepark.studio' }, null),
         }, '@MINNIEPARK.STUDIO', el('span', { 'aria-hidden': 'true' }, '↗')),
-        el('span', {}, 'META ROSE SPECIMEN / SEOUL 2026'),
+        el('span', {}, 'META ROSE 2026 / THE FUNERAL'),
         el('span', { class: 'menu-copyright' }, '© 2026 MINNIE PARK. ALL RIGHTS RESERVED.'),
       ),
     ),
@@ -929,7 +929,7 @@ function screenArrival() {
             'No account or legal name is required. Only what you choose to leave is connected to your rose number.',
           )),
           el('p', {}, tr(
-            '얼굴 원본과 휴대폰의 위치 정보는 저장하지 않습니다. 마지막 장미를 완성하고, 작품을 더 잘 만들기 위해서만 사용합니다.',
+            '얼굴을 식별하기 위한 정보와 휴대폰의 위치 정보는 저장하지 않습니다. 수집한 기록은 작품 연구와 전시 경험 개선을 위해서만 사용하며 다른 관객에게 공개하지 않습니다.',
             'Original face images and phone location are not stored.',
           )),
         ),
@@ -1043,17 +1043,17 @@ function screenPersonalSetup() {
         error,
       ),
       el('section', { class: 'emotional-naming-intro' },
-        el('span', { class: 'section-code' }, 'EMOTIONAL NAMING'),
+        el('span', { class: 'section-code' }, 'NAME GIVEN TODAY'),
         el('h2', {}, tr('이름은 아직 짓지 않습니다', 'THE NAME COMES LATER')),
         el('p', {}, tr(
           '01의 장미 정원에서 손으로 먼저 만난 뒤, 당신의 말로 하나의 이름을 짓습니다. 그 이름은 02와 03에서 다시 나타납니다.',
           'After meeting the roses by hand in 01, you will make one name in your own words.',
         )),
         disclosure(
-          tr('감정명명 더 알아보기', 'MORE ABOUT EMOTIONAL NAMING'),
+          tr('이름을 짓는 일에 대하여', 'ABOUT NAMING'),
           el('div', { class: 'copy-stack emotional-naming-guide' },
             el('p', {}, tr(
-              '감정명명은 이미 정해진 감정 단어를 고르는 과정이 아닙니다. 작품을 지나며 발견한 서로 다른 두 모습을 한 문장 안에 함께 남기고, 오늘의 나를 부를 임시적인 이름을 직접 만드는 과정입니다.',
+              '이름을 짓는 일은 이미 정해진 감정 단어를 고르는 과정이 아닙니다. 작품을 지나며 발견한 서로 다른 두 모습을 한 문장 안에 함께 남기고, 오늘의 나를 부를 임시적인 이름을 직접 만드는 과정입니다.',
               'Emotional naming is not a matter of choosing from a fixed list. It brings two different sides you encounter into one sentence and lets you make a temporary name for yourself today.',
             )),
             el('p', {}, tr(
@@ -1074,7 +1074,7 @@ function screenPersonalSetup() {
               'There is no correct or polished answer. It does not need to be a complete sentence or easy to explain. This is not a diagnosis or a fixed identity, but a marker for the self moving through the exhibition today.',
             )),
             el('p', {}, tr(
-              '01을 마친 뒤 이름을 붙이는 것을 권합니다. 완성한 감정명은 02와 03의 화면에 나타나고, 마지막에는 당신의 장미 번호와 함께 최종 기록에 남습니다. 원한다면 마지막 단계에서 다시 읽고 다듬을 수 있습니다.',
+              '01을 마친 뒤 이름을 짓는 것을 권합니다. 오늘 지은 이름은 02와 03의 화면에 나타나고, 마지막에는 당신의 장미 번호와 함께 유품에 남습니다. 발인 전 다시 읽고 다듬을 수 있습니다.',
               'We recommend naming after 01. Your completed name reappears in 02 and 03 and remains with your rose number in the final record. You can read and refine it again at the end.',
             )),
           ),
@@ -1289,7 +1289,7 @@ function screenHome() {
           '바니타스의 꽃과 해골은 삶이 사라진다는 사실을 말해왔습니다. 이 작품은 질문을 바꿉니다. 우리는 왜 살아 있는 동안에도 자기 안의 어떤 부분을 계속 죽일까요.',
           'The flowers and skulls of vanitas speak of life passing. This work asks what we keep killing while we are still alive.',
         )),
-        textButton(tr('프로젝트 상세 내용', 'PROJECT DETAILS'), () => screenAboutProject('about-intro'), 'home-about-primary'),
+        textButton(tr('전체 프로젝트 읽기', 'READ THE FULL PROJECT'), () => screenAboutProject('about-intro'), 'home-about-primary'),
       ),
       el('div', { class: 'section-heading-row' },
         el('div', {},
@@ -1314,8 +1314,8 @@ function screenHome() {
       ),
       isTestMode() ? testPreviewPanel({ home: true }) : null,
       el('div', { class: 'home-name-action' },
-        el('span', {}, session.emotional_name ? tr('오늘의 감정명', 'TODAY\'S EMOTIONAL NAME') : 'NOT YET NAMED'),
-        textButton(session.emotional_name ? tr('감정명 보기', 'VIEW NAME') : tr('이름 붙이기', 'NAME YOURSELF'), () => screenFinalReflection({ exitFlow: false })),
+        el('span', {}, session.emotional_name ? tr('오늘 지은 이름', 'NAME GIVEN TODAY') : tr('아직 이름 없음', 'NOT YET NAMED')),
+        textButton(session.emotional_name ? tr('오늘의 이름 보기', 'VIEW NAME') : tr('오늘의 이름 짓기', 'NAME YOURSELF'), () => screenFinalReflection({ exitFlow: false })),
       ),
     ),
   ]);
@@ -1335,13 +1335,13 @@ function aboutSection({ id, index, title, lead, body = [], deeper = [] }) {
     el('p', { class: 'about-section-lead' }, lead),
     ...body.map((paragraph) => el('p', {}, paragraph)),
     deeper.length ? disclosure(
-      tr('더 깊이 읽기', 'READ DEEPER'),
+      tr('작품의 안쪽 읽기', 'READ DEEPER'),
       el('div', { class: 'copy-stack about-deeper-copy' },
         ...deeper.map((paragraph) => el('p', {}, paragraph)),
       ),
       `about_${id}`,
     ) : null,
-    el('button', { class: 'about-to-top', type: 'button', onclick: () => scrollToAboutSection('about-top') }, tr('이 페이지의 목차로', 'BACK TO CONTENTS')),
+    el('button', { class: 'about-to-top', type: 'button', onclick: () => scrollToAboutSection('about-top') }, tr('목차로 돌아가기', 'BACK TO CONTENTS')),
   );
 }
 
@@ -1375,7 +1375,7 @@ function screenAboutProject(initialSection = null) {
   render([
     globalHeader(),
     el('article', { class: 'screen about-screen', id: 'about-top' },
-      textButton(tr('HOME으로 돌아갑니다', 'RETURN HOME'), screenHome, 'about-back'),
+      textButton('HOME', screenHome, 'about-back'),
       el('header', { class: 'about-hero' },
         el('span', { class: 'micro-label' }, 'META ROSE 2026 / THE FUNERAL'),
         el('h1', {}, tr('프로젝트에 대하여', 'ABOUT THE PROJECT')),
@@ -1386,7 +1386,7 @@ function screenAboutProject(initialSection = null) {
         )),
       ),
       el('details', { class: 'about-toc', open: true },
-        el('summary', {}, tr('이 페이지에서 읽을 내용', 'CONTENTS'), el('span', { 'aria-hidden': 'true' }, '+')),
+        el('summary', {}, tr('읽을 곳을 고릅니다', 'CONTENTS'), el('span', { 'aria-hidden': 'true' }, '+')),
         el('nav', { class: 'about-anchor-nav', 'aria-label': tr('프로젝트 상세 목차', 'Project contents') },
           ...anchors.map(([id, label], index) => el('button', {
             type: 'button',
@@ -1409,6 +1409,8 @@ function screenAboutProject(initialSection = null) {
         deeper: [
           '이 작품은 자기혐오를 하나의 개인적 결함으로만 보지 않습니다. 완벽함을 요구하는 시선, 쓸모와 생산성을 기준으로 자신을 평가하는 습관, 좋아 보이는 모습만 남기려는 이미지 문화가 한 사람의 내부에서 어떻게 작동하는지를 함께 봅니다.',
           '장례식이라는 형식은 끝을 선언하기 위해서가 아니라, 평소에는 보이지 않던 관계를 잠시 드러내기 위해 사용됩니다. 누가 죽였고, 무엇이 죽었으며, 남은 사람은 누구인지. 여기서는 세 질문의 답이 모두 ‘나’일 수 있습니다.',
+          '이 작품에서 죽인 사람과 죽은 사람, 그리고 장례 뒤에 남은 사람은 모두 나일 수 있습니다. 그래서 이 장례는 누군가를 완전히 보내기 위한 의식이 아닙니다. 내가 없앴다고 믿은 것이 어떤 모습으로 돌아오는지 보고, 그 존재와 맺고 있던 관계를 다시 바라보는 자리입니다.',
+          '작품은 자기혐오가 사라졌다고 선언하지 않습니다. 대신 미워했던 면을 제거해야만 앞으로 갈 수 있다는 생각을 멈추고, 그 면 안에 함께 있었던 다른 얼굴까지 같은 시간에 놓아봅니다.',
         ],
       }),
       aboutSection({
@@ -1423,6 +1425,8 @@ function screenAboutProject(initialSection = null) {
         deeper: [
           '그래서 여기의 장미와 해골은 단순한 장례 장식이나 고딕 이미지가 아닙니다. 장미는 만져야 소리를 얻고, 해골은 관객에게 손을 내밉니다. 정물화 속에서 멈춰 있던 상징이 관객의 행동을 기다리는 물체로 바뀝니다.',
           '바니타스가 죽음을 기억하게 했다면, 이 작업은 자신이 무엇을 죽이고 있는지 보게 합니다. 기억은 관찰로 끝나지 않고, 무엇을 살리고 무엇에 물을 줄지 다시 고르는 행동으로 이어집니다.',
+          '바니타스의 꽃은 피어 있는 순간에도 시들고 있고, 해골은 한때 살아 움직였던 몸의 시간을 품습니다. 이 작품은 서로 반대되는 상태가 한 화면 안에 동시에 존재하는 구조를 가져오되, 죽음을 멀리 있는 운명으로만 다루지 않습니다.',
+          '살아 있으면서도 자기 안의 일부를 반복해서 제거하고, 말하지 못하게 하고, 존재하지 않았던 것처럼 만드는 일에 주목합니다. 장미와 해골은 그 질문을 바라보는 상징에서 관객의 선택을 받아 움직이는 몸으로 바뀝니다.',
         ],
       }),
       aboutSection({
@@ -1437,6 +1441,8 @@ function screenAboutProject(initialSection = null) {
         deeper: [
           '생화와 조화를 진짜와 가짜의 위계로 나누지 않습니다. 생화는 변화하고 소멸하는 몸이고, 조화는 변하지 않도록 붙잡힌 기억입니다. 하나는 살아 있어서 사라지고, 다른 하나는 죽어 있어서 오래 남습니다.',
           '마지막에 만들어지는 디지털 장미도 완성된 자아의 초상이 아닙니다. 관객이 고른 색, 지나온 순서, 남긴 이름과 장면이 잠시 한 형태로 모인 것입니다. 정답이나 진단이 아니라 그날의 배치에 가깝습니다.',
+          '같은 성질이 어떤 순간에는 자신을 지키고, 다른 순간에는 자신과 타인을 찌를 수 있습니다. 그래서 관객이 고른 색에도 미리 감정의 이름을 붙이지 않습니다. 색은 진단이 아니라 전시장 안에서 자신을 다시 찾기 위한 표식입니다.',
+          '01의 장미는 손길과 전시의 시간을 몸에 남깁니다. 02와 03의 장미는 이미 일어난 일을 다시 연기하고 지나간 것을 표본처럼 바라보는 자리에 놓입니다. 서로 다른 물성은 각 작품이 시간과 맺는 관계를 드러냅니다.',
         ],
       }),
       aboutSection({
@@ -1446,11 +1452,13 @@ function screenAboutProject(initialSection = null) {
         lead: '미워한 면과 그것의 다른 얼굴을 동시에 바라볼 수 있을까요.',
         body: [
           '이 전시에서 살리는 행동과 죽이는 행동은 선과 악으로 나뉘지 않습니다. 물과 햇빛도 지나치면 한 존재를 압도할 수 있고, 독과 괴물에 반응하는 방식에서도 관객 자신의 태도가 드러납니다. 중요한 것은 어느 버튼이 옳은가가 아니라, 자신이 무엇을 반복해서 선택하는가입니다.',
-          '감정명명도 같은 구조를 가집니다. 관객은 먼저 없애고 싶었던 자기의 한 면을 쓰고, 그 안에 함께 있었던 다른 한 면을 씁니다. 두 번째 문장은 첫 번째를 미화하거나 취소하지 않습니다. 서로 모순되는 두 얼굴이 한 이름 안에 함께 남습니다.',
+          '오늘의 이름도 같은 구조를 가집니다. 관객은 먼저 없애고 싶었던 자기의 한 면을 쓰고, 그 안에 함께 있었던 다른 한 면을 씁니다. 두 번째 문장은 첫 번째를 미화하거나 취소하지 않습니다. 서로 모순되는 두 얼굴이 한 이름 안에 함께 남습니다.',
         ],
         deeper: [
           '작품의 끝은 부정적인 면을 제거하고 긍정적인 면이 승리하는 장면이 아닙니다. 죽음 뒤에는 리스폰이 있고, 이전의 흔적은 완전히 사라지지 않습니다. 살아남음과 상처, 돌봄과 파괴가 한 화면 안에서 공존하는 상태가 마지막에 가깝습니다.',
           '그래서 Phone Hub는 관객에게 점수나 성격 분석을 보여주지 않습니다. 내부의 변화는 장미의 모양에만 반영됩니다. 숫자는 모순을 다시 한 줄의 평가로 줄여버리기 때문입니다.',
+          '돌봄은 언제나 순수하게 선하지 않고 파괴 역시 하나의 의미로만 닫히지 않습니다. 무엇을 살린다는 명목으로 지나치게 통제할 수도 있고, 없애려던 행동이 오히려 다른 흔적을 드러낼 수도 있습니다.',
+          '오늘의 이름도 같은 구조를 가집니다. 두 번째 문장은 첫 번째를 미화하거나 취소하지 않습니다. 둘은 한 사람 안에서 동시에 존재하며, 이름은 한쪽이 다른 쪽을 이긴 결과가 아니라 두 얼굴을 함께 부르는 방식이 됩니다.',
         ],
       }),
       aboutSection({
@@ -1465,19 +1473,24 @@ function screenAboutProject(initialSection = null) {
         deeper: [
           '선택권을 준다는 것은 모든 것을 가볍게 만든다는 뜻이 아닙니다. 오히려 선택의 결과가 다음 장면에 남도록 합니다. 01에서 만든 이름이 02와 03으로 이동하고, 오래 바라본 시간이 자신의 위치를 바꾸며, 마지막에 남긴 한 줄이 장미 번호에 연결됩니다.',
           '작가는 관객을 분석 대상이나 작품을 완성하는 재료로만 다루지 않으려 합니다. 관객은 작품 안에서 보이는 사람이면서 동시에 보는 사람이고, 시스템을 움직이는 입력이면서도 언제든 그 관계를 멈출 수 있는 사람입니다.',
+          '감정 단어를 먼저 보여주지 않는 이유는 관객의 언어가 시스템이 제시한 예시를 따라가지 않게 하기 위해서입니다. 설명을 읽고 정답을 수행하는 대신, 몸이 장미와 기계에 닿은 뒤에 말이 오도록 합니다.',
+          '자유는 아무 결과도 없는 상태가 아니라 내 선택이 남긴 모양을 다시 볼 수 있는 상태에 가깝습니다. 불편한 내용을 끝까지 견디는 것이 좋은 관람이라는 규칙도 없습니다. 지나가고, 쉬고, 다시 돌아오는 선택 역시 작품의 일부입니다.',
         ],
       }),
       aboutSection({
         id: 'about-ritual',
         index: '06',
         title: '장례식의 순서',
-        lead: '명명하고, 재연하고, 애도하고, 마지막에 이름을 내려놓습니다.',
+        lead: '명명하고, 개입하고, 목격하고, 마지막에 오늘 지은 이름을 내려놓습니다.',
         body: [
           '첫 번째 작품에서 관객은 다른 사람의 손을 빌려 장미를 만지고 이름을 짓습니다. 두 번째에서는 그 이름을 가진 존재를 직접 살리고 죽이며 자신이 자신을 대하는 방식을 다시 연기합니다. 세 번째에서는 자기 화면을 벗어나 다른 사람들의 장례 속에서 자신의 자리를 찾습니다.',
           '마지막의 “놓아주기”는 이름을 삭제하는 일이 아닙니다. 그 이름을 더 이상 혼자 들고 있지 않겠다고 정하는 일입니다. 장례식이 끝나도 죽인 것은 사라지지 않습니다. 다만 다시 부를 수 있는 이름과, 어느 쪽에 물을 줄지 고를 가능성이 남습니다.',
         ],
         deeper: [
           '이 순서는 치료의 단계나 회복의 정답을 제시하지 않습니다. 작품을 본 뒤 더 나아졌다고 말하도록 요구하지도 않습니다. 의식의 역할은 한 사람 안의 모순을 없애는 것이 아니라, 평소에는 겹쳐 보이지 않던 것들을 같은 시간 안에 놓는 것입니다.',
+          '01은 다른 사람의 손을 빌려 자기 안으로 가장 가까이 들어가는 자리입니다. 02는 그 이름을 가진 존재를 직접 살리고 죽이며 자신이 자신을 대하는 방식을 행동으로 반복합니다.',
+          '03에서는 자기 내부에서 한 걸음 물러나 세계의 장례들 사이에서 자신의 색과 형체를 목격합니다. 04는 완성된 작품 뒤에서 사라지는 제작의 손과 실패를 이 시신의 기록으로 남깁니다.',
+          '마지막 발인은 이름을 삭제하는 일이 아닙니다. 그 이름을 더 이상 혼자 들고 있지 않기로 하는 일입니다. 의식은 모순을 없애지 않고, 서로 겹쳐 보이지 않던 것들을 같은 시간 안에 놓습니다.',
         ],
       }),
       aboutSection({
@@ -1490,9 +1503,11 @@ function screenAboutProject(initialSection = null) {
           '이 작품에서 관계는 감상해야 할 주제가 아니라 작동 조건입니다. 누군가의 손을 잡지 않으면 자기 장미도 들을 수 없습니다. “나는 혼자 존재할 수 있는가”라는 질문이 설명문이 아니라 끊어지고 이어지는 회로로 나타납니다.',
         ],
         deeper: [
-          '관객은 장미의 소리를 들은 뒤 감정명을 짓습니다. 먼저 미워했던 자기의 한 면을 적고, 그 안의 다른 얼굴을 적은 다음, 둘이 함께 남을 수 있는 하나의 문장을 만듭니다. 명명은 감정을 분류하는 검사가 아니라 서로 밀어내던 두 얼굴을 같은 이름 아래 잠시 두는 행동입니다.',
+          '관객은 장미의 소리를 들은 뒤 오늘의 이름을 짓습니다. 먼저 미워했던 자기의 한 면을 적고, 그 안의 다른 얼굴을 적은 다음, 둘이 함께 남을 수 있는 하나의 문장을 만듭니다. 명명은 감정을 분류하는 검사가 아니라 서로 밀어내던 두 얼굴을 같은 이름 아래 잠시 두는 행동입니다.',
           '장미마다 어떤 의미가 있는지는 미리 적어두지 않습니다. 의미를 먼저 읽고 맞는 꽃을 고르는 대신, 손의 감각과 소리의 반응이 먼저 오게 합니다.',
           '장면을 남기는 마지막 행동은 메인1이 내민 손과의 악수입니다. 사람과 사람이 손을 이어 회로를 만들었던 몸이, 이번에는 작품의 몸과 직접 손을 맞잡으며 그 순간을 기록합니다.',
+          '정원의 회로는 물에서 시작해 사람의 피부와 손을 지나 생화에 닿습니다. 자연과 기계, 나와 타인의 경계가 하나의 신호 안에서 잠시 흐려지고, 반응의 원인을 한 사람에게만 돌릴 수 없게 됩니다.',
+          '생화는 전시가 진행되는 동안 실제로 상하고 시듭니다. 관객의 접촉은 흔적 없이 사라지는 입력이 아니라 꽃의 몸에 남는 시간이며, 명명은 그 접촉 뒤에 오는 응답입니다.',
         ],
       }),
       aboutSection({
@@ -1507,6 +1522,9 @@ function screenAboutProject(initialSection = null) {
         deeper: [
           '스크린샷을 남기려면 카메라를 바라보고 두 눈을 2초 동안 감습니다. 화면을 확인하며 포즈를 취하는 대신 잠시 시각을 닫고, 방금 자신이 그 존재를 어떻게 대했는지 몸 안에서 느낀 뒤 장면을 남깁니다.',
           '이 작품에는 승리 화면이 없습니다. 긍정적인 선택만 반복하는 것도 하나의 답이 되지 않습니다. 돌봄과 파괴가 함께 지나간 뒤 그 존재와 어떤 상태로 머무는지가 중요합니다.',
+          '물과 햇빛, 독과 괴물은 선과 악의 버튼이 아닙니다. 중요한 것은 어느 선택이 옳은가가 아니라 어떤 행동을 반복하고 언제 바꾸며 서로 다른 행동을 어떻게 섞는가입니다.',
+          '관객은 화면 속 존재를 보면서 동시에 카메라 안의 자신을 봅니다. 손가락의 형상 안에 자기 모습이 나타나고, 행동하는 나와 그 행동을 지켜보는 내가 같은 장면에 놓입니다.',
+          '죽음은 끝이 되지 않습니다. 존재는 다시 일어나지만 이전 상태로 완전히 복구되지는 않습니다. 돌봄과 손상, 죽음과 재생이 서로를 취소하지 않고 같은 몸에 남습니다.',
         ],
       }),
       aboutSection({
@@ -1521,6 +1539,9 @@ function screenAboutProject(initialSection = null) {
         deeper: [
           '되감기가 없는 이유는 놓친 것을 벌주기 위해서가 아닙니다. 모든 장면을 확보하고 확인하는 방식 대신, 지나가는 동안 실제로 본 것이 남게 하기 위해서입니다. 찾기는 목적이 아니라 천천히 보게 만드는 도구입니다.',
           '여러 언어의 인공적인 목소리와 한국어 자막은 타인의 기억에 완전히 들어갈 수 없다는 거리를 만듭니다. 충분히 오래 머문 순간에만 자신의 목소리와 가까운 단서가 나타납니다. 애도는 죽은 사람만을 위한 것이 아니라, 남아서 바라보는 사람의 위치를 다시 만드는 일이기도 합니다.',
+          '관객은 손의 높이로 시간의 속도를 바꾸고 일부 장면 앞에서 충분히 느려진 채 머뭅니다. 놓친 장면은 다시 소유할 수 없는 지나간 시간으로 남습니다.',
+          '왜상은 정면에서 풍경의 일부였던 죽음의 표식이 특정한 각도에서 드러나는 바니타스의 시각 구조를 가져옵니다. 여기서도 관객은 몸의 위치를 바꾸어야 자신의 형체를 볼 수 있습니다.',
+          '자기 색을 찾는 일은 특별한 존재가 되는 일이 아니라, 서로 같지 않은 수많은 죽음과 타인의 시간 사이에 자신도 놓여 있음을 알아보는 일입니다.',
         ],
       }),
       aboutSection({
@@ -1534,6 +1555,10 @@ function screenAboutProject(initialSection = null) {
         ],
         deeper: [
           '제작 기록은 작품을 설명하는 홍보 영상이 아닙니다. 이 시신이 어떤 노동과 반복을 지나 만들어졌는지 보여주는 또 하나의 부검 기록에 가깝습니다. 기계가 매끈한 마술처럼 보이지 않도록 연결부와 손의 흔적을 숨기지 않습니다.',
+          '인터랙티브 미디어 작품은 완성되면 기술이 보이지 않는 매끄러운 표면으로 나타나기 쉽습니다. 그러나 그 뒤에는 자르고 잇는 손, 실패한 테스트, 다시 시작된 연결, 사라진 버전과 고장 난 장치의 시간이 있습니다.',
+          '이 작품은 그 과정을 숨겨 마술처럼 보이게 하지 않습니다. 기계 역시 몸을 가지고 있고, 그 몸은 수많은 손의 노동과 오류를 통해 만들어집니다.',
+          '영상에 정해진 처음과 마지막이 없는 이유도 여기에 있습니다. 제작은 선명한 시작과 완성으로 정리되지 않습니다. 어느 장면에서 들어와도 손은 이미 무언가를 만들고 있고, 어느 순간 떠나도 작업은 다른 곳에서 계속됩니다.',
+          '04는 네 번째 성격 점수나 변화 축을 만들지 않습니다. 앞선 세 작품이 생겨난 물질적 시간과 그 시간을 감싸는 기록의 자리입니다.',
         ],
       }),
       aboutSection({
@@ -1543,11 +1568,14 @@ function screenAboutProject(initialSection = null) {
         lead: '휴대폰은 작품의 실시간 화면을 복제하지 않고, 흩어진 선택을 한 장미 아래 이어주는 얇은 실입니다.',
         body: [
           '입장에서 고른 색, 01에서 지은 이름, 각 작품에서 직접 남긴 장면이 하나의 장미 번호에 연결됩니다. 작품 앞의 조화 장미에 휴대폰을 대는 행동은 디지털 기록을 시작하는 동시에 전시장 전체에 흩어진 정원을 이어줍니다.',
-          'Phone Hub는 관객을 분석한 점수나 성격 유형을 보여주지 않습니다. 중간의 MY SPECIMEN도 완성된 해석이 아니라 지금까지의 흔적입니다. 변화는 숫자가 아니라 장미의 모양과 남겨진 장면으로만 보입니다.',
+          'Phone Hub는 관객을 분석한 점수나 성격 유형을 보여주지 않습니다. 중간의 현재 표본도 완성된 해석이 아니라 지금까지의 흔적입니다. 변화는 숫자가 아니라 장미의 모양과 남겨진 장면으로만 보입니다.',
         ],
         deeper: [
           '작품의 원본 상호작용은 각 TouchDesigner 시스템 안에서 처리하고, 휴대폰에는 필요한 결과만 전달합니다. 네트워크가 잠시 끊겨도 작품이 멈추지 않게 하고, 관객이 기술 상태를 감시하느라 작품에서 눈을 떼지 않게 하기 위한 구조입니다.',
           '당신의 장미 번호는 실명 대신 오늘의 선택들을 다시 찾기 위한 표식입니다. 번호의 목적은 사람을 식별하는 것이 아니라, 떨어져 있는 장면들이 누구의 장미에 돌아가야 하는지 알려주는 것입니다.',
+          'Phone Hub는 작품의 실시간 화면을 복제하지 않습니다. 각 작품이 실제로 필요로 하는 최소한의 정보만 제때 연결하고, 나머지 행동 기록은 작품의 흐름을 방해하지 않도록 묶어서 저장합니다.',
+          '현재의 장미는 완성된 초상이 아닙니다. 색, 이름, 방문한 순서와 작품에서 남겨진 흔적이 그 순간 잠시 겹쳐 보이는 표본이며, 관객이 다음 행동을 하면 다시 달라질 수 있습니다.',
+          '세션이 끝나면 휴대폰에서는 해당 관람의 연결을 종료합니다. 수집된 기록은 다른 관객에게 공개되지 않으며, 개인을 식별하지 않는 내부 연구와 작품 개선의 자료로만 다룹니다.',
         ],
       }),
       aboutSection({
@@ -1562,11 +1590,17 @@ function screenAboutProject(initialSection = null) {
         deeper: [
           '이 장례식은 치료를 약속하지 않습니다. 자기혐오가 사라졌다고 선언하지도 않습니다. 다만 미워했던 면과 그 안의 다른 얼굴을 동시에 바라볼 수 있는 짧은 시간을 만들고자 합니다.',
           '모순은 없어지지 않아도, 어느 쪽에 물을 줄지는 고를 수 있습니다. 이 문장은 작품이 관객에게 주는 결론이 아니라, 전시장을 나간 뒤에도 다시 선택할 수 있도록 남겨두는 질문입니다.',
+          '인터랙션은 무엇을 느껴야 하는지 명령하기 위한 장치가 아니라 자기 선택을 자기 눈앞에 돌려놓기 위한 구조입니다. 오늘의 이름은 작품이 부여하는 진단이 아니며, 관객이 원하지 않으면 기록 없이 입장할 수도 있습니다.',
+          '선택권은 작품의 책임을 관객에게 떠넘기기 위한 말이 아닙니다. 죽음, 애도, 자기혐오를 다루는 만큼 화면은 강요보다 예고를, 평가보다 복구 가능한 선택을 먼저 제공합니다.',
+          '기술이 실패하더라도 작품을 계속 볼 수 있는 경로를 남기고, 남겨진 데이터보다 관객의 경험을 우선합니다. 관객은 정답을 찾는 사람이 아니라 서로 모순되는 자기 모습을 같은 시간 안에 둘 수 있는지 시험하는 사람입니다.',
         ],
       }),
       el('footer', { class: 'about-page-end' },
-        el('p', {}, tr('여기까지 읽어주셔서 고맙습니다.', 'THANK YOU FOR READING.')),
-        textButton(tr('HOME으로 돌아갑니다', 'RETURN HOME'), screenHome),
+        el('span', { class: 'micro-label' }, 'ARTIST / MINNIE PARK'),
+        el('p', {}, tr('Minnie Park은 인간, 자연, 기계 사이에서 감정이 어떻게 물질과 행동으로 번역되는지 탐구하는 인터랙티브 미디어 아티스트입니다.', 'Minnie Park is an interactive media artist.')),
+        el('p', {}, tr('생화, 해골, 전선, 센서, 실시간 이미지와 관객의 몸을 연결해 한 사람이 혼자서는 완성할 수 없는 장면을 만듭니다.', 'Her work connects organic matter, machines, real-time images, and the audience body.')),
+        el('a', { class: 'text-button', href: ARTIST_INSTAGRAM_URL, target: '_blank', rel: 'noopener noreferrer' }, tr('작가에게 메시지 보내기', 'MESSAGE THE ARTIST'), el('span', { 'aria-hidden': 'true' }, '↗')),
+        textButton('HOME', screenHome),
         textButton(tr('장미 메뉴를 엽니다', 'OPEN ROSE MENU'), openRoseMenu),
       ),
     ),
@@ -1582,51 +1616,55 @@ function screenAboutProject(initialSection = null) {
 const MODULES = {
   '01': {
     en: 'NAMING', ko: '명명', phaseKo: '명명', visual: 'naming',
-    essentialKo: '한 사람이 물에 손을 담급니다. 서로의 손을 이어 하나의 사슬을 만들고, 사슬 끝에 남은 손으로 장미를 만집니다. 장면을 남기려면 메인1이 내민 손과 악수합니다. 혼자서는 작동하지 않습니다.',
+    essentialKo: '다른 사람과 손을 이어 장미를 만집니다. 혼자 고른 장미가 아니라, 잠시 함께 만든 회로 안에서 들린 장미를 기억해주세요. 마지막에는 작품이 내민 손과 악수해 이 장면을 남깁니다.',
     essentialEn: 'Place one hand in the water and hold the person beside you. Touch the roses with your free hand to make today\'s resonance.',
-    helpKo: '물에 손을 담근 사람부터 장미까지 손을 이어주세요. 연결된 상태에서 장미를 만지면 소리와 빛이 반응합니다.',
+    helpKo: '물에서 시작해 사람의 손을 지나 장미까지 하나의 회로를 만듭니다.',
     helpEn: 'Make a chain of hands from the water to the roses. Touch a rose while connected to activate sound and light.',
-    helpDetailKo: ['한 사람이 먼저 물에 한 손을 담급니다.', '그 사람의 다른 손을 다음 사람이 잡고, 같은 방식으로 손을 이어 장미가 있는 자리까지 연결합니다.', '사슬의 마지막 사람은 남은 손으로 장미를 만집니다. 짧게 스치거나 오래 쥐어도 됩니다.', '연결이 끊기면 소리도 멈춥니다. 다시 손을 잡으면 이어집니다.', '작품이 내민 손이 나타나면 악수해 장면을 남깁니다. 혼자서는 회로가 완성되지 않습니다.'],
+    helpDetailKo: ['한 사람이 물에 한 손을 담급니다.', '남은 손으로 옆 사람의 손을 잡습니다. 여러 명이면 같은 방식으로 손을 이어갑니다.', '사슬 끝에 선 사람이 남은 손으로 장미를 만집니다. 짧게 스치거나 오래 쥐고, 여러 송이를 함께 잡아도 됩니다.', '작품이 손을 내밀면 악수합니다. 손을 맞잡은 순간의 장면이 당신의 장미에 남습니다.', '장미를 지난 뒤 오늘의 이름을 짓습니다.'],
     helpDetailEn: ['One person begins with one hand in the water.', 'Hold hands in a chain until the final person reaches the roses.', 'The last person touches the roses with their free hand. A brief touch or a long hold both work.', 'If the chain breaks, the sound stops. Reconnect your hands to continue.', 'When the work offers a hand, shake it to leave the scene. The circuit cannot close alone.'],
-    aboutKo: '생화와 기계가 한 정원 안에 연결되어 있습니다. 장미는 당신이 만지는 동안에만 소리를 얻고, 그 소리는 다른 사람의 손이 이어져 있을 때만 납니다. 여기서 만진 장미의 조합은 뒤이어 지을 감정명의 재료가 됩니다.',
+    troubleshootKo: ['소리가 나지 않으면 물에서 장미까지 손이 이어져 있는지 확인해주세요. 손과 손이 끊어지면 회로와 소리도 멈춥니다.', '손을 다시 잡은 뒤 장미를 만져주세요. 손이 젖었다면 장비를 만지기 전에 닦아주세요.', '악수 뒤 장면이 보이지 않아도 작품은 계속 진행할 수 있습니다. 잠시 뒤 다시 확인하거나 스태프에게 말씀해주세요.'],
+    aboutKo: '생화와 기계가 한 정원 안에 연결되어 있습니다. 장미는 손이 닿는 동안 소리를 얻지만, 그 소리는 혼자서는 나지 않습니다. 누군가 물에 손을 담그고 서로의 손을 이을 때 여러 몸이 잠시 하나의 회로가 됩니다. 여기서 손이 머문 장미들은 뒤이어 지을 오늘의 이름에 먼저 닿은 재료가 됩니다.',
     aboutEn: 'As different bodies become one circuit, the combination of roses becomes material for one emotional name.',
-    aboutDetailKo: ['이 정원에서 장미는 장식이 아니라 회로의 끝입니다. 물, 사람의 피부, 손, 생화, 센서와 소리가 하나의 연결 안에 놓입니다.', '누군가가 물에 손을 담그고 다른 사람과 손을 이어야만 장미의 반응이 지속됩니다. 한 사람이 만든 선택은 혼자만의 것이 아니라 잠시 함께 선 사람들의 감각을 통과합니다.', '여러 장미를 어떻게 만졌는지는 정답을 만들지 않습니다. 이후 감정명을 붙일 때, 손으로 먼저 만든 조합을 다시 말로 옮겨보게 합니다.'],
+    aboutDetailKo: ['이 정원에서 관계는 감상해야 할 주제가 아니라 작동 조건입니다. 누군가의 손을 잡지 않으면 자기 앞의 장미도 들을 수 없습니다. “나는 혼자 존재할 수 있는가”라는 질문이 설명문이 아니라 끊어지고 이어지는 회로로 나타납니다.', '회로는 물에서 시작해 사람의 피부와 손을 지나 생화에 닿습니다. 자연과 기계, 나와 타인의 경계는 하나의 신호 안에서 잠시 흐려집니다. 누가 시작했고 누가 반응을 만들었는지 한 사람에게만 돌릴 수 없습니다.', '장미마다 정해진 감정 단어는 없습니다. 의미를 먼저 읽고 자신에게 맞는 꽃을 고르는 대신, 손의 감각과 소리의 반응이 말보다 먼저 오게 합니다.', '생화는 전시가 진행되는 동안 실제로 상하고 시듭니다. 관객의 접촉은 흔적 없이 사라지는 입력이 아니라 꽃의 몸에 남는 시간입니다.', '여러 송이를 함께 잡거나 오래 머무는 행동은 좋은 선택과 나쁜 선택으로 환산되지 않습니다. 그 조합은 점수로 돌아오지 않고, 이후 자기 언어로 이름을 지을 때 다시 떠올릴 감각으로 남습니다.', '마지막에 작품이 내민 손과 악수하면 한 장면이 남습니다. 처음에는 다른 사람의 손을 빌려 회로를 만들었다면, 끝에서는 작품의 몸과 직접 손을 맞잡습니다.'],
   },
   '02': {
     en: 'INTERVENTION', ko: '개입', phaseKo: '개입', visual: 'reenactment',
-    essentialKo: '컨트롤러로 화면 속 존재를 대합니다. 손을 카메라 안에 펼치면 손과 마스크가 나타납니다. 스크린샷을 남기려면 카메라를 바라보고 두 눈을 2초 동안 감아주세요.',
+    essentialKo: '컨트롤러로 화면 속 존재에게 개입합니다. 돌보고, 해치고, 다시 일어나는 모습을 지켜보세요. 한 방향만 반복할 필요는 없습니다. 마지막에는 카메라를 바라보고 두 눈을 감아 장면을 남깁니다.',
     essentialEn: 'Open your hand toward the screen. Follow the hand and mask, then close both eyes for two seconds to be recorded.',
-    helpKo: '컨트롤러의 각 버튼을 눌러 화면 속 존재에 개입해보세요. 화면에 손과 마스크가 나타나면 카메라를 바라보고 두 눈을 감아 장면을 남깁니다.',
+    helpKo: '버튼마다 화면 속 존재에게 다른 변화가 일어납니다. 화면의 반응을 보며 행동을 고릅니다.',
     helpEn: 'Use the controller buttons to intervene in the figure. When the hand and mask appear, face the camera and close both eyes to leave a scene.',
-    helpDetailKo: ['컨트롤러의 버튼은 서로 다른 변화를 만듭니다. 무엇을 살리고 무엇을 해칠지는 화면의 반응을 보며 직접 발견합니다.', '한 방향의 행동만 반복할 필요는 없습니다. 서로 다른 행동을 섞었을 때 남는 변화도 관찰해보세요.', '손 전체와 얼굴이 카메라 화면 안에 들어오도록 한 걸음 물러섭니다.', '화면에 손과 마스크가 나타나면 카메라를 바라보고 두 눈을 약 2초 동안 감습니다. 눈을 감은 장면이 기록됩니다.'],
+    helpDetailKo: ['컨트롤러의 버튼을 눌러봅니다. 버튼마다 화면 속 존재에게 다른 변화가 일어납니다.', '화면의 반응을 보며 서로 다른 행동을 시도합니다. 무엇이 살리고 무엇이 해치는지는 직접 발견합니다.', '손 전체와 얼굴이 카메라 화면에 들어오도록 한 걸음 물러섭니다.', '화면에 손과 마스크가 나타나면 카메라를 바라봅니다.', '두 눈을 약 2초 동안 감습니다. 눈을 감은 순간의 장면이 당신의 장미에 남습니다.'],
     helpDetailEn: ['Each controller button makes a different change. Discover what it protects or harms by watching the response.', 'You do not need to repeat only one kind of action. Notice what remains when different actions are mixed.', 'Step back until your full hand and face are visible to the camera.', 'When the hand and mask appear, face the camera and close both eyes for about two seconds. That moment is recorded.'],
-    aboutKo: '01에서 지은 이름이 이 화면으로 옵니다. 살릴 수도 있고 죽일 수도 있습니다. 죽어도 다시 일어나지만 이전의 흔적은 사라지지 않습니다. 여기에는 승리도 패배도 없습니다.',
+    troubleshootKo: ['버튼을 눌러도 반응이 없으면 컨트롤러의 전원이 켜져 있는지 확인해주세요.', '손과 마스크가 보이지 않으면 손 전체와 얼굴이 화면 안에 들어오도록 한 걸음 물러섭니다.', '스크린샷이 남지 않으면 카메라를 정면으로 바라보고 두 눈을 완전히 감은 채 약 2초간 기다립니다.', '계속 작동하지 않으면 스태프에게 말씀해주세요.'],
+    aboutKo: '01에서 지은 이름을 가진 존재가 화면 안에서 다시 살아납니다. 당신은 그 존재를 돌보거나 해칠 수 있습니다. 완전히 죽어도 다시 일어나지만 이전의 흔적은 지워지지 않습니다. 여기에는 승리도 패배도 없습니다. 남는 것은 그 존재를 대했던 방식입니다.',
     aboutEn: 'This scene does not restore a lost emotion exactly. It leaves another form by performing it again with the body.',
-    aboutDetailKo: ['이 작품은 자신을 돌보는 행동과 해치는 행동을 같은 손에 놓습니다. 무엇이 옳은 선택인지 알려주지 않으며, 어떤 결과도 승리나 패배로 판정하지 않습니다.', '화면 속 존재는 죽어도 다시 일어나지만, 이전의 흔적을 지우지는 못합니다. 돌봄과 손상은 서로를 취소하지 않고 같은 시간 안에 남습니다.', '마지막에 눈을 감아 남기는 이미지는 행위를 바라보는 자신까지 한 화면에 넣는 장면입니다.'],
+    aboutDetailKo: ['이 작품에서 관객은 관찰자가 아니라 개입하는 사람입니다. 화면 속 존재는 01에서 관객이 지은 이름을 받아 나타나고, 관객의 손은 그 존재를 살리거나 죽이는 사건을 만듭니다.', '물과 햇빛, 독과 괴물은 선과 악의 버튼이 아닙니다. 중요한 것은 어느 선택이 정답인가가 아니라 어떤 행동을 반복하고, 언제 바꾸며, 서로 다른 행동을 어떻게 섞는가입니다.', '죽음은 끝이 되지 않습니다. 존재는 다시 일어나지만 이전 상태로 완전히 복구되지는 않습니다. 돌봄과 손상, 죽음과 재생이 서로를 취소하지 않고 같은 몸에 남습니다.', '관객은 화면 속 존재를 보면서 동시에 카메라 안의 자신을 보게 됩니다. 손가락의 형상 안에 자신의 모습이 나타나고, 행동하는 나와 그 행동을 지켜보는 내가 같은 장면에 놓입니다.', '두 눈을 감는 행위는 정답을 찾았다는 신호가 아닙니다. 화면을 확인하며 포즈를 고르는 대신 잠시 시각을 닫고, 방금 자신이 그 존재를 어떻게 대해왔는지 몸 안에서 지나가게 합니다.', '그 순간 생성된 스크린샷은 결과 인증 사진이 아닙니다. 내가 이름 붙인 존재에게 무엇을 했고, 그 행위를 바라보는 나는 어떤 모습이었는지를 함께 남긴 장면입니다.'],
   },
   '03': {
     en: 'WITNESS', ko: '목격', phaseKo: '목격', visual: 'mourning',
-    essentialKo: '흰 장미 위에 손을 올려주세요. 손이 가까워질수록 시간이 느려집니다. 가장 느린 시간에 머문 뒤 화면을 비스듬히 바라보며 자신의 색을 찾고, 찾은 자리에서 흰 장미를 눌러주세요.',
+    essentialKo: '흰 장미 위에 손을 올려 흐르는 시간을 늦춥니다. 가장 느린 시간에 머문 뒤 화면을 비스듬히 바라보며 자신의 장미 색을 찾습니다. 찾은 자리에서 흰 장미를 눌러 그 순간을 남깁니다.',
     essentialEn: 'Place your hand above the flower. Move time with its height and slowly find your color inside the passing images.',
-    helpKo: '흰 장미 위에 손을 올려 시간을 늦추고, 가장 느린 시간에 머문 뒤 화면을 비스듬히 보며 자신의 색을 찾으세요.',
+    helpKo: '손의 높이로 시간을 늦추고, 몸의 위치를 바꾸어 정면에서는 보이지 않는 자신의 형체를 찾습니다.',
     helpEn: 'Slow time by holding your hand over the white rose, then look from an angle to find your color.',
-    helpDetailKo: ['흰 장미 위에 손을 가까이 가져가면 화면의 시간이 느려집니다.', '가장 느린 속도에서 약 3초 머물면 짧은 소리가 납니다. 그 뒤 손을 떼어도 느려진 속도는 잠시 유지됩니다.', '정면에서는 보이지 않던 형체가 화면을 비스듬히 볼 때 나타납니다. 자신의 장미 색을 천천히 찾아보세요.', '찾은 자리에서 흰 장미를 눌러주세요. 이 영상은 되감기지 않으므로, 놓친 장면도 지나간 시간의 일부로 남습니다.'],
+    helpDetailKo: ['흰 장미 위에 손을 올립니다. 손이 가까워질수록 화면의 시간이 느려집니다.', '가장 느린 시간에 약 3초 동안 머뭅니다. 짧은 소리가 나면 손을 떼어도 느려진 시간이 유지됩니다.', '화면 앞에서 몸을 옆으로 옮기며 비스듬히 바라봅니다. 정면에서는 보이지 않던 형체와 자신의 장미 색을 찾습니다.', '찾았다고 생각되는 자리에서 흰 장미를 누릅니다.', '지나간 영상은 되감기지 않습니다. 놓친 장면도 이곳을 지나온 시간의 일부로 남습니다.'],
     helpDetailEn: ['Bring your hand close to the white rose to slow the image.', 'Stay at the slowest speed for about three seconds to hear a short sound. The slowed speed remains briefly after you remove your hand.', 'A form invisible from the front appears when you look at the screen from an angle. Find your rose color slowly.', 'Press the white rose where you find it. The video does not rewind; a missed scene remains part of the passing time.'],
-    aboutKo: '흐르는 장면은 모두 다른 사람들의 장례입니다. 당신이 오래 바라본 장면과 처음에 고른 색이 자신의 자리를 정합니다. 찾기는 목적이 아니라 천천히 보게 만드는 도구입니다.',
+    troubleshootKo: ['시간이 느려지지 않으면 손을 장미 위에서 완전히 뺐다가 다시 가져와주세요.', '가장 느린 속도에서 약 3초 머물면 짧은 소리가 납니다. 소리가 난 뒤에는 손을 떼고 화면을 비스듬히 볼 수 있습니다.', '형체가 보이지 않으면 화면 정면에만 서 있지 말고 좌우로 천천히 움직이며 바라보는 각도를 바꿔주세요.', '흰 장미를 눌러도 반응하지 않으면 조금 더 머물며 다음 장면을 바라봐주세요.'],
+    aboutKo: '다른 사람들의 장례가 흐르는 시간 속에서 자신의 자리를 찾습니다. 손을 가까이 가져갈수록 시간은 느려지고, 오래 바라본 장면과 처음 고른 장미의 색이 당신이 나타날 자리를 정합니다. 찾기는 목적이 아니라 지나가는 것을 천천히 보게 만드는 방법입니다.',
     aboutEn: 'Here, mourning is not a still scene but finding your trace again among other people\'s time.',
-    aboutDetailKo: ['여기에서 장례는 한 사람의 사건이 아니라 세계 안에서 반복되는 수많은 죽음의 언어입니다. 서로 다른 장면이 지나가고, 관객은 그 안에서 자신의 색을 찾습니다.', '자신의 색을 찾는 일은 정답을 맞히는 게임이 아닙니다. 시간을 늦추고, 정면이 아닌 각도에서 보고, 다른 사람의 시간 사이에 자신의 자리를 대입해 보는 행위입니다.', '되감기가 없다는 조건은 지나간 장면을 소유할 수 없게 합니다. 목격은 붙잡는 일이 아니라 지나감 속에서 잠시 알아보는 일입니다.'],
+    aboutDetailKo: ['01과 02가 자기 안으로 가까이 들어가는 작품이었다면, 03은 한 걸음 물러나 세계 속에서 자신을 바라보는 자리입니다. 화면을 지나가는 장면은 서로 다른 문화와 장소에 존재하는 장례의 이미지입니다.', '관객은 영상을 자유롭게 되감거나 목록처럼 훑을 수 없습니다. 손의 높이로 시간의 속도를 바꾸고, 일부 장면 앞에서 충분히 느려진 채 머뭅니다. 놓친 장면은 다시 소유할 수 없는 지나간 시간으로 남습니다.', '자신의 형체는 정면에서 알아보기 어려운 왜상으로 나타납니다. 한 자리에서 비스듬히 바라볼 때만 형태가 서기 때문에, 무엇을 보는지는 어디에 서 있는가와 분리되지 않습니다.', '왜상은 바니타스의 계보 안에서 죽음을 숨겨두었던 시각 장치를 가져옵니다. 정면에서는 풍경의 일부였던 형상이 몸을 옮겨 특정한 각도에 섰을 때 드러나듯, 여기서도 관객은 자기 위치를 바꾸어야 자신을 볼 수 있습니다.', '여러 언어의 목소리와 한국어 자막은 타인의 기억에 완전히 들어갈 수 없다는 거리를 남깁니다. 관객은 세계의 죽음을 모두 자기 이야기로 소유하지 않은 채 바라봅니다.', '애도는 죽은 사람만을 위한 일이 아닙니다. 남아서 바라보는 사람이 자신의 위치를 다시 만드는 일이기도 합니다. 자기 색을 찾는 일은 특별한 존재가 되는 일이 아니라 수많은 타인 사이에 자신도 놓여 있음을 알아보는 일입니다.'],
   },
   '04': {
     en: 'RECORD', ko: '기록', phaseKo: '기록', visual: 'archive',
-    essentialKo: '헤드폰을 쓰고 편한 자리에서 보시면 됩니다. 영상에는 정해진 처음과 마지막이 없습니다. 어느 장면에서 들어와도 되고, 언제 나가셔도 됩니다.',
+    essentialKo: '헤드폰을 쓰고 원하는 만큼 머뭅니다. 영상에는 반드시 처음부터 보아야 하는 서사가 없습니다. 어느 장면에서 들어와도 되고, 한 장면만 본 뒤 나가도 됩니다.',
     essentialEn: 'Look slowly through the scenes and specimen records left behind.',
-    helpKo: '헤드폰을 쓰고 편한 자리에서 영상을 보세요. 어느 장면에서 들어와도 되고, 언제 나가도 됩니다. 장미에 휴대폰을 대면 이곳에 머문 시간이 연결됩니다.',
+    helpKo: '정해진 시작과 끝 없이 제작의 장면 사이에 머뭅니다.',
     helpEn: 'Put on the headphones and watch from any point for as long as you wish. Touch your phone to the rose to connect this stay.',
-    helpDetailKo: ['헤드폰을 쓰고 볼 수 있는 위치에 앉거나 섭니다. 사용 전후에는 준비된 티슈로 닦아주세요.', '영상에는 정해진 시작과 끝이 없습니다. 어느 장면에서 들어와도 되고, 한 장면만 보고 나가도 됩니다.', '이 장소를 당신의 장미 번호에 연결하려면 안내판의 장미에 휴대폰을 대거나 QR을 스캔합니다. 휴대폰을 연결하지 않아도 영상 감상은 가능합니다.'],
+    helpDetailKo: ['준비된 티슈로 헤드폰을 닦습니다.', '헤드폰을 쓰고 편한 자리에서 영상을 봅니다.', '원하는 장면만 보거나 오래 머물러도 됩니다.', '관람을 마친 뒤 헤드폰을 다시 닦아 제자리에 둡니다.', '휴대폰을 연결하지 않아도 영상을 볼 수 있습니다. 장미에 휴대폰을 대면 머문 시간이 당신의 장미 번호에 남습니다.'],
     helpDetailEn: ['Put on the headphones and sit or stand where you can watch comfortably. Please use the supplied tissue before and after use.', 'The film has no fixed beginning or ending. You may enter at any scene and leave at any time.', 'To connect this visit to your rose number, hold your phone to the rose on the sign or scan the QR. The film can also be watched without connecting your phone.'],
-    aboutKo: '장미, 해골, 전선과 센서가 하나의 몸이 되는 동안의 손을 기록했습니다. 완성된 작품 뒤에서 사라지는 절단과 연결, 실패와 반복의 시간도 이 장례의 일부로 남깁니다.',
+    troubleshootKo: ['소리가 들리지 않으면 헤드폰이 끝까지 연결되어 있는지 확인해주세요. 음량은 준비된 조절 장치에서 천천히 올려주세요.', '영상에는 정해진 시작 화면이 없습니다. 중간 장면처럼 보여도 정상입니다.', '계속 소리가 들리지 않으면 스태프에게 말씀해주세요.'],
+    aboutKo: '완성된 작품 뒤에서 사라지는 손과 제작의 시간을 남긴 영상입니다. 장미, 해골, 전선과 센서가 하나의 몸이 되는 동안의 절단과 연결, 실패와 반복을 기록했습니다. 완성된 표면뿐 아니라 그 표면을 만들고 사라진 시간도 이 장례의 일부입니다.',
     aboutEn: 'ARCHIVE is not a fourth distortion axis. It is the documentary frame around the other traces.',
-    aboutDetailKo: ['기록은 다른 작품의 결과를 설명하는 부록이 아닙니다. 장미, 해골, 전선, 센서와 사람이 하나의 몸이 되어 가는 제작의 시간을 보여줍니다.', '화면 뒤에는 수많은 절단과 연결, 실패와 반복이 있습니다. 완성된 작품만 남기지 않고 그 과정 자체를 장례의 일부로 놓습니다.', '이곳은 네 번째 점수를 만들지 않습니다. 앞선 경험들을 감싸는 기록의 자리입니다.'],
+    aboutDetailKo: ['제작 기록은 다른 작품을 설명하는 부록이나 홍보 영상이 아닙니다. 이 시신이 어떤 노동과 반복을 지나 만들어졌는지를 보여주는 또 하나의 부검 기록에 가깝습니다.', '인터랙티브 미디어 작품은 완성되면 기술이 보이지 않는 매끄러운 표면으로 나타나기 쉽습니다. 그러나 그 뒤에는 자르고 잇는 손, 실패한 테스트, 다시 시작된 연결, 사라진 버전과 고장 난 장치의 시간이 있습니다.', '이 작품은 그 과정을 숨겨 마술처럼 보이게 하지 않습니다. 기계 역시 몸을 가지고 있고, 그 몸은 수많은 손의 노동과 오류를 통해 만들어집니다.', '장미와 해골, 센서와 케이블은 각각 독립된 재료였다가 전시가 시작되는 순간 하나의 작동하는 시신이 됩니다. 관객이 만나는 것은 완제품이 아니라 계속 유지되고 다시 연결되어야 하는 임시적인 몸입니다.', '영상에 정해진 처음과 마지막이 없는 이유도 여기에 있습니다. 제작은 선명한 시작과 완성으로 정리되지 않습니다. 어느 장면에서 들어와도 손은 이미 무언가를 만들고 있고, 어느 순간 떠나도 작업은 다른 곳에서 계속됩니다.', '04는 네 번째 성격 점수나 변화 축을 만들지 않습니다. 앞선 세 작품이 생겨난 물질적 시간과 그 시간을 감싸는 기록의 자리입니다.'],
   },
 };
 
@@ -1814,17 +1852,16 @@ function screenModule(stationId, options = {}) {
         el('p', { class: 'module-korean-title' }, tr(module.phaseKo, module.en)),
       ),
       moduleHero(stationId, module),
-      captureResultPanel(stationId),
       needsName ? el('section', { class: 'naming-prerequisite' },
-        el('span', { class: 'instruction-level' }, 'EMOTIONAL NAMING / REQUIRED'),
-        el('h2', {}, tr('이 작품에는 당신이 지은 이름이 필요합니다', 'THIS WORK NEEDS YOUR NAME')),
+        el('span', { class: 'instruction-level' }, 'NAME GIVEN TODAY / REQUIRED'),
+        el('h2', {}, tr('이 작품에는 오늘 지은 이름이 필요합니다', 'THIS WORK NEEDS YOUR NAME')),
         el('p', {}, tr(
-          '01의 장미 정원을 지난 뒤 감정명을 붙이는 것을 권합니다. 그 이름이 이 작품의 화면 안에 나타납니다.',
+          '01의 장미를 지난 뒤 이름을 짓는 것을 권합니다. 그 이름이 이 작품의 화면 안에 나타납니다.',
           'We recommend making your name after the rose garden in 01. That name appears inside this work.',
         )),
         el('div', { class: 'naming-prerequisite-actions' },
-          textButton(tr('01 장미 정원으로 갑니다', 'GO TO 01'), () => screenModule('01', { via: 'name_required' })),
-          textButton(tr('지금 감정명을 붙입니다', 'MAKE MY NAME NOW'), () => screenFinalReflection({ exitFlow: false, returnToStation: stationId })),
+          textButton(tr('01 명명으로 갑니다', 'GO TO 01'), () => screenModule('01', { via: 'name_required' })),
+          textButton(tr('지금 오늘의 이름을 짓습니다', 'MAKE MY NAME NOW'), () => screenFinalReflection({ exitFlow: false, returnToStation: stationId })),
         ),
       ) : connected ? el('div', { class: 'connected-banner' },
         el('span', {}, '● CONNECTED'),
@@ -1836,36 +1873,40 @@ function screenModule(stationId, options = {}) {
           el('p', {}, tr('안내판의 장미에 휴대폰을 대거나 옆의 QR을 찍어주세요.', 'Hold your phone to the rose or scan the QR.')),
         ),
       ),
-      connected && !needsName ? el('section', { class: 'essential-instruction' },
-        el('span', { class: 'instruction-level' }, 'ESSENTIAL / 01'),
-        el('h2', {}, tr('지금 해야 할 것', 'WHAT TO DO NOW')),
-        el('p', {}, tr(module.essentialKo, module.essentialEn)),
-      ) : null,
-      el('section', { class: 'module-info-block' },
-        el('span', { class: 'micro-label' }, tr('HOW IT WORKS', 'HOW IT WORKS')),
-        el('h2', {}, tr('작동법', 'HOW TO USE THIS WORK')),
-        el('p', {}, tr(module.helpKo, module.helpEn)),
-        disclosure(
-          tr('더 자세히 알고 싶어요', 'SHOW DETAILED STEPS'),
-          el('ol', { class: 'detailed-step-list' }, ...tr(module.helpDetailKo, module.helpDetailEn).map((step) => el('li', {}, step))),
-          `how_to_${stationId}`,
-        ),
-      ),
       el('section', { class: 'module-info-block' },
         el('span', { class: 'micro-label' }, 'ABOUT THIS WORK'),
         el('h2', {}, tr('이 작품에 대하여', 'ABOUT THIS WORK')),
         el('p', {}, tr(module.aboutKo, module.aboutEn)),
         disclosure(
-          tr('더 자세히 알아보기', 'READ MORE ABOUT THIS WORK'),
+          tr('작품의 안쪽 읽기', 'READ DEEPER'),
           el('div', { class: 'copy-stack' }, ...tr(module.aboutDetailKo, module.aboutDetailEn).map((paragraph) => el('p', {}, paragraph))),
           `about_${stationId}`,
         ),
       ),
-      textButton(tr('프로젝트 전체에서 이 작품 읽기', 'READ THIS WORK IN THE FULL PROJECT'), () => screenAboutProject(workAboutSection(stationId)), 'module-full-story'),
-      !connected ? textButton(tr('HOME으로 돌아가기', 'RETURN HOME'), screenHome, 'return-home') : null,
+      el('section', { class: 'module-info-block' },
+        el('span', { class: 'micro-label' }, 'YOUR TURN'),
+        el('h2', {}, tr('당신의 차례', 'YOUR TURN')),
+        el('p', {}, tr(module.essentialKo, module.essentialEn)),
+      ),
+      el('section', { class: 'module-info-block' },
+        el('span', { class: 'micro-label' }, 'SEQUENCE'),
+        el('h2', {}, tr('참여 순서', 'SEQUENCE')),
+        el('p', {}, tr(module.helpKo, module.helpEn)),
+        el('ol', { class: 'detailed-step-list' }, ...tr(module.helpDetailKo, module.helpDetailEn).map((step) => el('li', {}, step))),
+      ),
+      el('section', { class: 'module-info-block troubleshooting-block' },
+        disclosure(
+          tr('잘 되지 않을 때', 'TROUBLESHOOTING'),
+          el('div', { class: 'copy-stack' }, ...tr(module.troubleshootKo || [], module.helpDetailEn).map((paragraph) => el('p', {}, paragraph))),
+          `troubleshoot_${stationId}`,
+        ),
+      ),
+      captureResultPanel(stationId),
+      textButton(tr('전체 프로젝트에서 이 작품 읽기', 'READ THIS WORK IN THE FULL PROJECT'), () => screenAboutProject(workAboutSection(stationId)), 'module-full-story'),
+      !connected ? textButton('HOME', screenHome, 'return-home') : null,
     ),
   ], connected && !needsName ? [
-    primaryButton(stationId === '01' ? tr('감정명을 남깁니다', 'NAME THIS FEELING') : tr('이 작품을 마칩니다', 'FINISH THIS WORK'), () => {
+    primaryButton(stationId === '01' ? tr('오늘의 이름을 짓습니다', 'NAME THIS FEELING') : tr('이 작품을 마칩니다', 'FINISH THIS WORK'), () => {
       if (stationId === '01') {
         markStationComplete('01');
         updateSession({ connected_station: null });
@@ -1905,17 +1946,17 @@ function screenMySpecimen({ returnTo = null } = {}) {
         'specimen-back-button',
       ) : null,
       el('div', { class: 'screen-kicker' },
-        el('span', {}, 'MY SPECIMEN'),
+        el('span', {}, tr('현재 표본', 'MY SPECIMEN')),
         el('span', {}, `ROSE NO. ${session.display_record_no}`),
       ),
       roseVisual('specimen', 'CURRENT MY ROSE', traceProfile),
       el('div', { class: 'specimen-name' },
-        el('span', {}, session.emotional_name ? 'EMOTIONAL NAME' : 'NOT YET NAMED'),
+        el('span', {}, session.emotional_name ? tr('오늘 지은 이름', 'NAME GIVEN TODAY') : tr('아직 이름 없음', 'NOT YET NAMED')),
         el('h1', {}, displayName(session)),
       ),
       el('section', { class: 'trace-section' },
         el('div', { class: 'section-heading-row' },
-          el('h2', {}, 'CURRENT TRACE'),
+          el('h2', {}, tr('지나온 흔적', 'CURRENT TRACE')),
         ),
         ...modules.map((stationId) => {
           const summary = traceSummaryForStation(stationId);
@@ -1928,8 +1969,8 @@ function screenMySpecimen({ returnTo = null } = {}) {
         }),
       ),
       el('div', { class: 'quiet-actions' },
-        textButton(session.emotional_name ? tr('감정명 보기', 'VIEW EMOTIONAL NAME') : tr('감정명명하기', 'EMOTIONAL NAMING'), () => screenFinalReflection({ exitFlow: false })),
-        textButton(tr('HOME으로', 'RETURN HOME'), screenHome),
+        textButton(session.emotional_name ? tr('오늘의 이름 보기', 'VIEW NAME') : tr('오늘의 이름 짓기', 'NAME GIVEN TODAY'), () => screenFinalReflection({ exitFlow: false })),
+        textButton('HOME', screenHome),
       ),
     ),
   ]);
@@ -1952,29 +1993,27 @@ function screenExitJourney() {
   logEvent('exit_entered', { missing_modules: missing }, '05');
   flushAnalyticsEvents('exit_entered');
 
-  if (!missing.length) {
-    screenFinalReflection({ exitFlow: true });
-    return;
-  }
-
   render([
     globalHeader(),
     el('section', { class: 'screen exit-screen' },
-      el('span', { class: 'micro-label' }, '05 / JOURNEY CHECK'),
-      el('h1', { class: 'screen-title' }, tr('아직 지나지 않은 곳이 있습니다.', 'SOME PLACES REMAIN.')),
-      el('div', { class: 'missing-list' },
+      el('span', { class: 'micro-label' }, '05 / DEPARTURE'),
+      el('h1', { class: 'screen-title' }, tr(missing.length ? '아직 지나지 않은 곳이 있습니다.' : '네 곳을 모두 지나왔습니다.', missing.length ? 'SOME PLACES REMAIN.' : 'YOU HAVE PASSED ALL FOUR WORKS.')),
+      missing.length ? el('div', { class: 'missing-list' },
         ...missing.map((stationId) => el('button', { type: 'button', onclick: () => screenModule(stationId, { via: 'exit' }) },
           el('span', {}, stationId),
           el('strong', {}, workTitle(stationId)),
           el('span', {}, '↗'),
         )),
-      ),
-      el('p', { class: 'intro-copy' }, tr('모든 곳을 지나지 않아도, 지금까지 남긴 것으로 당신의 장미를 완성할 수 있습니다.', 'You may complete your rose with what you have left so far.')),
-      textButton(tr('돌아가서 보기', 'RETURN TO EXHIBITION'), screenHome),
+      ) : null,
+      el('p', { class: 'intro-copy' }, tr(
+        missing.length ? '모든 곳을 지나지 않아도 지금까지 남긴 것으로 유품을 만들 수 있습니다. 돌아가도 되고, 이대로 마쳐도 됩니다.' : '이제 오늘 지은 이름과 남긴 장면을 확인하고, 이 장례식의 마지막 기록을 남깁니다.',
+        missing.length ? 'You may complete your rose with what you have left so far.' : 'Review the name and moments you left, then make the final record of this funeral.',
+      )),
+      missing.length ? textButton(tr('돌아가서 봅니다', 'RETURN TO EXHIBITION'), screenHome) : null,
     ),
   ], [
-    primaryButton(tr('이대로 나의 장미를 완성합니다', 'COMPLETE MY ROSE'), () => {
-      logEvent('exit_continue_incomplete', { missing_modules: missing }, '05');
+    primaryButton(tr(missing.length ? '이대로 발인을 시작합니다' : '발인을 시작합니다', 'BEGIN DEPARTURE'), () => {
+      logEvent(missing.length ? 'exit_continue_incomplete' : 'exit_continue_complete', { missing_modules: missing }, '05');
       screenFinalReflection({ exitFlow: true });
     }),
   ]);
@@ -2077,7 +2116,7 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
     rows: 4,
     maxlength: 600,
     value: session.survey?.reflection || '',
-    placeholder: tr('원한다면, 지금 남기고 싶은 마음이나 장면을 적어주세요.', 'If you wish, leave a feeling or scene you want to keep.'),
+    placeholder: tr('지금 남기고 싶은 문장', 'A sentence you want to leave'),
   });
   const surveyTextTracking = trackInput(surveyTextInput, 'survey_reflection');
   const sliderAnswers = {};
@@ -2122,8 +2161,8 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
   };
 
   const survey = el('div', { class: 'survey-block' },
-    el('span', { class: 'micro-label' }, 'FINAL REFLECTION / 10 QUESTIONS'),
-    el('p', { class: 'survey-scale-note' }, tr('약 1분 · 각 막대를 1–10 사이에서 드래그해주세요.', 'About 1 minute · drag each scale from 1 to 10.')),
+    el('span', { class: 'micro-label' }, 'FINAL RECORD / 10 QUESTIONS'),
+    el('p', { class: 'survey-scale-note' }, tr('아래 문항은 이 전시가 실제로 어떻게 닿았는지 확인하기 위한 기록입니다. 정답은 없습니다. 약 1분 동안 각 막대를 1에서 10 사이로 움직여주세요.', 'About 1 minute · drag each scale from 1 to 10.')),
     ...SURVEY_QUESTIONS.map(surveySlider),
     el('div', { class: 'survey-text-question' },
       el('label', { for: 'survey-reflection' }, tr(
@@ -2137,10 +2176,10 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
   render([
     globalHeader(),
     el('section', { class: 'screen reflection-screen' },
-      el('span', { class: 'micro-label' }, exitFlow ? 'FINAL REFLECTION' : 'EMOTIONAL NAMING'),
-      el('h1', { class: 'screen-title' }, tr(exitFlow ? '당신의 장미를 완성합니다' : '감정명을 붙입니다', exitFlow ? 'COMPLETE YOUR ROSE' : 'EMOTIONAL NAMING')),
+      el('span', { class: 'micro-label' }, exitFlow ? 'FINAL RECORD' : 'NAME GIVEN TODAY'),
+      el('h1', { class: 'screen-title' }, tr(exitFlow ? '놓아주기 전에' : '오늘의 이름을 짓습니다', exitFlow ? 'BEFORE LETTING GO' : 'NAME GIVEN TODAY')),
       el('p', { class: 'intro-copy' }, tr(
-        '미워했던 한 면과 그 안에 함께 있던 다른 한 면을 놓고, 두 얼굴이 함께 남을 수 있는 하나의 이름을 지어주세요.',
+        exitFlow ? '오늘 지은 이름을 이곳에 두고 갈 시간입니다. 두고 간다는 것은 지우는 일이 아닙니다. 더 이상 혼자 들고 있지 않기로 하는 일입니다.' : '방금 손이 머문 장미를 떠올려주세요. 없애고 싶었던 한 면과 그 안에 함께 있었던 다른 한 면을 적고, 두 얼굴이 함께 남을 수 있는 하나의 이름을 짓습니다.',
         'Place two sides together and make one name that can hold them both.',
       )),
       el('div', { class: 'numbered-input' },
@@ -2155,15 +2194,15 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
       ),
       el('div', { class: 'numbered-input final-name-input' },
         el('span', {}, '03'),
-        el('label', {}, tr('마지막으로, 오늘의 나에게 하나의 이름을 붙입니다.', 'FINALLY, GIVE TODAY\'S SELF ONE NAME.')),
+        el('label', {}, tr('두 얼굴을 함께 부를 오늘의 이름', 'FINALLY, GIVE TODAY\'S SELF ONE NAME.')),
         finalInput,
       ),
       exitFlow ? survey : null,
       error,
-      !exitFlow ? textButton(tr('취소하고 HOME으로', 'CANCEL AND RETURN HOME'), screenHome) : null,
+      !exitFlow ? textButton('HOME', screenHome) : null,
     ),
   ], [
-    primaryButton(exitFlow ? tr('당신의 장미를 완성합니다', 'COMPLETE YOUR ROSE') : tr('이 감정명으로 합니다', 'SAVE THIS NAME'), () => {
+    primaryButton(exitFlow ? tr('이 이름을 두고 갑니다', 'LEAVE THIS NAME') : tr('오늘의 이름을 남깁니다', 'SAVE THIS NAME'), () => {
       const a = aInput.value.trim();
       const b = bInput.value.trim();
       const finalName = finalInput.value.trim();
@@ -2304,7 +2343,7 @@ function saveResultImage() {
   context.font = '400 28px Menlo, monospace';
   context.fillStyle = '#b6b2aa';
   context.fillText(`ROSE NO. ${session.display_record_no}`, 84, 962);
-  context.fillText('EMOTIONAL NAME / META ROSE', 84, 1012);
+  context.fillText('NAME GIVEN TODAY / META ROSE', 84, 1012);
   context.fillText('MINNIE PARK / META ROSE 2026', 84, 1320);
 
   const link = document.createElement('a');
@@ -2316,7 +2355,7 @@ function saveResultImage() {
 
 async function shareResult() {
   const session = ensureSession();
-  const text = `META ROSE SPECIMEN\n${session.emotional_name || '아직 이름 없음'}\nROSE NO. ${session.display_record_no}`;
+  const text = `FINAL MEMENTO / META ROSE 2026\n${session.emotional_name || '아직 이름 없음'}\nROSE NO. ${session.display_record_no}`;
   try {
     if (navigator.share) {
       await navigator.share({ title: 'META ROSE SPECIMEN', text, url: location.href });
@@ -2360,14 +2399,14 @@ function screenFinalSpecimen({ refresh = false } = {}) {
     globalHeader(),
     el('section', { class: 'screen final-specimen-screen' },
       el('div', { class: 'final-header' },
-        el('span', {}, 'FINAL META ROSE SPECIMEN'),
+        el('span', {}, 'FINAL MEMENTO / 유품'),
         el('strong', {}, `ROSE NO. ${session.display_record_no}`),
       ),
       el('div', { class: 'vertical-specimen' },
         roseVisual('final', 'FINAL META ROSE SPECIMEN', traceProfile),
         el('div', { class: 'specimen-stem stem-top', 'aria-hidden': 'true' }),
         el('div', { class: 'final-emotional-name' },
-          el('span', {}, 'EMOTIONAL NAME'),
+          el('span', {}, tr('오늘 지은 이름', 'NAME GIVEN TODAY')),
           el('h1', {}, session.emotional_name || tr('아직 이름 없음', 'NOT YET NAMED')),
         ),
         el('div', { class: 'specimen-stem', 'aria-hidden': 'true' }),
@@ -2377,8 +2416,13 @@ function screenFinalSpecimen({ refresh = false } = {}) {
         specimenReference('04', session),
         el('div', { class: 'specimen-stem stem-bottom', 'aria-hidden': 'true' }),
       ),
+      el('section', { class: 'final-epilogue' },
+        el('p', {}, tr('장례식은 끝났습니다.', 'THE FUNERAL HAS ENDED.')),
+        el('p', {}, tr('죽인 것은 사라지지 않았습니다. 다시 부를 이름이 생겼을 뿐입니다.', 'WHAT WAS KILLED DID NOT DISAPPEAR. IT NOW HAS A NAME THAT CAN BE CALLED AGAIN.')),
+        el('p', {}, tr('모순은 없어지지 않아도, 어느 쪽에 물을 줄지는 다시 고를 수 있습니다.', 'THE CONTRADICTION MAY REMAIN, BUT YOU MAY CHOOSE AGAIN WHAT TO WATER.')),
+      ),
       el('footer', { class: 'specimen-label' },
-        el('div', {}, el('span', {}, 'EMOTIONAL NAME'), el('strong', {}, session.emotional_name || tr('아직 이름 없음', 'NOT YET NAMED'))),
+        el('div', {}, el('span', {}, tr('오늘 지은 이름', 'NAME GIVEN TODAY')), el('strong', {}, session.emotional_name || tr('아직 이름 없음', 'NOT YET NAMED'))),
         el('div', {}, el('span', {}, 'ROSE NO.'), el('strong', {}, session.display_record_no)),
         el('div', {}, el('span', {}, 'DATE'), el('strong', {}, new Date().toLocaleDateString('ko-KR'))),
         el('p', {}, 'META ROSE 2026 / MINNIE PARK'),
@@ -2386,7 +2430,7 @@ function screenFinalSpecimen({ refresh = false } = {}) {
     ),
   ], [
     primaryButton(tr('이미지로 저장', 'SAVE IMAGE'), saveResultImage),
-    el('button', { class: 'secondary-action', type: 'button', onclick: shareResult }, tr('공유하기', 'SHARE'), el('span', { 'aria-hidden': 'true' }, '↗')),
+    el('button', { class: 'secondary-action', type: 'button', onclick: shareResult }, tr('공유', 'SHARE'), el('span', { 'aria-hidden': 'true' }, '↗')),
   ]);
   void refreshRemoteTraceSummaries();
   void refreshSpecimenCaptureReferences();

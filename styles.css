@@ -2194,6 +2194,24 @@ body.has-dock .app {
   border-bottom: 1px dotted var(--line);
 }
 
+.final-epilogue {
+  margin: 46px 0 28px;
+  padding: 34px 0;
+  border-top: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+  text-align: center;
+}
+
+.final-epilogue p {
+  max-width: 32em;
+  margin: 0 auto 18px;
+  line-height: 1.9;
+}
+
+.final-epilogue p:last-child {
+  margin-bottom: 0;
+}
+
 .instruction-level {
   display: block;
   margin-bottom: 28px;
