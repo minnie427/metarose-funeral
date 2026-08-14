@@ -2172,6 +2172,8 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage {
+  --pattern-animation-duration: 3200ms;
+  --pattern-scan-distance: 245px;
   position: relative;
   min-height: 500px;
   margin: 0 0 20px;
@@ -2397,31 +2399,31 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-symbol {
-  animation: pattern-preview-symbol 3200ms cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-symbol var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-specimen {
-  animation: pattern-preview-specimen 3200ms cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-specimen var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-tint {
-  animation: pattern-preview-colour 3200ms cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-colour var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-scan {
-  animation: pattern-preview-scan 3200ms cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-scan var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-dot {
-  animation: pattern-preview-dot 3200ms ease-in-out both;
+  animation: pattern-preview-dot var(--pattern-animation-duration) ease-in-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-copy .step-a {
-  animation: pattern-preview-copy-a 3200ms ease-in-out both;
+  animation: pattern-preview-copy-a var(--pattern-animation-duration) ease-in-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-copy .step-b {
-  animation: pattern-preview-copy-b 3200ms ease-in-out both;
+  animation: pattern-preview-copy-b var(--pattern-animation-duration) ease-in-out both;
 }
 
 .pattern-animation-replay {
@@ -2432,6 +2434,149 @@ body.has-dock .app {
   display: block;
   margin: 18px auto 0;
   text-align: center;
+}
+
+.pattern-animation-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin: 0 0 22px;
+}
+
+.pattern-animation-comparison-card {
+  min-width: 0;
+}
+
+.pattern-animation-stage.is-compact {
+  --pattern-animation-duration: 3400ms;
+  --pattern-scan-distance: 108px;
+  min-height: 260px;
+  margin: 0;
+}
+
+.pattern-animation-stage.is-compact .pattern-animation-index,
+.pattern-animation-stage.is-compact .pattern-animation-coordinate {
+  top: 13px;
+  font-size: 6px;
+  letter-spacing: .08em;
+}
+
+.pattern-animation-stage.is-compact .pattern-animation-index {
+  left: 12px;
+}
+
+.pattern-animation-stage.is-compact .pattern-animation-coordinate {
+  right: 12px;
+}
+
+.pattern-animation-stage.is-compact .pattern-animation-field {
+  top: 42px;
+  width: calc(100% - 18px);
+  max-width: none;
+}
+
+.pattern-animation-stage.is-compact .pattern-animation-copy {
+  right: 10px;
+  bottom: 18px;
+  left: 10px;
+  min-height: 36px;
+  font-size: 7px;
+  line-height: 1.45;
+  letter-spacing: .04em;
+}
+
+.pattern-animation-stage.is-compact .pattern-animation-tint {
+  -webkit-mask-image: url('./assets/images/rose_specimen_animation_compact.png');
+  mask-image: url('./assets/images/rose_specimen_animation_compact.png');
+}
+
+.pattern-animation-card-replay {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 4px;
+  border: 1px solid #ffffff;
+  border-top: 0;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 7px;
+  line-height: 1.4;
+  letter-spacing: .06em;
+  text-align: center;
+}
+
+/* 01 / NAMING — two separated sides close around one shared centre. */
+.pattern-animation-stage[data-station="01"].is-playing .pattern-structure-naming {
+  animation: pattern-naming-join var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* 02 / INTERVENTION — a diagonal action enters, alters, then settles. */
+.pattern-animation-stage[data-station="02"].is-playing .pattern-animation-symbol {
+  animation-name: pattern-intervention-symbol;
+}
+
+.pattern-animation-stage[data-station="02"].is-playing .pattern-animation-specimen {
+  animation-name: pattern-intervention-specimen;
+}
+
+.pattern-animation-stage[data-station="02"] .pattern-animation-scan {
+  top: 50%;
+  left: -8%;
+  right: -8%;
+  transform-origin: center;
+}
+
+.pattern-animation-stage[data-station="02"].is-playing .pattern-animation-scan {
+  animation-name: pattern-intervention-scan;
+}
+
+.pattern-animation-stage[data-station="02"].is-playing .pattern-structure-intervention {
+  animation: pattern-intervention-cut var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* 03 / WITNESS — the form is found by shifting the angle of view. */
+.pattern-animation-stage[data-station="03"].is-playing .pattern-animation-symbol {
+  animation-name: pattern-witness-symbol;
+}
+
+.pattern-animation-stage[data-station="03"].is-playing .pattern-animation-specimen {
+  animation-name: pattern-witness-specimen;
+}
+
+.pattern-animation-stage[data-station="03"] .pattern-animation-scan {
+  top: 10%;
+  right: auto;
+  left: 12%;
+  width: 1px;
+  height: 80%;
+}
+
+.pattern-animation-stage[data-station="03"].is-playing .pattern-animation-scan {
+  animation-name: pattern-witness-scan;
+}
+
+.pattern-animation-stage[data-station="03"].is-playing .pattern-structure-witness {
+  animation: pattern-witness-orbit var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* 04 / RECORD — a scan exposes and fixes the specimen inside a frame. */
+.pattern-animation-stage[data-station="04"].is-playing .pattern-animation-symbol {
+  animation-name: pattern-record-symbol;
+}
+
+.pattern-animation-stage[data-station="04"].is-playing .pattern-animation-specimen {
+  animation-name: pattern-record-specimen;
+}
+
+.pattern-animation-stage[data-station="04"].is-playing .pattern-structure-record {
+  animation: pattern-record-frame var(--pattern-animation-duration) ease-in-out both;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 @keyframes pattern-mismatch {
@@ -2475,8 +2620,8 @@ body.has-dock .app {
   0%, 34% { opacity: 0; transform: translate3d(0, 0, 0); }
   44% { opacity: .18; }
   58% { opacity: .68; }
-  84% { opacity: .54; transform: translate3d(0, 245px, 0); }
-  96%, 100% { opacity: 0; transform: translate3d(0, 275px, 0); }
+  84% { opacity: .54; transform: translate3d(0, var(--pattern-scan-distance), 0); }
+  96%, 100% { opacity: 0; transform: translate3d(0, calc(var(--pattern-scan-distance) + 24px), 0); }
 }
 
 @keyframes pattern-preview-dot {
@@ -2496,6 +2641,93 @@ body.has-dock .app {
   64%, 100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
+@keyframes pattern-naming-join {
+  0% { opacity: 0; transform: scaleX(1.48); }
+  18% { opacity: .54; }
+  44% { opacity: .92; transform: scaleX(1.14); }
+  66%, 100% { opacity: .72; transform: scaleX(1); }
+}
+
+@keyframes pattern-intervention-symbol {
+  0% { opacity: 0; transform: translate3d(-58%, -42%, 0) scale(.78) rotate(-7deg); }
+  18% { opacity: .58; }
+  42% { opacity: 1; transform: translate3d(-51%, -49%, 0) scale(1.02) rotate(0); }
+  62% { opacity: .7; transform: translate3d(-48%, -52%, 0) scale(1.1) rotate(2deg); }
+  84%, 100% { opacity: 0; transform: translate3d(-46%, -54%, 0) scale(1.18) rotate(3deg); }
+}
+
+@keyframes pattern-intervention-specimen {
+  0%, 10% { opacity: 0; transform: translate3d(-43%, -58%, 0) scale(.7) rotate(4deg); }
+  34% { opacity: .32; transform: translate3d(-52%, -48%, 0) scale(.84) rotate(-2deg); }
+  58% { opacity: .76; transform: translate3d(-49%, -51%, 0) scale(.95) rotate(.7deg); }
+  82%, 100% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1) rotate(0); }
+}
+
+@keyframes pattern-intervention-cut {
+  0%, 12% { opacity: 0; stroke-dasharray: 1 180; stroke-dashoffset: 180; transform: scale(.86); }
+  42% { opacity: 1; stroke-dasharray: 180 1; stroke-dashoffset: 0; transform: scale(1.03); }
+  68%, 100% { opacity: .72; stroke-dasharray: 180 1; stroke-dashoffset: 0; transform: scale(1); }
+}
+
+@keyframes pattern-intervention-scan {
+  0%, 30% { opacity: 0; transform: translate3d(-36px, -54px, 0) rotate(-43deg); }
+  44% { opacity: .2; }
+  62% { opacity: .76; }
+  86% { opacity: .48; transform: translate3d(38px, 58px, 0) rotate(-43deg); }
+  96%, 100% { opacity: 0; transform: translate3d(50px, 74px, 0) rotate(-43deg); }
+}
+
+@keyframes pattern-witness-symbol {
+  0% { opacity: 0; transform: translate3d(-61%, -50%, 0) scale(.78) scaleX(.42) rotate(-18deg); }
+  20% { opacity: .56; }
+  46% { opacity: 1; transform: translate3d(-53%, -50%, 0) scale(.98) scaleX(.74) rotate(-7deg); }
+  66% { opacity: .68; transform: translate3d(-49%, -50%, 0) scale(1.08) scaleX(1) rotate(0); }
+  86%, 100% { opacity: 0; transform: translate3d(-46%, -50%, 0) scale(1.16) scaleX(1) rotate(3deg); }
+}
+
+@keyframes pattern-witness-specimen {
+  0%, 14% { opacity: 0; transform: translate3d(-58%, -50%, 0) scale(.76) scaleX(.5); }
+  38% { opacity: .28; transform: translate3d(-54%, -50%, 0) scale(.86) scaleX(.68); }
+  62% { opacity: .74; transform: translate3d(-51%, -50%, 0) scale(.96) scaleX(.9); }
+  84%, 100% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1) scaleX(1); }
+}
+
+@keyframes pattern-witness-orbit {
+  0% { opacity: 0; transform: rotate(-72deg) scale(.84); }
+  26% { opacity: .48; }
+  64% { opacity: .9; transform: rotate(-12deg) scale(1.02); }
+  100% { opacity: .72; transform: rotate(0) scale(1); }
+}
+
+@keyframes pattern-witness-scan {
+  0%, 30% { opacity: 0; transform: translate3d(0, 0, 0); }
+  43% { opacity: .18; }
+  58% { opacity: .7; }
+  84% { opacity: .5; transform: translate3d(var(--pattern-scan-distance), 0, 0); }
+  96%, 100% { opacity: 0; transform: translate3d(calc(var(--pattern-scan-distance) + 24px), 0, 0); }
+}
+
+@keyframes pattern-record-symbol {
+  0% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.16); }
+  18% { opacity: .42; }
+  42% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(.98); }
+  66% { opacity: .5; transform: translate3d(-50%, -50%, 0) scale(1); }
+  82%, 100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.02); }
+}
+
+@keyframes pattern-record-specimen {
+  0%, 18% { opacity: 0; clip-path: inset(0 0 100% 0); transform: translate3d(-50%, -50%, 0) scale(.96); }
+  42% { opacity: .48; clip-path: inset(0 0 62% 0); }
+  68% { opacity: .88; clip-path: inset(0 0 16% 0); }
+  84%, 100% { opacity: 1; clip-path: inset(0); transform: translate3d(-50%, -50%, 0) scale(1); }
+}
+
+@keyframes pattern-record-frame {
+  0% { opacity: 0; stroke-dasharray: 2 140; stroke-dashoffset: 140; transform: scale(1.18); }
+  40% { opacity: .9; stroke-dasharray: 140 2; stroke-dashoffset: 0; transform: scale(1); }
+  72%, 100% { opacity: .72; stroke-dasharray: 140 2; stroke-dashoffset: 0; transform: scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rose-pattern-button.is-mismatch,
   .rose-pattern-button.is-matched .rose-pattern-graphic {
@@ -2506,30 +2738,34 @@ body.has-dock .app {
   .pattern-animation-stage.is-playing .pattern-animation-scan,
   .pattern-animation-stage.is-playing .pattern-animation-copy .step-a {
     display: none;
-    animation: none;
+    animation: none !important;
   }
 
   .pattern-animation-stage.is-playing .pattern-animation-specimen {
     opacity: 1;
     transform: translate3d(-50%, -50%, 0) scale(1);
-    animation: none;
+    animation: none !important;
   }
 
   .pattern-animation-stage.is-playing .pattern-animation-tint {
     opacity: .72;
-    animation: none;
+    animation: none !important;
   }
 
   .pattern-animation-stage.is-playing .pattern-animation-dot {
     border-color: var(--session);
     background: var(--session);
     opacity: .72;
-    animation: none;
+    animation: none !important;
   }
 
   .pattern-animation-stage.is-playing .pattern-animation-copy .step-b {
     opacity: 1;
-    animation: none;
+    animation: none !important;
+  }
+
+  .pattern-animation-stage.is-playing .pattern-structure {
+    animation: none !important;
   }
 }
 

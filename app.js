@@ -47,6 +47,7 @@ const TAB_INSTANCE_ID = crypto.randomUUID
 // 투명 배경 PNG. 색은 CSS mask로 장미의 alpha 영역에만 입힌다.
 const ROSE_SPECIMEN_IMAGE = './assets/images/rose_specimen.png';
 const ROSE_SPECIMEN_ANIMATION_IMAGE = './assets/images/rose_specimen_animation.png';
+const ROSE_SPECIMEN_ANIMATION_COMPACT_IMAGE = './assets/images/rose_specimen_animation_compact.png';
 
 let currentView = { name: 'arrival', data: {} };
 let activeReadKey = null;
@@ -622,7 +623,7 @@ function roseSpecimenImage(label, className = '', source = ROSE_SPECIMEN_IMAGE) 
   // 다음 새로고침부터 자동으로 실제 specimen 이미지가 사용된다.
   image.addEventListener('error', () => {
     if (image.dataset.fallback === 'true') return;
-    if (image.src.endsWith('/rose_specimen_animation.png')) {
+    if (image.src.includes('/rose_specimen_animation')) {
       image.src = ROSE_SPECIMEN_IMAGE;
       return;
     }
@@ -801,7 +802,7 @@ function testPreviewPanel({ home = false } = {}) {
       testPreview('PATTERN 02', () => { seedTestSession(); screenModule('02', { enter: false, via: 'test_pattern' }); }),
       testPreview('PATTERN 03', () => { seedTestSession(); screenModule('03', { enter: false, via: 'test_pattern' }); }),
       testPreview('PATTERN 04', () => { seedTestSession(); screenModule('04', { enter: false, via: 'test_pattern' }); }),
-      testPreview('ANIMATION 01', () => screenPatternAnimationPreview('01')),
+      testPreview('ANIMATION ALL', () => screenPatternAnimationPreview('all')),
       testPreview('TAGGED 01', () => { seedTestSession(); screenModule('01', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 02', () => { seedTestSession(); screenModule('02', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 03', () => { seedTestSession(); screenModule('03', { enter: true, via: 'test' }); }),
@@ -1775,21 +1776,31 @@ function stablePatternOrder(sessionId, stationId) {
   return seed % 2 ? rotated.reverse() : rotated;
 }
 
-function patternAnimationStage(stationId) {
+const PATTERN_ANIMATION_MOTION = {
+  '01': { code: 'JOIN / NAME', finalKo: '당신의 장미를 명명에 잇습니다', finalEn: 'JOINING YOUR ROSE TO NAMING' },
+  '02': { code: 'ACT / ALTER', finalKo: '당신의 장미를 개입에 들여보냅니다', finalEn: 'ENTERING YOUR ROSE INTO INTERVENTION' },
+  '03': { code: 'SHIFT / WITNESS', finalKo: '당신의 장미를 목격의 시간에 놓습니다', finalEn: 'PLACING YOUR ROSE IN WITNESS' },
+  '04': { code: 'SCAN / RECORD', finalKo: '당신의 장미를 기록에 남깁니다', finalEn: 'INSCRIBING YOUR ROSE INTO RECORD' },
+};
+
+function patternAnimationStage(stationId, { compact = false } = {}) {
   const module = MODULES[stationId];
+  const motion = PATTERN_ANIMATION_MOTION[stationId];
   return el('div', {
-    class: 'pattern-animation-stage',
+    class: `pattern-animation-stage${compact ? ' is-compact' : ''}`,
     'data-station': stationId,
     'aria-label': tr(`${module.ko} 입장 애니메이션 미리보기`, `${module.en} entry animation preview`),
   },
     el('span', { class: 'pattern-animation-index' }, `${stationId} / ${module.en}`),
-    el('span', { class: 'pattern-animation-coordinate coordinate-top' }, 'PATTERN / VERIFIED'),
+    el('span', { class: 'pattern-animation-coordinate coordinate-top' }, motion.code),
     el('div', { class: 'pattern-animation-field', 'aria-hidden': 'true' },
       el('span', { class: 'pattern-animation-guide guide-a' }),
       el('span', { class: 'pattern-animation-guide guide-b' }),
       el('div', { class: 'pattern-animation-symbol', html: rosePatternSvg(stationId) }),
       el('div', { class: 'pattern-animation-specimen' },
-        roseSpecimenImage('', 'pattern-animation-specimen-image', ROSE_SPECIMEN_ANIMATION_IMAGE),
+        roseSpecimenImage('', 'pattern-animation-specimen-image', compact
+          ? ROSE_SPECIMEN_ANIMATION_COMPACT_IMAGE
+          : ROSE_SPECIMEN_ANIMATION_IMAGE),
         el('i', { class: 'pattern-animation-tint' }),
         el('i', { class: 'pattern-animation-scan' }),
       ),
@@ -1803,8 +1814,8 @@ function patternAnimationStage(stationId) {
         `THE ROSE OF ${module.en} IS CONFIRMED`,
       )),
       el('span', { class: 'pattern-animation-copy-step step-b' }, tr(
-        '당신의 장미를 연결합니다',
-        'CONNECTING YOUR ROSE',
+        motion.finalKo,
+        motion.finalEn,
       )),
     ),
   );
@@ -1812,13 +1823,7 @@ function patternAnimationStage(stationId) {
 
 const patternAnimationRuns = new WeakMap();
 
-async function replayPatternAnimation(stage) {
-  if (!stage) return;
-  const runId = (patternAnimationRuns.get(stage) || 0) + 1;
-  patternAnimationRuns.set(stage, runId);
-  stage.classList.remove('is-playing');
-  stage.classList.add('is-preparing');
-
+async function decodePatternAnimationImage(stage) {
   const image = stage.querySelector('.pattern-animation-specimen-image');
   try {
     if (image && !image.complete) {
@@ -1831,16 +1836,82 @@ async function replayPatternAnimation(stage) {
   } catch {
     // The existing image fallback will be used. Animation still remains usable.
   }
-
-  if (patternAnimationRuns.get(stage) !== runId || !stage.isConnected) return;
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  if (patternAnimationRuns.get(stage) !== runId || !stage.isConnected) return;
-  stage.classList.remove('is-preparing');
-  stage.classList.add('is-playing');
 }
 
-function screenPatternAnimationPreview(stationId = '01') {
-  const safeStationId = MODULES[stationId] ? stationId : '01';
+async function replayPatternAnimations(inputStages) {
+  const stages = inputStages.filter((stage) => stage?.isConnected);
+  if (!stages.length) return;
+  const runIds = new Map();
+
+  stages.forEach((stage) => {
+    const runId = (patternAnimationRuns.get(stage) || 0) + 1;
+    patternAnimationRuns.set(stage, runId);
+    runIds.set(stage, runId);
+    stage.classList.remove('is-playing');
+    stage.classList.add('is-preparing');
+  });
+
+  await Promise.all(stages.map(decodePatternAnimationImage));
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+  stages.forEach((stage) => {
+    if (patternAnimationRuns.get(stage) !== runIds.get(stage) || !stage.isConnected) return;
+    stage.classList.remove('is-preparing');
+    stage.classList.add('is-playing');
+  });
+}
+
+function replayPatternAnimation(stage) {
+  return replayPatternAnimations([stage]);
+}
+
+function patternAnimationComparisonCard(stationId, stage) {
+  const module = MODULES[stationId];
+  return el('article', { class: 'pattern-animation-comparison-card' },
+    stage,
+    el('button', {
+      class: 'pattern-animation-card-replay',
+      type: 'button',
+      onclick: () => replayPatternAnimation(stage),
+    }, `${stationId} / ${tr(module.ko, module.en)} / ${tr('다시 보기', 'REPLAY')}`),
+  );
+}
+
+function screenPatternAnimationPreview(stationId = 'all') {
+  const comparisonMode = stationId === 'all';
+  const safeStationId = comparisonMode || MODULES[stationId] ? stationId : '01';
+  if (comparisonMode) {
+    rememberView('pattern-animation', { stationId: 'all' });
+    const stages = ROSE_PATTERN_IDS.map((id) => patternAnimationStage(id, { compact: true }));
+    render([
+      el('header', { class: 'global-header pattern-preview-header' },
+        el('div', { class: 'wordmark', 'aria-label': 'META ROSE 2026' },
+          el('span', {}, 'META ROSE'),
+          el('span', {}, '2026'),
+        ),
+        el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V2'),
+      ),
+      el('section', { class: 'screen pattern-animation-preview pattern-animation-comparison' },
+        el('span', { class: 'micro-label' }, 'FOUR ENTRY TRANSITIONS / PREVIEW'),
+        el('h1', {}, tr('네 개의 입장 동작', 'FOUR ROSE TRANSITIONS')),
+        el('p', { class: 'pattern-animation-preview-note' }, tr(
+          '각 장미는 작품의 행위를 따라 서로 다른 방식으로 열립니다. 이 화면은 애니메이션만 보여주며 작품이나 TD에는 연결되지 않습니다.',
+          'EACH ROSE OPENS THROUGH THE ACTION OF ITS WORK. THIS PREVIEW DOES NOT CONNECT TO THE INSTALLATION.',
+        )),
+        el('div', { class: 'pattern-animation-comparison-grid' },
+          ...ROSE_PATTERN_IDS.map((id, index) => patternAnimationComparisonCard(id, stages[index])),
+        ),
+        el('button', {
+          class: 'primary-button pattern-animation-replay',
+          type: 'button',
+          onclick: () => replayPatternAnimations(stages),
+        }, tr('네 개 다시 보기', 'REPLAY ALL FOUR')),
+      ),
+    ]);
+    requestAnimationFrame(() => replayPatternAnimations(stages));
+    return;
+  }
+
   const module = MODULES[safeStationId];
   rememberView('pattern-animation', { stationId: safeStationId });
   const stage = patternAnimationStage(safeStationId);
@@ -1851,7 +1922,7 @@ function screenPatternAnimationPreview(stationId = '01') {
         el('span', {}, 'META ROSE'),
         el('span', {}, '2026'),
       ),
-      el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V1'),
+      el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V2'),
     ),
     el('section', { class: 'screen pattern-animation-preview' },
       el('span', { class: 'micro-label' }, 'ENTRY TRANSITION / PREVIEW'),
@@ -2878,7 +2949,7 @@ function boot() {
   const bootParams = new URLSearchParams(location.search);
   const patternPreview = bootParams.get('preview');
   const patternAnimationPreviewMatch = bootParams.get('test') === '1'
-    ? /^pattern-animation-(0[1-4])$/.exec(patternPreview || '')
+    ? /^pattern-animation-(all|0[1-4])$/.exec(patternPreview || '')
     : null;
 
   // Animation study is deliberately isolated from Supabase, station locks,
