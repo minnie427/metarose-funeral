@@ -2172,8 +2172,8 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage {
-  --pattern-animation-duration: 3200ms;
-  --pattern-scan-distance: 245px;
+  --pattern-animation-duration: 4200ms;
+  --pattern-scan-distance: 268px;
   position: relative;
   min-height: 500px;
   margin: 0 0 20px;
@@ -2273,9 +2273,9 @@ body.has-dock .app {
 
 .pattern-animation-symbol {
   z-index: 4;
-  width: 56%;
+  width: 68%;
   opacity: 0;
-  transform: translate3d(-50%, -50%, 0) scale(.84);
+  transform: translate3d(-50%, -50%, 0) scale(.9);
 }
 
 .pattern-animation-symbol svg {
@@ -2290,7 +2290,7 @@ body.has-dock .app {
 .pattern-animation-symbol path {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.1;
+  stroke-width: 1.75;
   vector-effect: non-scaling-stroke;
 }
 
@@ -2340,13 +2340,94 @@ body.has-dock .app {
 .pattern-animation-scan {
   position: absolute;
   z-index: 4;
-  top: 12%;
-  left: 10%;
-  right: 10%;
+  top: 7%;
+  left: 5%;
+  right: 5%;
   display: block;
   height: 1px;
   background: #ffffff;
   opacity: 0;
+  box-shadow: 0 0 8px rgba(255, 255, 255, .38);
+  will-change: transform, opacity;
+}
+
+.pattern-motion-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pattern-motion-fragment {
+  --piece-x: 0px;
+  --piece-y: 0px;
+  --piece-rotate: 0deg;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 68%;
+  aspect-ratio: 1;
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0);
+  transform-origin: center;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.pattern-motion-fragment.fragment-a { clip-path: polygon(0 0, 52% 0, 52% 52%, 0 52%); }
+.pattern-motion-fragment.fragment-b { clip-path: polygon(48% 0, 100% 0, 100% 52%, 48% 52%); }
+.pattern-motion-fragment.fragment-c { clip-path: polygon(0 48%, 52% 48%, 52% 100%, 0 100%); }
+.pattern-motion-fragment.fragment-d { clip-path: polygon(48% 48%, 100% 48%, 100% 100%, 48% 100%); }
+
+.pattern-motion-fragment svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pattern-motion-fragment circle,
+.pattern-motion-fragment ellipse,
+.pattern-motion-fragment path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.95;
+  vector-effect: non-scaling-stroke;
+}
+
+.pattern-motion-fragment .pattern-solid {
+  fill: currentColor;
+  stroke: none;
+}
+
+.pattern-motion-fragment .pattern-structure { opacity: .86; }
+.pattern-motion-fragment .pattern-scan-axis { stroke-dasharray: 1 5; }
+
+.pattern-motion-merge-ring,
+.pattern-motion-merge-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(.2);
+  will-change: transform, opacity;
+}
+
+.pattern-motion-merge-ring {
+  width: 30%;
+  aspect-ratio: 1;
+  border: 1px solid var(--session);
+}
+
+.pattern-motion-merge-core {
+  width: 7px;
+  height: 7px;
+  background: var(--session);
+  box-shadow: 0 0 15px var(--session);
 }
 
 .pattern-animation-dot {
@@ -2399,19 +2480,31 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-symbol {
-  animation: pattern-preview-symbol var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-symbol-v4 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-specimen {
-  animation: pattern-preview-specimen var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-specimen-v4 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-tint {
-  animation: pattern-preview-colour var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-colour-v4 var(--pattern-animation-duration) ease-in-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-scan {
-  animation: pattern-preview-scan var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
+  animation: pattern-preview-scan-v4 var(--pattern-animation-duration) cubic-bezier(.32, 0, .16, 1) both;
+}
+
+.pattern-animation-stage.is-playing .pattern-motion-fragment {
+  animation: pattern-fragments-merge-v4 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.pattern-animation-stage.is-playing .pattern-motion-merge-ring {
+  animation: pattern-merge-ring-v4 var(--pattern-animation-duration) ease-out both;
+}
+
+.pattern-animation-stage.is-playing .pattern-motion-merge-core {
+  animation: pattern-merge-core-v4 var(--pattern-animation-duration) ease-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-dot {
@@ -2448,8 +2541,8 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-compact {
-  --pattern-animation-duration: 3400ms;
-  --pattern-scan-distance: 108px;
+  --pattern-animation-duration: 4200ms;
+  --pattern-scan-distance: 148px;
   min-height: 260px;
   margin: 0;
 }
@@ -2504,79 +2597,82 @@ body.has-dock .app {
   text-align: center;
 }
 
-/* 01 / NAMING — two separated sides close around one shared centre. */
-.pattern-animation-stage[data-station="01"].is-playing .pattern-structure-naming {
-  animation: pattern-naming-join var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
-  transform-box: fill-box;
-  transform-origin: center;
+/* Each work begins with the same four fragments, but from an unmistakably
+   different direction. Every route resolves into the exact centre. */
+.pattern-animation-stage[data-station="01"] .fragment-a,
+.pattern-animation-stage[data-station="01"] .fragment-c {
+  --piece-x: -78px;
+  --piece-y: 0px;
+  --piece-rotate: -5deg;
 }
 
-/* 02 / INTERVENTION — a diagonal action enters, alters, then settles. */
-.pattern-animation-stage[data-station="02"].is-playing .pattern-animation-symbol {
-  animation-name: pattern-intervention-symbol;
+.pattern-animation-stage[data-station="01"] .fragment-b,
+.pattern-animation-stage[data-station="01"] .fragment-d {
+  --piece-x: 78px;
+  --piece-y: 0px;
+  --piece-rotate: 5deg;
 }
 
-.pattern-animation-stage[data-station="02"].is-playing .pattern-animation-specimen {
-  animation-name: pattern-intervention-specimen;
+.pattern-animation-stage[data-station="02"] .fragment-a {
+  --piece-x: -66px;
+  --piece-y: -66px;
+  --piece-rotate: -12deg;
 }
 
-.pattern-animation-stage[data-station="02"] .pattern-animation-scan {
-  top: 50%;
-  left: -8%;
-  right: -8%;
-  transform-origin: center;
+.pattern-animation-stage[data-station="02"] .fragment-b {
+  --piece-x: 66px;
+  --piece-y: -66px;
+  --piece-rotate: 12deg;
 }
 
-.pattern-animation-stage[data-station="02"].is-playing .pattern-animation-scan {
-  animation-name: pattern-intervention-scan;
+.pattern-animation-stage[data-station="02"] .fragment-c {
+  --piece-x: -66px;
+  --piece-y: 66px;
+  --piece-rotate: 12deg;
 }
 
-.pattern-animation-stage[data-station="02"].is-playing .pattern-structure-intervention {
-  animation: pattern-intervention-cut var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
-  transform-box: fill-box;
-  transform-origin: center;
+.pattern-animation-stage[data-station="02"] .fragment-d {
+  --piece-x: 66px;
+  --piece-y: 66px;
+  --piece-rotate: -12deg;
 }
 
-/* 03 / WITNESS — the form is found by shifting the angle of view. */
-.pattern-animation-stage[data-station="03"].is-playing .pattern-animation-symbol {
-  animation-name: pattern-witness-symbol;
+.pattern-animation-stage[data-station="03"] .fragment-a,
+.pattern-animation-stage[data-station="03"] .fragment-b {
+  --piece-x: 0px;
+  --piece-y: -82px;
+  --piece-rotate: -4deg;
 }
 
-.pattern-animation-stage[data-station="03"].is-playing .pattern-animation-specimen {
-  animation-name: pattern-witness-specimen;
+.pattern-animation-stage[data-station="03"] .fragment-c,
+.pattern-animation-stage[data-station="03"] .fragment-d {
+  --piece-x: 0px;
+  --piece-y: 82px;
+  --piece-rotate: 4deg;
 }
 
-.pattern-animation-stage[data-station="03"] .pattern-animation-scan {
-  top: 10%;
-  right: auto;
-  left: 12%;
-  width: 1px;
-  height: 80%;
+.pattern-animation-stage[data-station="04"] .fragment-a {
+  --piece-x: 0px;
+  --piece-y: -88px;
+  --piece-rotate: -18deg;
 }
 
-.pattern-animation-stage[data-station="03"].is-playing .pattern-animation-scan {
-  animation-name: pattern-witness-scan;
+.pattern-animation-stage[data-station="04"] .fragment-b {
+  --piece-x: 88px;
+  --piece-y: 0px;
+  --piece-rotate: 18deg;
 }
 
-.pattern-animation-stage[data-station="03"].is-playing .pattern-structure-witness {
-  animation: pattern-witness-orbit var(--pattern-animation-duration) cubic-bezier(.2, .64, .18, 1) both;
-  transform-box: fill-box;
-  transform-origin: center;
+.pattern-animation-stage[data-station="04"] .fragment-c {
+  --piece-x: -88px;
+  --piece-y: 0px;
+  --piece-rotate: 18deg;
 }
 
-/* 04 / RECORD — a scan exposes and fixes the specimen inside a frame. */
-.pattern-animation-stage[data-station="04"].is-playing .pattern-animation-symbol {
-  animation-name: pattern-record-symbol;
-}
-
-.pattern-animation-stage[data-station="04"].is-playing .pattern-animation-specimen {
-  animation-name: pattern-record-specimen;
-}
-
-.pattern-animation-stage[data-station="04"].is-playing .pattern-structure-record {
-  animation: pattern-record-frame var(--pattern-animation-duration) ease-in-out both;
-  transform-box: fill-box;
-  transform-origin: center;
+.pattern-animation-stage[data-station="04"] .fragment-d {
+  --piece-x: 0px;
+  --piece-y: 88px;
+  --piece-rotate: -18deg;
 }
 
 @keyframes pattern-mismatch {
@@ -2590,38 +2686,6 @@ body.has-dock .app {
   0% { opacity: .7; transform: scale(.94); }
   55% { opacity: 1; transform: scale(1.04); }
   100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes pattern-preview-symbol {
-  0% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(.84); }
-  10% { opacity: .52; }
-  24% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(.96); }
-  46% { opacity: .96; transform: translate3d(-50%, -50%, 0) scale(1.04); }
-  66% { opacity: .48; transform: translate3d(-50%, -50%, 0) scale(1.12); }
-  84%, 100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.18); }
-}
-
-@keyframes pattern-preview-specimen {
-  0%, 10% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(.72); }
-  26% { opacity: .14; transform: translate3d(-50%, -50%, 0) scale(.79); }
-  45% { opacity: .48; transform: translate3d(-50%, -50%, 0) scale(.88); }
-  64% { opacity: .84; transform: translate3d(-50%, -50%, 0) scale(.96); }
-  82%, 100% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
-}
-
-@keyframes pattern-preview-colour {
-  0%, 28% { opacity: 0; }
-  48% { opacity: .08; }
-  68% { opacity: .34; }
-  86%, 100% { opacity: .72; }
-}
-
-@keyframes pattern-preview-scan {
-  0%, 34% { opacity: 0; transform: translate3d(0, 0, 0); }
-  44% { opacity: .18; }
-  58% { opacity: .68; }
-  84% { opacity: .54; transform: translate3d(0, var(--pattern-scan-distance), 0); }
-  96%, 100% { opacity: 0; transform: translate3d(0, calc(var(--pattern-scan-distance) + 24px), 0); }
 }
 
 @keyframes pattern-preview-dot {
@@ -2641,91 +2705,145 @@ body.has-dock .app {
   64%, 100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
-@keyframes pattern-naming-join {
-  0% { opacity: 0; transform: scaleX(1.48); }
-  18% { opacity: .54; }
-  44% { opacity: .92; transform: scaleX(1.14); }
-  66%, 100% { opacity: .72; transform: scaleX(1); }
+@keyframes pattern-preview-symbol-v4 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(.88);
+  }
+  7% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+  19% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1.04);
+  }
+  29% {
+    opacity: .22;
+    transform: translate3d(-50%, -50%, 0) scale(1.08);
+  }
+  34%, 100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.1);
+  }
 }
 
-@keyframes pattern-intervention-symbol {
-  0% { opacity: 0; transform: translate3d(-58%, -42%, 0) scale(.78) rotate(-7deg); }
-  18% { opacity: .58; }
-  42% { opacity: 1; transform: translate3d(-51%, -49%, 0) scale(1.02) rotate(0); }
-  62% { opacity: .7; transform: translate3d(-48%, -52%, 0) scale(1.1) rotate(2deg); }
-  84%, 100% { opacity: 0; transform: translate3d(-46%, -54%, 0) scale(1.18) rotate(3deg); }
+@keyframes pattern-fragments-merge-v4 {
+  0%, 13% {
+    opacity: 0;
+    transform: translate3d(
+      calc(-50% + var(--piece-x)),
+      calc(-50% + var(--piece-y)),
+      0
+    ) rotate(var(--piece-rotate)) scale(1.08);
+  }
+  22% {
+    opacity: 1;
+    transform: translate3d(
+      calc(-50% + var(--piece-x)),
+      calc(-50% + var(--piece-y)),
+      0
+    ) rotate(var(--piece-rotate)) scale(1.08);
+  }
+  52% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1);
+  }
+  61% {
+    opacity: .95;
+    transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(.98);
+  }
+  73% {
+    opacity: .18;
+    transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1.03);
+  }
+  79%, 100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1.05);
+  }
 }
 
-@keyframes pattern-intervention-specimen {
-  0%, 10% { opacity: 0; transform: translate3d(-43%, -58%, 0) scale(.7) rotate(4deg); }
-  34% { opacity: .32; transform: translate3d(-52%, -48%, 0) scale(.84) rotate(-2deg); }
-  58% { opacity: .76; transform: translate3d(-49%, -51%, 0) scale(.95) rotate(.7deg); }
-  82%, 100% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1) rotate(0); }
+@keyframes pattern-preview-specimen-v4 {
+  0%, 31% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(.78);
+  }
+  49% {
+    opacity: .12;
+    transform: translate3d(-50%, -50%, 0) scale(.86);
+  }
+  63% {
+    opacity: .64;
+    transform: translate3d(-50%, -50%, 0) scale(.95);
+  }
+  80%, 100% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
 }
 
-@keyframes pattern-intervention-cut {
-  0%, 12% { opacity: 0; stroke-dasharray: 1 180; stroke-dashoffset: 180; transform: scale(.86); }
-  42% { opacity: 1; stroke-dasharray: 180 1; stroke-dashoffset: 0; transform: scale(1.03); }
-  68%, 100% { opacity: .72; stroke-dasharray: 180 1; stroke-dashoffset: 0; transform: scale(1); }
+@keyframes pattern-preview-colour-v4 {
+  0%, 49% { opacity: 0; }
+  63% { opacity: .16; }
+  80% { opacity: .56; }
+  92%, 100% { opacity: .76; }
 }
 
-@keyframes pattern-intervention-scan {
-  0%, 30% { opacity: 0; transform: translate3d(-36px, -54px, 0) rotate(-43deg); }
-  44% { opacity: .2; }
-  62% { opacity: .76; }
-  86% { opacity: .48; transform: translate3d(38px, 58px, 0) rotate(-43deg); }
-  96%, 100% { opacity: 0; transform: translate3d(50px, 74px, 0) rotate(-43deg); }
+@keyframes pattern-preview-scan-v4 {
+  0%, 38% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  45% {
+    opacity: .82;
+    transform: translate3d(0, 0, 0);
+  }
+  79% {
+    opacity: .64;
+    transform: translate3d(0, var(--pattern-scan-distance), 0);
+  }
+  88%, 100% {
+    opacity: 0;
+    transform: translate3d(0, calc(var(--pattern-scan-distance) + 16px), 0);
+  }
 }
 
-@keyframes pattern-witness-symbol {
-  0% { opacity: 0; transform: translate3d(-61%, -50%, 0) scale(.78) scaleX(.42) rotate(-18deg); }
-  20% { opacity: .56; }
-  46% { opacity: 1; transform: translate3d(-53%, -50%, 0) scale(.98) scaleX(.74) rotate(-7deg); }
-  66% { opacity: .68; transform: translate3d(-49%, -50%, 0) scale(1.08) scaleX(1) rotate(0); }
-  86%, 100% { opacity: 0; transform: translate3d(-46%, -50%, 0) scale(1.16) scaleX(1) rotate(3deg); }
+@keyframes pattern-merge-ring-v4 {
+  0%, 45% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(.18);
+  }
+  53% {
+    opacity: .9;
+    transform: translate3d(-50%, -50%, 0) scale(.26);
+  }
+  68% {
+    opacity: .38;
+    transform: translate3d(-50%, -50%, 0) scale(1.12);
+  }
+  79%, 100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.48);
+  }
 }
 
-@keyframes pattern-witness-specimen {
-  0%, 14% { opacity: 0; transform: translate3d(-58%, -50%, 0) scale(.76) scaleX(.5); }
-  38% { opacity: .28; transform: translate3d(-54%, -50%, 0) scale(.86) scaleX(.68); }
-  62% { opacity: .74; transform: translate3d(-51%, -50%, 0) scale(.96) scaleX(.9); }
-  84%, 100% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1) scaleX(1); }
-}
-
-@keyframes pattern-witness-orbit {
-  0% { opacity: 0; transform: rotate(-72deg) scale(.84); }
-  26% { opacity: .48; }
-  64% { opacity: .9; transform: rotate(-12deg) scale(1.02); }
-  100% { opacity: .72; transform: rotate(0) scale(1); }
-}
-
-@keyframes pattern-witness-scan {
-  0%, 30% { opacity: 0; transform: translate3d(0, 0, 0); }
-  43% { opacity: .18; }
-  58% { opacity: .7; }
-  84% { opacity: .5; transform: translate3d(var(--pattern-scan-distance), 0, 0); }
-  96%, 100% { opacity: 0; transform: translate3d(calc(var(--pattern-scan-distance) + 24px), 0, 0); }
-}
-
-@keyframes pattern-record-symbol {
-  0% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.16); }
-  18% { opacity: .42; }
-  42% { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(.98); }
-  66% { opacity: .5; transform: translate3d(-50%, -50%, 0) scale(1); }
-  82%, 100% { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(1.02); }
-}
-
-@keyframes pattern-record-specimen {
-  0%, 18% { opacity: 0; clip-path: inset(0 0 100% 0); transform: translate3d(-50%, -50%, 0) scale(.96); }
-  42% { opacity: .48; clip-path: inset(0 0 62% 0); }
-  68% { opacity: .88; clip-path: inset(0 0 16% 0); }
-  84%, 100% { opacity: 1; clip-path: inset(0); transform: translate3d(-50%, -50%, 0) scale(1); }
-}
-
-@keyframes pattern-record-frame {
-  0% { opacity: 0; stroke-dasharray: 2 140; stroke-dashoffset: 140; transform: scale(1.18); }
-  40% { opacity: .9; stroke-dasharray: 140 2; stroke-dashoffset: 0; transform: scale(1); }
-  72%, 100% { opacity: .72; stroke-dasharray: 140 2; stroke-dashoffset: 0; transform: scale(1); }
+@keyframes pattern-merge-core-v4 {
+  0%, 44% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(.2);
+  }
+  51% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1.4);
+  }
+  62% {
+    opacity: .88;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+  78%, 100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(.7);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2736,6 +2854,9 @@ body.has-dock .app {
 
   .pattern-animation-stage.is-playing .pattern-animation-symbol,
   .pattern-animation-stage.is-playing .pattern-animation-scan,
+  .pattern-animation-stage.is-playing .pattern-motion-fragment,
+  .pattern-animation-stage.is-playing .pattern-motion-merge-ring,
+  .pattern-animation-stage.is-playing .pattern-motion-merge-core,
   .pattern-animation-stage.is-playing .pattern-animation-copy .step-a {
     display: none;
     animation: none !important;

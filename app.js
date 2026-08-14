@@ -191,6 +191,9 @@ let remoteTraceCache = {
 };
 
 let capturePollTimer = null;
+let capturePollFocusHandler = null;
+let capturePollVisibilityHandler = null;
+let capturePollGeneration = 0;
 const captureUrlCache = new Map();
 
 // 전시 작동에 필요한 데이터만 즉시 보낸다. 나머지는 analytics buffer에
@@ -286,9 +289,19 @@ function render(nodes, actions = []) {
 }
 
 function stopCapturePolling() {
-  if (!capturePollTimer) return;
-  clearTimeout(capturePollTimer);
-  capturePollTimer = null;
+  capturePollGeneration += 1;
+  if (capturePollTimer) {
+    clearTimeout(capturePollTimer);
+    capturePollTimer = null;
+  }
+  if (capturePollFocusHandler) {
+    window.removeEventListener('focus', capturePollFocusHandler);
+    capturePollFocusHandler = null;
+  }
+  if (capturePollVisibilityHandler) {
+    document.removeEventListener('visibilitychange', capturePollVisibilityHandler);
+    capturePollVisibilityHandler = null;
+  }
 }
 
 function siteFooter() {
@@ -1835,6 +1848,26 @@ const PATTERN_ANIMATION_MOTION = {
   '04': { code: 'SCAN / RECORD', finalKo: '당신의 장미를 기록에 남깁니다', finalEn: 'INSCRIBING YOUR ROSE INTO RECORD' },
 };
 
+function patternAnimationMotionLayer(stationId) {
+  const motionClass = {
+    '01': 'motion-naming',
+    '02': 'motion-intervention',
+    '03': 'motion-witness',
+    '04': 'motion-record',
+  }[stationId] || 'motion-naming';
+  return el('div', {
+    class: `pattern-motion-layer ${motionClass}`,
+    'aria-hidden': 'true',
+  },
+    ...['a', 'b', 'c', 'd'].map((piece) => el('i', {
+      class: `pattern-motion-fragment fragment-${piece}`,
+      html: rosePatternSvg(stationId),
+    })),
+    el('i', { class: 'pattern-motion-merge-ring' }),
+    el('i', { class: 'pattern-motion-merge-core' }),
+  );
+}
+
 function patternAnimationStage(stationId, { compact = false } = {}) {
   const module = MODULES[stationId];
   const motion = PATTERN_ANIMATION_MOTION[stationId];
@@ -1848,6 +1881,7 @@ function patternAnimationStage(stationId, { compact = false } = {}) {
     el('div', { class: 'pattern-animation-field', 'aria-hidden': 'true' },
       el('span', { class: 'pattern-animation-guide guide-a' }),
       el('span', { class: 'pattern-animation-guide guide-b' }),
+      patternAnimationMotionLayer(stationId),
       el('div', { class: 'pattern-animation-symbol', html: rosePatternSvg(stationId) }),
       el('div', { class: 'pattern-animation-specimen' },
         roseSpecimenImage('', 'pattern-animation-specimen-image', compact
@@ -1941,7 +1975,7 @@ function screenPatternAnimationPreview(stationId = 'all') {
           el('span', {}, 'META ROSE'),
           el('span', {}, '2026'),
         ),
-        el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V2'),
+        el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V4'),
       ),
       el('section', { class: 'screen pattern-animation-preview pattern-animation-comparison' },
         el('span', { class: 'micro-label' }, 'FOUR ENTRY TRANSITIONS / PREVIEW'),
@@ -1974,7 +2008,7 @@ function screenPatternAnimationPreview(stationId = 'all') {
         el('span', {}, 'META ROSE'),
         el('span', {}, '2026'),
       ),
-      el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V2'),
+      el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V4'),
     ),
     el('section', { class: 'screen pattern-animation-preview' },
       el('span', { class: 'micro-label' }, 'ENTRY TRANSITION / PREVIEW'),
@@ -2147,7 +2181,8 @@ function moduleHero(stationId, module) {
 function captureResultPanel(stationId) {
   if (!['01', '02', '03'].includes(stationId)) return null;
   const isSub1 = stationId === '02';
-  const autoPollsCapture = ['01', '02'].includes(stationId);
+  const isSub2 = stationId === '03';
+  const autoPollsCapture = ['01', '02', '03'].includes(stationId);
   return el('section', {
     class: 'module-capture-panel',
     id: `module-capture-${stationId}`,
@@ -2165,7 +2200,14 @@ function captureResultPanel(stationId) {
             : '이 작품에서 남긴 장면이 이곳에 나타납니다.',
           'The moment you leave in this work will appear here.',
         )),
-        autoPollsCapture ? el('small', {}, tr('연결 중에는 새 장면을 자동으로 확인합니다.', 'New captures are checked automatically while connected.')) : null,
+        autoPollsCapture ? el('small', {}, tr(
+          isSub2
+            ? '이 페이지에서는 새 장면을 자동으로 확인합니다.'
+            : '연결 중에는 새 장면을 자동으로 확인합니다.',
+          isSub2
+            ? 'New captures are checked automatically while this page is open.'
+            : 'New captures are checked automatically while connected.',
+        )) : null,
       ),
     ),
   );
@@ -2190,7 +2232,27 @@ async function captureDisplayUrl(artifact) {
 async function refreshCaptureResultPanel(stationId) {
   const panel = document.getElementById(`module-capture-${stationId}`);
   if (!panel || !panel.isConnected) return false;
-  const artifacts = await fetchMyCaptureArtifacts(stationId);
+  const normalizedStationId = String(stationId).padStart(2, '0');
+  const fetchedArtifacts = await fetchMyCaptureArtifacts(normalizedStationId);
+  // SUB2 may finish its private Storage upload just after station presence
+  // closes. Keep every capture belonging to the persistent phone session,
+  // remove duplicate rows/paths, and retain chronological carousel order.
+  // Existing MAIN1/SUB1 ordering is intentionally left unchanged.
+  const artifacts = normalizedStationId === '03'
+    ? fetchedArtifacts
+      .filter((artifact, index, list) => {
+        const id = artifact?.id == null ? null : String(artifact.id);
+        const path = captureStoragePath(artifact);
+        return !list.slice(0, index).some((previous) => (
+          (id && previous?.id != null && String(previous.id) === id)
+          || (path && captureStoragePath(previous) === path)
+        ));
+      })
+      .sort((a, b) => (
+        new Date(a.occurred_at || a.created_at || 0)
+        - new Date(b.occurred_at || b.created_at || 0)
+      ))
+    : fetchedArtifacts;
   if (!panel.isConnected || !artifacts.length) return false;
 
   const resolved = (await Promise.all(artifacts.map(async (artifact) => ({
@@ -2238,20 +2300,57 @@ async function refreshCaptureResultPanel(stationId) {
 }
 
 function startModuleCapturePolling(stationId, connected) {
-  if (!['01', '02', '03'].includes(stationId)) return;
+  const normalizedStationId = String(stationId).padStart(2, '0');
+  if (!['01', '02', '03'].includes(normalizedStationId)) return;
   stopCapturePolling();
+  const generation = capturePollGeneration;
+  const persistentResultPolling = normalizedStationId === '03';
+  const repeatsWhileConnected = ['01', '02'].includes(normalizedStationId) && connected;
+  let inFlight = false;
+
+  const isCurrentCaptureView = () => (
+    capturePollGeneration === generation
+    && currentView.name === 'module'
+    && String(currentView.data.stationId).padStart(2, '0') === normalizedStationId
+  );
+
+  const schedule = (delay) => {
+    if (!isCurrentCaptureView()) return;
+    if (capturePollTimer) clearTimeout(capturePollTimer);
+    capturePollTimer = setTimeout(() => { void poll(); }, delay);
+  };
+
   const poll = async () => {
-    if (currentView.name !== 'module' || currentView.data.stationId !== stationId) return;
-    await refreshCaptureResultPanel(stationId);
-    // 캡처 adapter가 연결된 MAIN1·SUB1은 같은 계약으로 반복 확인한다.
-    if (['01', '02'].includes(stationId)
-        && connected
-        && currentView.name === 'module'
-        && currentView.data.stationId === stationId) {
-      capturePollTimer = setTimeout(poll, 4000);
+    if (!isCurrentCaptureView()) return;
+    if (inFlight) {
+      schedule(350);
+      return;
+    }
+    inFlight = true;
+    try {
+      await refreshCaptureResultPanel(normalizedStationId);
+    } catch (error) {
+      console.warn(`[capture] station ${normalizedStationId} refresh failed`, error);
+    } finally {
+      inFlight = false;
+    }
+    if (isCurrentCaptureView() && (persistentResultPolling || repeatsWhileConnected)) {
+      schedule(4000);
     }
   };
-  capturePollTimer = setTimeout(poll, 0);
+
+  if (persistentResultPolling) {
+    capturePollFocusHandler = () => {
+      if (document.visibilityState === 'visible') schedule(0);
+    };
+    capturePollVisibilityHandler = () => {
+      if (document.visibilityState === 'visible') schedule(0);
+    };
+    window.addEventListener('focus', capturePollFocusHandler);
+    document.addEventListener('visibilitychange', capturePollVisibilityHandler);
+  }
+
+  schedule(0);
 }
 
 async function leaveStation(stationId) {
