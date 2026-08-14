@@ -2431,33 +2431,6 @@ body.has-dock .app {
   box-shadow: 0 0 15px var(--session);
 }
 
-.pattern-animation-dot {
-  position: absolute;
-  z-index: 6;
-  display: block;
-  width: 5px;
-  height: 5px;
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  background: #09090a;
-  opacity: .55;
-}
-
-.pattern-animation-dot.dot-a {
-  top: 24%;
-  left: 12%;
-}
-
-.pattern-animation-dot.dot-b {
-  top: 67%;
-  right: 8%;
-}
-
-.pattern-animation-dot.dot-c {
-  right: 24%;
-  bottom: 10%;
-}
-
 .pattern-animation-copy {
   position: absolute;
   right: 22px;
@@ -2506,10 +2479,6 @@ body.has-dock .app {
 
 .pattern-animation-stage.is-playing .pattern-motion-merge-core {
   animation: pattern-merge-core-v5 var(--pattern-animation-duration) ease-out both;
-}
-
-.pattern-animation-stage.is-playing .pattern-animation-dot {
-  animation: pattern-preview-dot var(--pattern-animation-duration) ease-in-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-copy .step-a {
@@ -2730,12 +2699,6 @@ body.has-dock .app {
   100% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes pattern-preview-dot {
-  0%, 54% { border-color: #ffffff; background: #09090a; opacity: .45; }
-  72% { border-color: var(--session); background: var(--session); opacity: 1; }
-  100% { border-color: var(--session); background: var(--session); opacity: .72; }
-}
-
 @keyframes pattern-preview-copy-a {
   0% { opacity: 0; transform: translate3d(0, 4px, 0); }
   14%, 40% { opacity: 1; transform: translate3d(0, 0, 0); }
@@ -2920,13 +2883,6 @@ body.has-dock .app {
   }
 
   .pattern-animation-stage.is-playing .pattern-animation-tint {
-    opacity: .72;
-    animation: none !important;
-  }
-
-  .pattern-animation-stage.is-playing .pattern-animation-dot {
-    border-color: var(--session);
-    background: var(--session);
     opacity: .72;
     animation: none !important;
   }

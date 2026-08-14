@@ -1890,9 +1890,6 @@ function patternAnimationStage(stationId, { compact = false } = {}) {
         el('i', { class: 'pattern-animation-tint' }),
         el('i', { class: 'pattern-animation-scan' }),
       ),
-      el('span', { class: 'pattern-animation-dot dot-a' }),
-      el('span', { class: 'pattern-animation-dot dot-b' }),
-      el('span', { class: 'pattern-animation-dot dot-c' }),
     ),
     el('div', { class: 'pattern-animation-copy', 'aria-live': 'polite' },
       el('span', { class: 'pattern-animation-copy-step step-a' }, tr(
