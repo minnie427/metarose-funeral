@@ -205,38 +205,37 @@ body.has-dock .app {
   width: 42px;
   height: 42px;
   place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  transition: border-color 180ms ease, transform 180ms ease;
+  border: 0;
+  border-radius: 0;
+  transition: transform 180ms ease, opacity 180ms ease;
 }
 
 .rose-menu-button:active {
   transform: scale(0.95);
-  border-color: var(--line-strong);
+  opacity: .72;
 }
 
 .rose-mark {
   position: relative;
   display: inline-block;
-  width: 22px;
-  height: 22px;
+  width: 40px;
+  height: 40px;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: #050505;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .rose-mark-image {
+  position: absolute;
+  top: 0;
+  left: 50%;
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 190%;
+  max-width: none;
+  height: auto;
   filter: grayscale(1) contrast(1.18) brightness(.84);
-}
-
-.rose-mark .rose-mark-tint {
-  inset: 0;
-  opacity: .82;
+  transform: translateX(-50%);
 }
 
 /* Legacy vector parts remain as a harmless fallback when the PNG cannot load. */
@@ -275,7 +274,7 @@ body.has-dock .app {
 
 .menu-rose {
   color: var(--session);
-  transform: scale(0.72);
+  transform: none;
 }
 
 .screen {
@@ -540,6 +539,16 @@ body.has-dock .app {
   -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
   mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
   pointer-events: none;
+}
+
+/* 메뉴에서는 줄기 대신 꽃머리만 이미지와 같은 비율로 확대해 착색한다. */
+.rose-mark .rose-mark-tint {
+  inset: 0;
+  opacity: .82;
+  -webkit-mask-position: center top;
+  mask-position: center top;
+  -webkit-mask-size: 190% auto;
+  mask-size: 190% auto;
 }
 
 .scanline,
@@ -2526,8 +2535,9 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-live-entry .pattern-animation-field {
-  top: 64px;
+  top: 50%;
   width: min(78vw, 340px);
+  transform: translate(-50%, -50%);
 }
 
 @keyframes pattern-live-overlay-in {
