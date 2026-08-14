@@ -25,6 +25,7 @@ const LS = {
 const STATION_TAG_DEDUPE_MS = 15 * 1000;
 const STATION_LEASE_SECONDS = 5 * 60;
 const STATION_LEASE_RENEW_MS = 60 * 1000;
+const STATION_PHONE_IDLE_MS = 5 * 60 * 1000;
 
 let sb = null;               // Supabase client
 let ready = false;
@@ -32,6 +33,7 @@ let online = navigator.onLine;
 let initPromise = null;
 let stationLeaseTimer = null;
 let lastStationEntryStatus = { code: 'idle', stationId: null };
+let lastPhoneActivityAt = Date.now();
 // iOS NFC/QR은 새 Safari 탭을 열 수 있다. Phone Hub의 최신 탭 하나만
 // DB 기록·전송을 수행하게 app.js의 cross-tab guard가 이 값을 제어한다.
 let runtimeActive = true;
@@ -50,6 +52,14 @@ export const isRuntimeActive = () => runtimeActive;
 
 export function getLastStationEntryStatus() {
   return { ...lastStationEntryStatus };
+}
+
+// A station has no total duration limit. Its five-minute lease is renewed only
+// while the visitor is still using the Phone Hub. Pointer, key, input and
+// scroll activity call this lightweight in-memory marker from app.js.
+export function notePhoneActivity(at = Date.now()) {
+  lastPhoneActivityAt = Number.isFinite(Number(at)) ? Number(at) : Date.now();
+  return lastPhoneActivityAt;
 }
 
 function setStationEntryStatus(code, stationId = null, detail = {}) {
@@ -836,6 +846,8 @@ async function renewActiveStationLease() {
   const leaseExpiryMs = Date.parse(state.stationLeaseExpiresAt || '');
   const hasExclusiveState = state.stationControl === 'exclusive'
     && state.station && state.presenceId;
+  const inactiveForMs = Date.now() - lastPhoneActivityAt;
+
   if (hasExclusiveState
       && Number.isFinite(leaseExpiryMs)
       && Date.now() >= leaseExpiryMs) {
@@ -843,6 +855,26 @@ async function renewActiveStationLease() {
       clearStationState();
       window.dispatchEvent(new CustomEvent('fringe:station-lease-lost', {
         detail: { station: state.station, clientRef: state.presenceId },
+      }));
+    }
+    return false;
+  }
+  // Total journey time is unlimited, but an unattended station must become
+  // available. Release immediately after five minutes without phone input.
+  // If the network is unavailable, do not renew; the existing server lease
+  // expires fail-safe and local truth is reconciled on visibility/reconnect.
+  if (hasExclusiveState && inactiveForMs >= STATION_PHONE_IDLE_MS) {
+    const released = await directReleaseExclusiveStation(
+      state.station, session?.id, state.presenceId,
+    );
+    if (released && getState().presenceId === state.presenceId) {
+      clearStationState();
+      window.dispatchEvent(new CustomEvent('fringe:station-lease-lost', {
+        detail: {
+          station: state.station,
+          clientRef: state.presenceId,
+          reason: 'phone_idle',
+        },
       }));
     }
     return false;

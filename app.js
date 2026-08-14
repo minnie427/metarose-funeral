@@ -22,7 +22,8 @@ import {
   confirmSessionControlFields,
   getState as getDbState,
   getLastStationEntryStatus,
-} from './db.js?v=lease-visibility-v1-20260814';
+  notePhoneActivity,
+} from './db.js?v=unlimited-session-v1-20260814';
 import {
   beginRead,
   endRead,
@@ -204,8 +205,20 @@ const LIVE_EVENT_TYPES = new Set([
 function startUiActionTracking() {
   if (uiTrackingStarted) return;
   uiTrackingStarted = true;
+  const markPhoneActivity = () => {
+    if (tabRuntimeActive) notePhoneActivity();
+  };
+  notePhoneActivity();
+  document.addEventListener('pointerdown', markPhoneActivity, { capture: true, passive: true });
+  document.addEventListener('keydown', markPhoneActivity, { capture: true });
+  document.addEventListener('input', markPhoneActivity, { capture: true });
+  window.addEventListener('scroll', markPhoneActivity, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') markPhoneActivity();
+  });
   document.addEventListener('click', (event) => {
     if (!tabRuntimeActive) return;
+    notePhoneActivity();
     const control = event.target.closest('button, summary, a');
     if (!control || control.closest('#debug')) return;
     const label = String(control.getAttribute('aria-label') || control.textContent || '')
@@ -777,6 +790,45 @@ function resetCurrentBrowserSession() {
   screenArrival();
 }
 
+// 00 is a lifecycle boundary, not a fifth station. The first read starts a
+// session; a repeat read during an active journey keeps the same rose number
+// but releases the current work; a read after Final starts a new rose.
+async function handleEntranceRoute() {
+  const session = ensureSession();
+  if (!session.intro_seen || !isRegistered(session)) {
+    session.intro_seen ? screenPersonalSetup() : screenArrival();
+    return;
+  }
+
+  const remoteSessionEnded = !session.local_only
+    && session.consent
+    && !activeDbSessionMatches(session.id);
+  if (session.finalization_completed || remoteSessionEnded) {
+    resetCurrentBrowserSession();
+    return;
+  }
+
+  if (session.connected_station) {
+    const previousStation = session.connected_station;
+    const closed = await leaveDbStation(previousStation);
+    if (!ownsActiveTab(session.id)) return;
+    if (closed) {
+      updateSession({ connected_station: null });
+      window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
+      logEvent('station_leave', { reason: 'entrance_return' }, previousStation);
+      flushAnalyticsEvents('entrance_return');
+    } else {
+      alert(tr(
+        '현재 작품 연결 종료를 확인하지 못했습니다. 연결은 마지막 휴대전화 조작 후 5분 안에 자동으로 끝납니다.',
+        'The current station could not be closed. It will expire within five minutes of the last phone action.',
+      ));
+    }
+  }
+
+  updateSession({ pending_station: null, pending_station_via: null });
+  screenHome();
+}
+
 function testPreview(label, action) {
   return el('button', {
     class: 'test-preview-button',
@@ -962,7 +1014,7 @@ function screenArrival() {
         )),
       ),
       el('p', { class: 'intro-copy phone-role-copy' }, tr(
-        '이 휴대폰은 당신이 고른 장미와 지은 이름, 각 작품에서 남긴 장면을 한곳에 모읍니다. 전시장 곳곳의 장미에 휴대폰을 대면, 당신이 지나온 과정이 당신의 장미에 차례로 남습니다.',
+        '이 휴대폰은 당신이 고른 장미와 지은 이름, 각 작품에서 남긴 장면을 한곳에 모읍니다. 입구에서는 NFC로 Phone Hub를 열고, 각 작품 앞에서는 안내판과 같은 장미 패턴을 선택하면 지나온 과정이 당신의 장미에 차례로 남습니다.',
         'This phone gathers your rose, the name you make, and the moments you leave in each work.',
       )),
       disclosure(
@@ -1618,7 +1670,7 @@ function screenAboutProject(initialSection = null) {
         title: '당신의 장미와 Phone Hub',
         lead: '휴대폰은 작품의 실시간 화면을 복제하지 않고, 흩어진 선택을 한 장미 아래 이어주는 얇은 실입니다.',
         body: [
-          '입장에서 고른 색, 01에서 지은 이름, 각 작품에서 직접 남긴 장면이 하나의 장미 번호에 연결됩니다. 작품 앞의 조화 장미에 휴대폰을 대는 행동은 디지털 기록을 시작하는 동시에 전시장 전체에 흩어진 정원을 이어줍니다.',
+          '입장에서 고른 색, 01에서 지은 이름, 각 작품에서 직접 남긴 장면이 하나의 장미 번호에 연결됩니다. 입구의 NFC로 장미 번호를 시작하고 작품 앞의 패턴을 고르는 행동은, 디지털 기록을 시작하는 동시에 전시장 전체에 흩어진 정원을 이어줍니다.',
           'Phone Hub는 관객을 분석한 점수나 성격 유형을 보여주지 않습니다. 중간의 현재 표본도 완성된 해석이 아니라 지금까지의 흔적입니다. 변화는 숫자가 아니라 장미의 모양과 남겨진 장면으로만 보입니다.',
         ],
         deeper: [
@@ -1710,8 +1762,8 @@ const MODULES = {
     essentialEn: 'Look slowly through the scenes and specimen records left behind.',
     helpKo: '정해진 시작과 끝 없이 제작의 장면 사이에 머뭅니다.',
     helpEn: 'Put on the headphones and watch from any point for as long as you wish. Touch your phone to the rose to connect this stay.',
-    helpDetailKo: ['준비된 티슈로 헤드폰을 닦습니다.', '헤드폰을 쓰고 편한 자리에서 영상을 봅니다.', '원하는 장면만 보거나 오래 머물러도 됩니다.', '관람을 마친 뒤 헤드폰을 다시 닦아 제자리에 둡니다.', '휴대폰을 연결하지 않아도 영상을 볼 수 있습니다. 장미에 휴대폰을 대면 머문 시간이 당신의 장미 번호에 남습니다.'],
-    helpDetailEn: ['Put on the headphones and sit or stand where you can watch comfortably. Please use the supplied tissue before and after use.', 'The film has no fixed beginning or ending. You may enter at any scene and leave at any time.', 'To connect this visit to your rose number, hold your phone to the rose on the sign or scan the QR. The film can also be watched without connecting your phone.'],
+    helpDetailKo: ['준비된 티슈로 헤드폰을 닦습니다.', '헤드폰을 쓰고 편한 자리에서 영상을 봅니다.', '원하는 장면만 보거나 오래 머물러도 됩니다.', '관람을 마친 뒤 헤드폰을 다시 닦아 제자리에 둡니다.', '휴대폰을 연결하지 않아도 영상을 볼 수 있습니다. 안내판과 같은 장미 패턴을 선택하면 머문 시간이 당신의 장미 번호에 남습니다.'],
+    helpDetailEn: ['Put on the headphones and sit or stand where you can watch comfortably. Please use the supplied tissue before and after use.', 'The film has no fixed beginning or ending. You may enter at any scene and leave at any time.', 'To connect this visit to your rose number, select the rose pattern that matches the sign. The film can also be watched without connecting your phone.'],
     troubleshootKo: ['소리가 들리지 않으면 헤드폰이 끝까지 연결되어 있는지 확인해주세요. 음량은 준비된 조절 장치에서 천천히 올려주세요.', '영상에는 정해진 시작 화면이 없습니다. 중간 장면처럼 보여도 정상입니다.', '계속 소리가 들리지 않으면 스태프에게 말씀해주세요.'],
     aboutKo: '완성된 작품 뒤에서 사라지는 손과 제작의 시간을 남긴 영상입니다. 장미, 해골, 전선과 센서가 하나의 몸이 되는 동안의 절단과 연결, 실패와 반복을 기록했습니다. 완성된 표면뿐 아니라 그 표면을 만들고 사라진 시간도 이 장례의 일부입니다.',
     aboutEn: 'ARCHIVE is not a fourth distortion axis. It is the documentary frame around the other traces.',
@@ -1963,8 +2015,8 @@ function patternEntryFeedback(stationId, entryStatus = null) {
   }
   if (entryStatus.code === 'setup_required') {
     return tr(
-      '패턴 연결 준비가 아직 완료되지 않았습니다. 안내판의 NFC 또는 QR을 이용해주세요.',
-      'PATTERN ENTRY IS NOT READY YET. PLEASE USE THE NFC OR QR ON THE SIGN.',
+      '패턴 연결 준비가 아직 완료되지 않았습니다. 안내판의 QR을 이용해주세요.',
+      'PATTERN ENTRY IS NOT READY YET. PLEASE USE THE QR ON THE SIGN.',
     );
   }
   if (entryStatus.code === 'lease_lost') {
@@ -2065,8 +2117,8 @@ function patternEntryPanel(stationId, entryStatus = null) {
     ),
     feedback,
     el('p', { class: 'pattern-entry-fallback' }, tr(
-      '연결이 어려우면 안내판의 NFC 또는 QR을 이용해주세요.',
-      'IF CONNECTION IS DIFFICULT, USE THE NFC OR QR ON THE SIGN.',
+      '연결이 어려우면 안내판의 QR을 이용해주세요.',
+      'IF CONNECTION IS DIFFICULT, USE THE QR ON THE SIGN.',
     )),
   );
   return panel;
@@ -2945,7 +2997,7 @@ function renderCurrentView() {
   else screenHome();
 }
 
-function boot() {
+async function boot() {
   const bootParams = new URLSearchParams(location.search);
   const patternPreview = bootParams.get('preview');
   const patternAnimationPreviewMatch = bootParams.get('test') === '1'
@@ -2976,7 +3028,7 @@ function boot() {
     history.replaceState({}, '', cleanUrl);
   }
   // SDK 로드·네트워크 실패는 이 흐름을 막지 않는다. db.js가 local queue로 폴백한다.
-  void initDB();
+  const dbReady = initDB();
   startIdleTracking();
   startUiActionTracking();
   const session = ensureSession();
@@ -2994,6 +3046,11 @@ function boot() {
 
   const station = stationFromQuery();
   const stationVia = stationViaFromQuery();
+  if (station === '00') {
+    await dbReady;
+    await handleEntranceRoute();
+    return;
+  }
   if (station === '05') {
     if (!session.intro_seen || !isRegistered(session)) {
       updateSession({ pending_station: station, pending_station_via: stationVia });
