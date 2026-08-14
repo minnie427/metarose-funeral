@@ -21,6 +21,7 @@ import {
   activeSessionMatches as activeDbSessionMatches,
   confirmSessionControlFields,
   getState as getDbState,
+  getLastStationEntryStatus,
 } from './db.js';
 import {
   beginRead,
@@ -160,6 +161,21 @@ function initializeActiveTabGuard({ forceClaim = false } = {}) {
   if (forceClaim || taggedEntry || !lease?.id || lease.id === TAB_INSTANCE_ID) claimActiveTab();
   else setTabRuntimeActive(false);
 }
+
+window.addEventListener('fringe:station-lease-lost', (event) => {
+  const stationId = event.detail?.station || null;
+  const session = getSession();
+  if (!stationId || session?.connected_station !== stationId) return;
+  updateSession({ connected_station: null });
+  window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
+  if (currentView.name === 'module' && currentView.data.stationId === stationId) {
+    void screenModule(stationId, {
+      enter: false,
+      via: 'lease_lost',
+      entryStatus: { code: 'lease_lost', stationId },
+    });
+  }
+});
 
 // Phone Hub은 TD의 raw interaction을 읽거나 실시간으로 구독하지 않는다.
 // 각 TD가 결과 확정 시 기록한 trace_summary만, MY SPECIMEN / FINAL을
@@ -771,11 +787,15 @@ function testPreviewPanel({ home = false } = {}) {
     el('span', { class: 'micro-label' }, 'TEST MODE / PREVIEW'),
     home ? el('h2', {}, tr('개발용 화면', 'DEVELOPMENT PREVIEW')) : null,
     home ? el('p', {}, tr(
-      '태깅 완료 상태와 출구, 마지막 총정리 화면을 바로 확인합니다.',
-      'Open tagged, exit, and final specimen states directly.',
+      '장미 패턴 선택, 기존 태깅, 출구와 마지막 총정리 화면을 바로 확인합니다.',
+      'Open rose-pattern entry, legacy tagged, exit, and final specimen states directly.',
     )) : null,
     el('div', { class: 'test-preview-grid' },
       testPreview(tr('처음부터 다시 보기', 'RESET TO ARRIVAL'), resetCurrentBrowserSession),
+      testPreview('PATTERN 01', () => { seedTestSession(); screenModule('01', { enter: false, via: 'test_pattern' }); }),
+      testPreview('PATTERN 02', () => { seedTestSession(); screenModule('02', { enter: false, via: 'test_pattern' }); }),
+      testPreview('PATTERN 03', () => { seedTestSession(); screenModule('03', { enter: false, via: 'test_pattern' }); }),
+      testPreview('PATTERN 04', () => { seedTestSession(); screenModule('04', { enter: false, via: 'test_pattern' }); }),
       testPreview('TAGGED 01', () => { seedTestSession(); screenModule('01', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 02', () => { seedTestSession(); screenModule('02', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 03', () => { seedTestSession(); screenModule('03', { enter: true, via: 'test' }); }),
@@ -1692,6 +1712,183 @@ const MODULES = {
   },
 };
 
+const ROSE_PATTERN_IDS = ['01', '02', '03', '04'];
+
+function rosePatternSvg(stationId) {
+  const roseCore = `
+    <g class="pattern-rose-core">
+      <ellipse cx="60" cy="42" rx="10" ry="22" />
+      <ellipse cx="60" cy="42" rx="10" ry="22" transform="rotate(60 60 60)" />
+      <ellipse cx="60" cy="42" rx="10" ry="22" transform="rotate(120 60 60)" />
+      <ellipse cx="60" cy="78" rx="10" ry="22" />
+      <ellipse cx="60" cy="78" rx="10" ry="22" transform="rotate(60 60 60)" />
+      <ellipse cx="60" cy="78" rx="10" ry="22" transform="rotate(120 60 60)" />
+      <circle cx="60" cy="60" r="7" />
+      <circle cx="60" cy="60" r="2.5" class="pattern-solid" />
+    </g>`;
+  const structures = {
+    '01': `
+      <g class="pattern-structure pattern-structure-naming">
+        <path d="M37 19 C19 29 13 46 16 65 C18 80 27 92 40 100" />
+        <path d="M83 19 C101 29 107 46 104 65 C102 80 93 92 80 100" />
+        <path d="M52 13 L52 27 M68 13 L68 27 M52 93 L52 107 M68 93 L68 107" />
+      </g>`,
+    '02': `
+      <g class="pattern-structure pattern-structure-intervention">
+        <path d="M18 99 L102 21" />
+        <path d="M30 88 L25 76 M43 76 L34 72 M76 45 L86 48 M89 33 L95 44" />
+        <circle cx="60" cy="60" r="31" stroke-dasharray="3 7" />
+      </g>`,
+    '03': `
+      <g class="pattern-structure pattern-structure-witness">
+        <ellipse cx="60" cy="60" rx="50" ry="30" transform="rotate(-18 60 60)" />
+        <ellipse cx="60" cy="60" rx="42" ry="48" stroke-dasharray="2 9" />
+        <circle cx="105" cy="43" r="4" class="pattern-solid pattern-orbit-point" />
+      </g>`,
+    '04': `
+      <g class="pattern-structure pattern-structure-record">
+        <path d="M15 39 V15 H39 M81 15 H105 V39 M105 81 V105 H81 M39 105 H15 V81" />
+        <path d="M25 31 H46 M74 31 H95 M25 89 H46 M74 89 H95" stroke-dasharray="2 5" />
+        <path d="M14 60 H106" class="pattern-scan-axis" />
+      </g>`,
+  };
+  return `<svg viewBox="0 0 120 120" role="img" aria-hidden="true" focusable="false">
+    ${roseCore}${structures[stationId] || structures['01']}
+  </svg>`;
+}
+
+function stablePatternOrder(sessionId, stationId) {
+  const seed = `${sessionId || 'local'}:${stationId}`
+    .split('')
+    .reduce((sum, character) => sum + character.charCodeAt(0), 0);
+  const offset = seed % ROSE_PATTERN_IDS.length;
+  const rotated = [
+    ...ROSE_PATTERN_IDS.slice(offset),
+    ...ROSE_PATTERN_IDS.slice(0, offset),
+  ];
+  return seed % 2 ? rotated.reverse() : rotated;
+}
+
+function patternEntryFeedback(stationId, entryStatus = null) {
+  const module = MODULES[stationId];
+  if (!entryStatus || entryStatus.stationId !== stationId) return '';
+  if (entryStatus.code === 'busy') {
+    return tr(
+      `지금 다른 장미가 ${module.ko}과 연결되어 있습니다. 잠시 후 다시 시도해주세요.`,
+      `ANOTHER ROSE IS CONNECTED TO ${module.en}. PLEASE TRY AGAIN SHORTLY.`,
+    );
+  }
+  if (entryStatus.code === 'setup_required') {
+    return tr(
+      '패턴 연결 준비가 아직 완료되지 않았습니다. 안내판의 NFC 또는 QR을 이용해주세요.',
+      'PATTERN ENTRY IS NOT READY YET. PLEASE USE THE NFC OR QR ON THE SIGN.',
+    );
+  }
+  if (entryStatus.code === 'lease_lost') {
+    return tr(
+      '연결 시간이 끝났습니다. 작품 앞에서 장미를 다시 선택해주세요.',
+      'THE CONNECTION HAS ENDED. SELECT THE ROSE AGAIN AT THE WORK.',
+    );
+  }
+  if (['connection_error', 'readback_failed', 'session_unavailable',
+    'previous_close_failed', 'claim_rejected', 'invalid_session',
+    'conflict'].includes(entryStatus.code)) {
+    return tr(
+      '연결을 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 선택해주세요.',
+      'THE CONNECTION COULD NOT BE CONFIRMED. CHECK THE NETWORK AND TRY AGAIN.',
+    );
+  }
+  return '';
+}
+
+async function playPatternSuccessTransition(panel, button, stationId) {
+  // Phase 1 deliberately stays light: the contract and DOM hook are fixed,
+  // while the full Rose Specimen colour-overlay animation can be added here
+  // later without touching station claiming, TD, or the pattern choices.
+  panel.dataset.state = 'matched';
+  panel.dataset.matchedStation = stationId;
+  button.classList.add('is-matched');
+  await new Promise((resolve) => setTimeout(resolve, 260));
+  panel.dataset.state = 'connecting';
+}
+
+function patternEntryPanel(stationId, entryStatus = null) {
+  const module = MODULES[stationId];
+  const session = ensureSession();
+  const feedback = el('p', {
+    class: `pattern-entry-feedback${entryStatus?.code === 'busy' ? ' is-busy' : ''}`,
+    'aria-live': 'polite',
+  }, patternEntryFeedback(stationId, entryStatus));
+  const panel = el('section', {
+    class: 'pattern-entry',
+    'data-station': stationId,
+  },
+    el('span', { class: 'micro-label' }, 'ROSE PATTERN / ENTRY'),
+    el('h2', {}, tr(
+      `${module.ko}의 장미를 선택해주세요`,
+      `SELECT THE ROSE OF ${module.en}`,
+    )),
+    el('p', { class: 'pattern-entry-instruction' }, tr(
+      '작품 앞에서 마주한 장미와 같은 패턴을 선택해주세요.',
+      'SELECT THE PATTERN THAT MATCHES THE ROSE BEFORE YOU.',
+    )),
+    el('div', { class: 'pattern-choice-grid' },
+      ...stablePatternOrder(session.id, stationId).map((patternId, index) => {
+        const button = el('button', {
+          class: 'rose-pattern-button',
+          type: 'button',
+          'data-pattern': patternId,
+          'aria-label': tr(`장미 패턴 ${index + 1}`, `Rose pattern ${index + 1}`),
+          onclick: async () => {
+            if (panel.dataset.state === 'connecting') return;
+            logEvent('station_pattern_selected', {
+              expected_pattern: stationId,
+              selected_pattern: patternId,
+              matched: patternId === stationId,
+            }, stationId);
+            if (patternId !== stationId) {
+              button.classList.remove('is-mismatch');
+              void button.offsetWidth;
+              button.classList.add('is-mismatch');
+              feedback.classList.remove('is-busy');
+              feedback.textContent = tr(
+                `${module.ko}의 장미를 다시 확인해주세요.`,
+                `CHECK THE ROSE OF ${module.en} AGAIN.`,
+              );
+              setTimeout(() => button.classList.remove('is-mismatch'), 520);
+              return;
+            }
+
+            panel.dataset.state = 'connecting';
+            button.classList.add('is-selected');
+            panel.querySelectorAll('.rose-pattern-button').forEach((candidate) => {
+              candidate.disabled = true;
+              if (candidate !== button) candidate.classList.add('is-dimmed');
+            });
+            feedback.classList.remove('is-busy');
+            feedback.textContent = tr(
+              `당신의 장미를 ${module.ko}에 연결하고 있습니다.`,
+              `CONNECTING YOUR ROSE TO ${module.en}.`,
+            );
+            await playPatternSuccessTransition(panel, button, stationId);
+            await screenModule(stationId, { enter: true, via: 'pattern' });
+          },
+        }, el('span', {
+          class: 'rose-pattern-graphic',
+          html: rosePatternSvg(patternId),
+        }));
+        return button;
+      }),
+    ),
+    feedback,
+    el('p', { class: 'pattern-entry-fallback' }, tr(
+      '연결이 어려우면 안내판의 NFC 또는 QR을 이용해주세요.',
+      'IF CONNECTION IS DIFFICULT, USE THE NFC OR QR ON THE SIGN.',
+    )),
+  );
+  return panel;
+}
+
 function moduleHero(stationId, module) {
   const fileName = {
     '01': 'module_01_naming_hero.jpeg',
@@ -1847,6 +2044,7 @@ async function leaveStation(stationId) {
 async function screenModule(stationId, options = {}) {
   const session = ensureSession();
   const module = MODULES[stationId];
+  let entryStatus = options.entryStatus || null;
   if (!module) {
     screenHome();
     return;
@@ -1888,6 +2086,7 @@ async function screenModule(stationId, options = {}) {
     const boundStation = controlsConfirmed && ownsActiveTab(uiSessionId)
       ? await enterDbStation(stationId, via, uiSessionId)
       : null;
+    entryStatus = getLastStationEntryStatus();
     if (boundStation === stationId && ownsActiveTab(uiSessionId)) {
       updateSession({ connected_station: stationId });
       window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: stationId } }));
@@ -1958,13 +2157,7 @@ async function screenModule(stationId, options = {}) {
       ) : connected ? el('div', { class: 'connected-banner' },
         el('span', {}, '● CONNECTED'),
         el('span', {}, `STATION / ${stationId}`),
-      ) : el('section', { class: 'tag-instruction' },
-        el('span', { class: 'tag-symbol', 'aria-hidden': 'true' }, '⌁'),
-        el('div', {},
-          el('h2', {}, tr('이 작품을 시작하려면', 'TO BEGIN THIS WORK')),
-          el('p', {}, tr('안내판의 장미에 휴대폰을 대거나 옆의 QR을 찍어주세요.', 'Hold your phone to the rose or scan the QR.')),
-        ),
-      ),
+      ) : patternEntryPanel(stationId, entryStatus),
       el('section', { class: 'module-info-block' },
         el('span', { class: 'micro-label' }, 'ABOUT THIS WORK'),
         el('h2', {}, tr('이 작품에 대하여', 'ABOUT THIS WORK')),
@@ -2579,6 +2772,16 @@ function boot() {
   const session = ensureSession();
   applySessionColor(session.color);
   $bar.replaceChildren();
+
+  const patternPreview = new URLSearchParams(location.search).get('preview');
+  const patternPreviewMatch = isTestMode()
+    ? /^pattern-(0[1-4])$/.exec(patternPreview || '')
+    : null;
+  if (patternPreviewMatch) {
+    seedTestSession();
+    screenModule(patternPreviewMatch[1], { enter: false, via: 'test_pattern' });
+    return;
+  }
 
   const station = stationFromQuery();
   const stationVia = stationViaFromQuery();
