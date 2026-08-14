@@ -2155,6 +2155,279 @@ body.has-dock .app {
   text-align: center;
 }
 
+.pattern-animation-preview > h1 {
+  max-width: 11em;
+  margin: 0 auto;
+  font-size: clamp(30px, 10vw, 42px);
+  line-height: 1.05;
+  text-align: center;
+}
+
+.pattern-animation-preview-note {
+  max-width: 27em;
+  margin: 18px auto 30px;
+  font-size: 12px;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.pattern-animation-stage {
+  position: relative;
+  min-height: 500px;
+  margin: 0 0 20px;
+  overflow: hidden;
+  border: 1px solid #ffffff;
+  background: #09090a;
+  color: #ffffff;
+  isolation: isolate;
+}
+
+.pattern-animation-stage::before,
+.pattern-animation-stage::after {
+  position: absolute;
+  z-index: 7;
+  width: 16px;
+  height: 16px;
+  content: '';
+  pointer-events: none;
+}
+
+.pattern-animation-stage::before {
+  top: 10px;
+  left: 10px;
+  border-top: 1px solid #ffffff;
+  border-left: 1px solid #ffffff;
+}
+
+.pattern-animation-stage::after {
+  right: 10px;
+  bottom: 10px;
+  border-right: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+}
+
+.pattern-animation-index,
+.pattern-animation-coordinate {
+  position: absolute;
+  z-index: 8;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .14em;
+}
+
+.pattern-animation-index {
+  top: 18px;
+  left: 18px;
+}
+
+.pattern-animation-coordinate {
+  top: 18px;
+  right: 18px;
+  opacity: .62;
+}
+
+.pattern-animation-field {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  width: min(82vw, 330px);
+  max-width: calc(100% - 28px);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+}
+
+.pattern-animation-guide {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  opacity: .28;
+}
+
+.pattern-animation-guide.guide-a {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  border-top: 1px dotted #ffffff;
+}
+
+.pattern-animation-guide.guide-b {
+  top: 0;
+  left: 50%;
+  height: 100%;
+  border-left: 1px dotted #ffffff;
+}
+
+.pattern-animation-symbol,
+.pattern-animation-specimen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  aspect-ratio: 1;
+  transform-origin: center;
+}
+
+.pattern-animation-symbol {
+  z-index: 4;
+  width: 56%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.72);
+}
+
+.pattern-animation-symbol svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pattern-animation-symbol circle,
+.pattern-animation-symbol ellipse,
+.pattern-animation-symbol path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+}
+
+.pattern-animation-symbol .pattern-solid {
+  fill: currentColor;
+  stroke: none;
+}
+
+.pattern-animation-symbol .pattern-structure {
+  opacity: .72;
+}
+
+.pattern-animation-symbol .pattern-scan-axis {
+  stroke-dasharray: 1 5;
+}
+
+.pattern-animation-specimen {
+  z-index: 3;
+  width: 88%;
+  overflow: hidden;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.76);
+}
+
+.pattern-animation-specimen-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(1) contrast(1.08) brightness(.9);
+}
+
+.pattern-animation-tint {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: var(--session);
+  opacity: 0;
+  mix-blend-mode: color;
+  -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
+}
+
+.pattern-animation-scan {
+  position: absolute;
+  z-index: 4;
+  top: 12%;
+  left: 10%;
+  right: 10%;
+  display: block;
+  height: 1px;
+  background: #ffffff;
+  opacity: 0;
+}
+
+.pattern-animation-dot {
+  position: absolute;
+  z-index: 6;
+  display: block;
+  width: 5px;
+  height: 5px;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  background: #09090a;
+  opacity: .55;
+}
+
+.pattern-animation-dot.dot-a {
+  top: 24%;
+  left: 12%;
+}
+
+.pattern-animation-dot.dot-b {
+  top: 67%;
+  right: 8%;
+}
+
+.pattern-animation-dot.dot-c {
+  right: 24%;
+  bottom: 10%;
+}
+
+.pattern-animation-copy {
+  position: absolute;
+  right: 22px;
+  bottom: 28px;
+  left: 22px;
+  z-index: 8;
+  min-height: 44px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  letter-spacing: .08em;
+  text-align: center;
+}
+
+.pattern-animation-copy-step {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+}
+
+.pattern-animation-stage.is-playing .pattern-animation-symbol {
+  animation: pattern-preview-symbol 2800ms cubic-bezier(.22, .72, .16, 1) both;
+}
+
+.pattern-animation-stage.is-playing .pattern-animation-specimen {
+  animation: pattern-preview-specimen 2800ms cubic-bezier(.22, .72, .16, 1) both;
+}
+
+.pattern-animation-stage.is-playing .pattern-animation-tint {
+  animation: pattern-preview-colour 2800ms ease both;
+}
+
+.pattern-animation-stage.is-playing .pattern-animation-scan {
+  animation: pattern-preview-scan 2800ms ease-in-out both;
+}
+
+.pattern-animation-stage.is-playing .pattern-animation-dot {
+  animation: pattern-preview-dot 2800ms ease both;
+}
+
+.pattern-animation-stage.is-playing .pattern-animation-copy .step-a {
+  animation: pattern-preview-copy-a 2800ms ease both;
+}
+
+.pattern-animation-stage.is-playing .pattern-animation-copy .step-b {
+  animation: pattern-preview-copy-b 2800ms ease both;
+}
+
+.pattern-animation-replay {
+  width: 100%;
+}
+
+.pattern-animation-return {
+  display: block;
+  margin: 18px auto 0;
+  text-align: center;
+}
+
 @keyframes pattern-mismatch {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
@@ -2168,9 +2441,83 @@ body.has-dock .app {
   100% { opacity: 1; transform: scale(1); }
 }
 
+@keyframes pattern-preview-symbol {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.72); }
+  10% { opacity: 1; }
+  34% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  55% { opacity: .88; transform: translate(-50%, -50%) scale(1.08); color: #ffffff; }
+  76%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28); color: var(--session); }
+}
+
+@keyframes pattern-preview-specimen {
+  0%, 31% { opacity: 0; transform: translate(-50%, -50%) scale(.76); }
+  48% { opacity: .62; transform: translate(-50%, -50%) scale(.9); }
+  70%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes pattern-preview-colour {
+  0%, 46% { opacity: 0; }
+  68% { opacity: .25; }
+  88%, 100% { opacity: .72; }
+}
+
+@keyframes pattern-preview-scan {
+  0%, 42% { opacity: 0; transform: translateY(0); }
+  50% { opacity: .72; }
+  82% { opacity: .62; transform: translateY(245px); }
+  94%, 100% { opacity: 0; transform: translateY(275px); }
+}
+
+@keyframes pattern-preview-dot {
+  0%, 54% { border-color: #ffffff; background: #09090a; opacity: .45; }
+  72% { border-color: var(--session); background: var(--session); opacity: 1; }
+  100% { border-color: var(--session); background: var(--session); opacity: .72; }
+}
+
+@keyframes pattern-preview-copy-a {
+  0%, 8% { opacity: 0; transform: translateY(4px); }
+  18%, 44% { opacity: 1; transform: translateY(0); }
+  54%, 100% { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes pattern-preview-copy-b {
+  0%, 55% { opacity: 0; transform: translateY(4px); }
+  68%, 100% { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rose-pattern-button.is-mismatch,
   .rose-pattern-button.is-matched .rose-pattern-graphic {
+    animation: none;
+  }
+
+  .pattern-animation-stage.is-playing .pattern-animation-symbol,
+  .pattern-animation-stage.is-playing .pattern-animation-scan,
+  .pattern-animation-stage.is-playing .pattern-animation-copy .step-a {
+    display: none;
+    animation: none;
+  }
+
+  .pattern-animation-stage.is-playing .pattern-animation-specimen {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    animation: none;
+  }
+
+  .pattern-animation-stage.is-playing .pattern-animation-tint {
+    opacity: .72;
+    animation: none;
+  }
+
+  .pattern-animation-stage.is-playing .pattern-animation-dot {
+    border-color: var(--session);
+    background: var(--session);
+    opacity: .72;
+    animation: none;
+  }
+
+  .pattern-animation-stage.is-playing .pattern-animation-copy .step-b {
+    opacity: 1;
     animation: none;
   }
 }

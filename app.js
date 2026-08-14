@@ -796,6 +796,7 @@ function testPreviewPanel({ home = false } = {}) {
       testPreview('PATTERN 02', () => { seedTestSession(); screenModule('02', { enter: false, via: 'test_pattern' }); }),
       testPreview('PATTERN 03', () => { seedTestSession(); screenModule('03', { enter: false, via: 'test_pattern' }); }),
       testPreview('PATTERN 04', () => { seedTestSession(); screenModule('04', { enter: false, via: 'test_pattern' }); }),
+      testPreview('ANIMATION 01', () => screenPatternAnimationPreview('01')),
       testPreview('TAGGED 01', () => { seedTestSession(); screenModule('01', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 02', () => { seedTestSession(); screenModule('02', { enter: true, via: 'test' }); }),
       testPreview('TAGGED 03', () => { seedTestSession(); screenModule('03', { enter: true, via: 'test' }); }),
@@ -1767,6 +1768,90 @@ function stablePatternOrder(sessionId, stationId) {
     ...ROSE_PATTERN_IDS.slice(0, offset),
   ];
   return seed % 2 ? rotated.reverse() : rotated;
+}
+
+function patternAnimationStage(stationId) {
+  const module = MODULES[stationId];
+  return el('div', {
+    class: 'pattern-animation-stage',
+    'data-station': stationId,
+    'aria-label': tr(`${module.ko} 입장 애니메이션 미리보기`, `${module.en} entry animation preview`),
+  },
+    el('span', { class: 'pattern-animation-index' }, `${stationId} / ${module.en}`),
+    el('span', { class: 'pattern-animation-coordinate coordinate-top' }, 'PATTERN / VERIFIED'),
+    el('div', { class: 'pattern-animation-field', 'aria-hidden': 'true' },
+      el('span', { class: 'pattern-animation-guide guide-a' }),
+      el('span', { class: 'pattern-animation-guide guide-b' }),
+      el('div', { class: 'pattern-animation-symbol', html: rosePatternSvg(stationId) }),
+      el('div', { class: 'pattern-animation-specimen' },
+        roseSpecimenImage('', 'pattern-animation-specimen-image'),
+        el('i', { class: 'pattern-animation-tint' }),
+        el('i', { class: 'pattern-animation-scan' }),
+      ),
+      el('span', { class: 'pattern-animation-dot dot-a' }),
+      el('span', { class: 'pattern-animation-dot dot-b' }),
+      el('span', { class: 'pattern-animation-dot dot-c' }),
+    ),
+    el('div', { class: 'pattern-animation-copy', 'aria-live': 'polite' },
+      el('span', { class: 'pattern-animation-copy-step step-a' }, tr(
+        `${module.ko}의 장미가 확인되었습니다`,
+        `THE ROSE OF ${module.en} IS CONFIRMED`,
+      )),
+      el('span', { class: 'pattern-animation-copy-step step-b' }, tr(
+        '당신의 장미를 연결합니다',
+        'CONNECTING YOUR ROSE',
+      )),
+    ),
+  );
+}
+
+function replayPatternAnimation(stage) {
+  if (!stage) return;
+  stage.classList.remove('is-playing');
+  void stage.offsetWidth;
+  requestAnimationFrame(() => stage.classList.add('is-playing'));
+}
+
+function screenPatternAnimationPreview(stationId = '01') {
+  const safeStationId = MODULES[stationId] ? stationId : '01';
+  const module = MODULES[safeStationId];
+  rememberView('pattern-animation', { stationId: safeStationId });
+  const stage = patternAnimationStage(safeStationId);
+
+  render([
+    el('header', { class: 'global-header pattern-preview-header' },
+      el('div', { class: 'wordmark', 'aria-label': 'META ROSE 2026' },
+        el('span', {}, 'META ROSE'),
+        el('span', {}, '2026'),
+      ),
+      el('span', { class: 'micro-label' }, 'ANIMATION STUDY / V1'),
+    ),
+    el('section', { class: 'screen pattern-animation-preview' },
+      el('span', { class: 'micro-label' }, 'ENTRY TRANSITION / PREVIEW'),
+      el('h1', {}, tr('장미 연결 동작', 'ROSE CONNECTION STUDY')),
+      el('p', { class: 'pattern-animation-preview-note' }, tr(
+        '이 화면은 애니메이션만 보여줍니다. 작품이나 TD에는 연결되지 않습니다.',
+        'THIS PREVIEW SHOWS ONLY THE ANIMATION. IT DOES NOT CONNECT TO THE INSTALLATION.',
+      )),
+      stage,
+      el('button', {
+        class: 'primary-button pattern-animation-replay',
+        type: 'button',
+        onclick: () => replayPatternAnimation(stage),
+      }, tr('다시 보기', 'REPLAY')),
+      el('button', {
+        class: 'text-button pattern-animation-return',
+        type: 'button',
+        onclick: () => {
+          const target = new URL(location.href);
+          target.searchParams.set('test', '1');
+          target.searchParams.set('preview', `pattern-${safeStationId}`);
+          location.href = target.toString();
+        },
+      }, tr(`${module.ko} 화면으로`, `BACK TO ${module.en}`)),
+    ),
+  ]);
+  requestAnimationFrame(() => replayPatternAnimation(stage));
 }
 
 function patternEntryFeedback(stationId, entryStatus = null) {
@@ -2758,13 +2843,31 @@ function renderCurrentView() {
   else if (name === 'exit') screenExitJourney();
   else if (name === 'reflection') screenFinalReflection(data);
   else if (name === 'final') screenFinalSpecimen();
+  else if (name === 'pattern-animation') screenPatternAnimationPreview(data.stationId);
   else screenHome();
 }
 
 function boot() {
+  const bootParams = new URLSearchParams(location.search);
+  const patternPreview = bootParams.get('preview');
+  const patternAnimationPreviewMatch = bootParams.get('test') === '1'
+    ? /^pattern-animation-(0[1-4])$/.exec(patternPreview || '')
+    : null;
+
+  // Animation study is deliberately isolated from Supabase, station locks,
+  // tab ownership, analytics, and TD. It can be reviewed on a phone without
+  // changing an active exhibition connection.
+  if (patternAnimationPreviewMatch) {
+    const previewSession = ensureSession();
+    applySessionColor(previewSession.color || '#F25C94');
+    $bar.replaceChildren();
+    screenPatternAnimationPreview(patternAnimationPreviewMatch[1]);
+    return;
+  }
+
   // Reset shared session state before any asynchronous Supabase/Auth work can
   // capture and later restore the previous audience session.
-  const resetRequested = new URLSearchParams(location.search).get('reset') === '1';
+  const resetRequested = bootParams.get('reset') === '1';
   initializeActiveTabGuard({ forceClaim: resetRequested });
   if (resetRequested) {
     localStorage.removeItem(STORAGE_KEY);
@@ -2782,7 +2885,6 @@ function boot() {
   applySessionColor(session.color);
   $bar.replaceChildren();
 
-  const patternPreview = new URLSearchParams(location.search).get('preview');
   const patternPreviewMatch = isTestMode()
     ? /^pattern-(0[1-4])$/.exec(patternPreview || '')
     : null;
