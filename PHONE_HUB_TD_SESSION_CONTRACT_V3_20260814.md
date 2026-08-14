@@ -102,6 +102,19 @@ Do not rerun the full schema on the existing project.
   the remaining interaction data at checkpoints and idle periods.
 - Keep bridge/capture adapter nodes separate from artistic visual nodes.
 
+### Multiple captures and revisits
+
+- A visitor may revisit a station and leave more than one capture under the
+  same active session UUID.
+- Every capture must use a unique timestamped filename and produce its own
+  Storage object and `artifacts` row.
+- A physical hold may save a prepared frame only once. MAIN1 requires a new
+  ordinary rose interaction and release before Rose12 can save another frame;
+  this prevents accidental duplicate files from one continuous hold.
+- Re-tagging alone does not create a new visual frame.
+- Phone Hub must fetch every capture for the current session/station and show
+  navigation such as `1 / 2`, without overwriting the earlier image.
+
 Station mapping:
 
 | Station | Work | TD source |
@@ -155,6 +168,8 @@ Release is allowed only when all are true:
 - [ ] `v_active_at_station` definition is latest-first and active-only.
 - [ ] Browser session-control smoke test passes with queue `0`.
 - [ ] Physical NFC station `01` returns the exact new UUID to MAIN1.
-- [ ] Rose12 capture returns to the same phone.
+- [ ] First Rose12 capture returns to the same phone.
+- [ ] A new interaction followed by Rose12 creates a second local file,
+      Storage object, and artifact; Phone Hub shows `1 / 2` navigation.
 - [ ] Station exit makes MAIN1 IDLE.
 - [ ] No service/secret key exists in the public repository.
