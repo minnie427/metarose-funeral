@@ -2274,6 +2274,7 @@ body.has-dock .app {
 .pattern-animation-symbol {
   z-index: 4;
   width: 68%;
+  color: var(--session);
   opacity: 0;
   transform: translate3d(-50%, -50%, 0) scale(.9);
 }
@@ -2418,14 +2419,14 @@ body.has-dock .app {
 }
 
 .pattern-motion-merge-ring {
-  width: 30%;
+  width: 44%;
   aspect-ratio: 1;
-  border: 1px solid var(--session);
+  border: 2px solid var(--session);
 }
 
 .pattern-motion-merge-core {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   background: var(--session);
   box-shadow: 0 0 15px var(--session);
 }
@@ -2480,31 +2481,31 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-symbol {
-  animation: pattern-preview-symbol-v4 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
+  animation: pattern-preview-symbol-v5 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-specimen {
-  animation: pattern-preview-specimen-v4 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
+  animation: pattern-preview-specimen-v5 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-tint {
-  animation: pattern-preview-colour-v4 var(--pattern-animation-duration) ease-in-out both;
+  animation: pattern-preview-colour-v5 var(--pattern-animation-duration) ease-in-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-scan {
-  animation: pattern-preview-scan-v4 var(--pattern-animation-duration) cubic-bezier(.32, 0, .16, 1) both;
+  animation: pattern-preview-scan-v5 var(--pattern-animation-duration) cubic-bezier(.32, 0, .16, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-motion-fragment {
-  animation: pattern-fragments-merge-v4 var(--pattern-animation-duration) cubic-bezier(.16, 1, .3, 1) both;
+  animation: pattern-fragments-merge-v5 var(--pattern-animation-duration) cubic-bezier(.4, 0, .2, 1) both;
 }
 
 .pattern-animation-stage.is-playing .pattern-motion-merge-ring {
-  animation: pattern-merge-ring-v4 var(--pattern-animation-duration) ease-out both;
+  animation: pattern-merge-ring-v5 var(--pattern-animation-duration) ease-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-motion-merge-core {
-  animation: pattern-merge-core-v4 var(--pattern-animation-duration) ease-out both;
+  animation: pattern-merge-core-v5 var(--pattern-animation-duration) ease-out both;
 }
 
 .pattern-animation-stage.is-playing .pattern-animation-dot {
@@ -2705,139 +2706,141 @@ body.has-dock .app {
   64%, 100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
-@keyframes pattern-preview-symbol-v4 {
-  0% {
+@keyframes pattern-preview-symbol-v5 {
+  0%, 54% {
     opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(.88);
+    transform: translate3d(-50%, -50%, 0) scale(.92);
   }
-  7% {
+  64% {
+    opacity: .24;
+    transform: translate3d(-50%, -50%, 0) scale(.96);
+  }
+  78% {
+    opacity: .82;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+  90%, 100% {
     opacity: 1;
     transform: translate3d(-50%, -50%, 0) scale(1);
   }
-  19% {
-    opacity: 1;
-    transform: translate3d(-50%, -50%, 0) scale(1.04);
-  }
-  29% {
-    opacity: .22;
-    transform: translate3d(-50%, -50%, 0) scale(1.08);
-  }
-  34%, 100% {
-    opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(1.1);
-  }
 }
 
-@keyframes pattern-fragments-merge-v4 {
-  0%, 13% {
+@keyframes pattern-fragments-merge-v5 {
+  0% {
+    color: #ffffff;
     opacity: 0;
     transform: translate3d(
       calc(-50% + var(--piece-x)),
       calc(-50% + var(--piece-y)),
       0
-    ) rotate(var(--piece-rotate)) scale(1.08);
+    ) rotate(var(--piece-rotate)) scale(.94);
   }
-  22% {
+  7%, 18% {
+    color: #ffffff;
     opacity: 1;
     transform: translate3d(
       calc(-50% + var(--piece-x)),
       calc(-50% + var(--piece-y)),
       0
-    ) rotate(var(--piece-rotate)) scale(1.08);
+    ) rotate(var(--piece-rotate)) scale(1.06);
   }
   52% {
+    color: #ffffff;
     opacity: 1;
     transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1);
   }
   61% {
-    opacity: .95;
+    color: var(--session);
+    opacity: .96;
     transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(.98);
   }
-  73% {
-    opacity: .18;
+  72% {
+    color: var(--session);
+    opacity: .12;
     transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1.03);
   }
-  79%, 100% {
+  78%, 100% {
+    color: var(--session);
     opacity: 0;
-    transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1.05);
+    transform: translate3d(-50%, -50%, 0) rotate(0deg) scale(1.04);
   }
 }
 
-@keyframes pattern-preview-specimen-v4 {
-  0%, 31% {
+@keyframes pattern-preview-specimen-v5 {
+  0%, 35% {
     opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(.78);
+    transform: translate3d(-50%, -50%, 0) scale(.8);
   }
   49% {
-    opacity: .12;
-    transform: translate3d(-50%, -50%, 0) scale(.86);
+    opacity: .18;
+    transform: translate3d(-50%, -50%, 0) scale(.87);
   }
-  63% {
-    opacity: .64;
-    transform: translate3d(-50%, -50%, 0) scale(.95);
+  64% {
+    opacity: .74;
+    transform: translate3d(-50%, -50%, 0) scale(.96);
   }
-  80%, 100% {
+  78%, 100% {
     opacity: 1;
     transform: translate3d(-50%, -50%, 0) scale(1);
   }
 }
 
-@keyframes pattern-preview-colour-v4 {
-  0%, 49% { opacity: 0; }
-  63% { opacity: .16; }
-  80% { opacity: .56; }
-  92%, 100% { opacity: .76; }
+@keyframes pattern-preview-colour-v5 {
+  0%, 48% { opacity: 0; }
+  62% { opacity: .22; }
+  78% { opacity: .62; }
+  90%, 100% { opacity: .76; }
 }
 
-@keyframes pattern-preview-scan-v4 {
-  0%, 38% {
+@keyframes pattern-preview-scan-v5 {
+  0%, 35% {
     opacity: 0;
     transform: translate3d(0, 0, 0);
   }
-  45% {
-    opacity: .82;
+  43% {
+    opacity: .86;
     transform: translate3d(0, 0, 0);
   }
-  79% {
-    opacity: .64;
+  77% {
+    opacity: .62;
     transform: translate3d(0, var(--pattern-scan-distance), 0);
   }
-  88%, 100% {
+  86%, 100% {
     opacity: 0;
     transform: translate3d(0, calc(var(--pattern-scan-distance) + 16px), 0);
   }
 }
 
-@keyframes pattern-merge-ring-v4 {
-  0%, 45% {
+@keyframes pattern-merge-ring-v5 {
+  0%, 39% {
     opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(.18);
+    transform: translate3d(-50%, -50%, 0) scale(.16);
   }
-  53% {
-    opacity: .9;
-    transform: translate3d(-50%, -50%, 0) scale(.26);
+  50% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(.42);
   }
-  68% {
-    opacity: .38;
-    transform: translate3d(-50%, -50%, 0) scale(1.12);
+  65% {
+    opacity: .46;
+    transform: translate3d(-50%, -50%, 0) scale(1.08);
   }
-  79%, 100% {
+  78%, 100% {
     opacity: 0;
-    transform: translate3d(-50%, -50%, 0) scale(1.48);
+    transform: translate3d(-50%, -50%, 0) scale(1.42);
   }
 }
 
-@keyframes pattern-merge-core-v4 {
-  0%, 44% {
+@keyframes pattern-merge-core-v5 {
+  0%, 43% {
     opacity: 0;
     transform: translate3d(-50%, -50%, 0) scale(.2);
   }
-  51% {
+  52% {
     opacity: 1;
-    transform: translate3d(-50%, -50%, 0) scale(1.4);
+    transform: translate3d(-50%, -50%, 0) scale(1.55);
   }
-  62% {
-    opacity: .88;
+  65% {
+    opacity: .84;
     transform: translate3d(-50%, -50%, 0) scale(1);
   }
   78%, 100% {
@@ -2852,13 +2855,20 @@ body.has-dock .app {
     animation: none;
   }
 
-  .pattern-animation-stage.is-playing .pattern-animation-symbol,
   .pattern-animation-stage.is-playing .pattern-animation-scan,
   .pattern-animation-stage.is-playing .pattern-motion-fragment,
   .pattern-animation-stage.is-playing .pattern-motion-merge-ring,
   .pattern-animation-stage.is-playing .pattern-motion-merge-core,
   .pattern-animation-stage.is-playing .pattern-animation-copy .step-a {
     display: none;
+    animation: none !important;
+  }
+
+  .pattern-animation-stage.is-playing .pattern-animation-symbol {
+    display: block;
+    color: var(--session);
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
     animation: none !important;
   }
 
