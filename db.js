@@ -114,7 +114,7 @@ async function initializeDB() {
   }
   try {
     const { createClient } = await import(
-      'https://esm.sh/@supabase/supabase-js@2'
+      'https://esm.sh/@supabase/supabase-js@2.112.3'
     );
     sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
       auth: {
@@ -162,6 +162,15 @@ window.addEventListener('online', async () => {
   startStationLeaseHeartbeat();
 });
 window.addEventListener('offline', () => { online = false; });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    stopStationLeaseHeartbeat();
+  } else {
+    // Validate immediately on return. A frozen/backgrounded browser may have
+    // missed its server expiry and must never show a stale CONNECTED state.
+    startStationLeaseHeartbeat();
+  }
+});
 
 // ------------------------------------------------------------
 // 세션 상태 — localStorage에 유지. 브라우저를 닫았다 열어도 복구된다.
@@ -824,9 +833,22 @@ async function directReleaseExclusiveStation(stationId, sessionId, clientRef) {
 async function renewActiveStationLease() {
   const state = getState();
   const session = loadSession();
+  const leaseExpiryMs = Date.parse(state.stationLeaseExpiresAt || '');
+  const hasExclusiveState = state.stationControl === 'exclusive'
+    && state.station && state.presenceId;
+  if (hasExclusiveState
+      && Number.isFinite(leaseExpiryMs)
+      && Date.now() >= leaseExpiryMs) {
+    if (getState().presenceId === state.presenceId) {
+      clearStationState();
+      window.dispatchEvent(new CustomEvent('fringe:station-lease-lost', {
+        detail: { station: state.station, clientRef: state.presenceId },
+      }));
+    }
+    return false;
+  }
   if (!runtimeActive || !ready || !online || !sb
-      || state.stationControl !== 'exclusive'
-      || !state.station || !state.presenceId
+      || !hasExclusiveState
       || !session?.id || session.status !== 'active') {
     return false;
   }
@@ -868,12 +890,14 @@ function startStationLeaseHeartbeat() {
   stopStationLeaseHeartbeat();
   const state = getState();
   if (!runtimeActive || !ready || !online
+      || document.visibilityState === 'hidden'
       || state.stationControl !== 'exclusive'
       || !state.station || !state.presenceId) return;
   stationLeaseTimer = setInterval(
     () => { void renewActiveStationLease(); },
     STATION_LEASE_RENEW_MS,
   );
+  void renewActiveStationLease();
 }
 
 function stopStationLeaseHeartbeat() {

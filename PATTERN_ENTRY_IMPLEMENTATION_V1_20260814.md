@@ -27,6 +27,8 @@
 - 이미 점유 중이면 두 번째 관객에게 `다른 장미가 연결되어 있습니다`를 표시하고 TD 세션을 바꾸지 않는다.
 - 연결 성공 뒤 휴대전화는 60초마다 lease를 갱신한다.
 - lease는 5분이며 네트워크 단절 또는 브라우저 이탈 뒤 자동 만료된다.
+- Phone Hub가 백그라운드로 가면 갱신을 명시적으로 멈춘다. 화면으로 돌아오면 서버 lease를 즉시 다시 확인하므로 만료된 연결을 `CONNECTED`로 표시하지 않는다.
+- 브라우저용 Supabase JS는 검증한 `2.112.3`으로 고정한다. 전시 중 CDN의 최신 버전 변경이 앱 동작을 바꾸지 않는다.
 - TD는 기존과 같은 `v_active_at_station` URL과 컬럼만 읽는다. TD 작품·캡처 노드는 수정하지 않는다.
 - 브라우저의 지연 큐에는 station 활성화 INSERT가 들어가지 않는다. 늦게 전송되어 관객이 떠난 뒤 TD가 켜지는 일을 막는다.
 
@@ -34,10 +36,11 @@
 
 1. 최신 Phone Hub 코드를 먼저 GitHub Pages에 배포한다.
 2. Supabase SQL Editor에서 `supabase_migration_20260814_exclusive_station_locks.sql`만 실행한다.
-3. `supabase_verify_20260814_exclusive_station_locks.sql`을 새 쿼리에서 실행한다.
-4. 휴대전화에서 `?reset=1`로 새 장미 번호를 만든다.
-5. `?test=1`의 `PATTERN 01`로 UI만 먼저 확인한다.
-6. 실제 01 상세 페이지에서 올바른 패턴을 선택하고 Phone Hub, `station_locks`, `v_active_at_station`, TD UUID가 모두 같은지 확인한다.
+3. `supabase_migration_20260814_staff_station_release.sql`을 실행해 비상 해제 함수를 설치한다.
+4. `supabase_verify_20260814_exclusive_station_locks.sql`을 새 쿼리에서 실행한다.
+5. 휴대전화에서 `?reset=1`로 새 장미 번호를 만든다.
+6. `?test=1`의 `PATTERN 01`로 UI만 먼저 확인한다.
+7. 실제 01 상세 페이지에서 올바른 패턴을 선택하고 Phone Hub, `station_locks`, `v_active_at_station`, TD UUID가 모두 같은지 확인한다.
 
 전체 `supabase_schema.sql`은 다시 실행하지 않는다. migration 직전에는 실제 관객이 작품에 연결되어 있지 않아야 한다.
 Migration은 전환 시점에 남아 있는 01–04의 과거 열린 presence에 `left_at`만 기록한다. 행과 기존 데이터는 삭제하지 않는다.
@@ -63,3 +66,13 @@ Migration은 전환 시점에 남아 있는 01–04의 과거 열린 presence에
 5. A가 종료한 뒤 B가 다시 선택하면 B로 연결되어야 한다.
 
 이 검사는 독점성의 최종 물리 검증이며 현재 단일 휴대전화 검사로 대체할 수 없다.
+
+## 스태프 비상 해제
+
+휴대전화가 화면을 켠 채 작품을 떠나 정상 heartbeat만 남은 경우에 사용한다. 작품 앞이 실제로 비어 있음을 눈으로 확인한 뒤 Supabase SQL Editor에서 해당 번호만 실행한다.
+
+```sql
+select * from public.force_release_station('01');
+```
+
+`01`만 `02`, `03`, `04`로 바꿀 수 있다. 이 작업은 해당 presence를 닫고 lock만 `idle`로 만든다. 관객 세션과 기존 기록은 삭제하거나 종료하지 않으므로 같은 장미가 나중에 다시 입장할 수 있다. 이 함수는 Phone Hub의 `authenticated` 관객에게 공개되지 않는다.

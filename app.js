@@ -22,7 +22,7 @@ import {
   confirmSessionControlFields,
   getState as getDbState,
   getLastStationEntryStatus,
-} from './db.js';
+} from './db.js?v=lease-visibility-v1-20260814';
 import {
   beginRead,
   endRead,
@@ -72,8 +72,8 @@ function activeTabOverlay() {
   overlay.innerHTML = `
     <div class="inactive-tab-card">
       <span>PHONE HUB / ACTIVE SCREEN</span>
-      <h1>새로 태깅한 화면을 이용해주세요</h1>
-      <p>이전 화면은 중복 기록을 막기 위해 자동으로 멈췄습니다. Safari의 가장 최근 탭으로 이동해주세요.</p>
+      <h1>가장 최근에 연 화면을 이용해주세요</h1>
+      <p>이 화면은 중복 연결과 기록을 막기 위해 멈췄습니다. 가장 최근에 연 Phone Hub 화면으로 이동해주세요.</p>
       <button type="button" class="inactive-tab-takeover">이 화면을 다시 사용합니다</button>
     </div>`;
   overlay.querySelector('.inactive-tab-takeover')?.addEventListener('click', () => {
