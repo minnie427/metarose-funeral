@@ -46,6 +46,7 @@ const TAB_INSTANCE_ID = crypto.randomUUID
   : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 // 투명 배경 PNG. 색은 CSS mask로 장미의 alpha 영역에만 입힌다.
 const ROSE_SPECIMEN_IMAGE = './assets/images/rose_specimen.png';
+const ROSE_SPECIMEN_ANIMATION_IMAGE = './assets/images/rose_specimen_animation.png';
 
 let currentView = { name: 'arrival', data: {} };
 let activeReadKey = null;
@@ -611,16 +612,20 @@ function assetFrame(fileName, options = {}) {
   return el('div', { class: `asset-frame ${options.className || ''}`.trim() }, image, placeholder);
 }
 
-function roseSpecimenImage(label, className = '') {
+function roseSpecimenImage(label, className = '', source = ROSE_SPECIMEN_IMAGE) {
   const image = el('img', {
     class: className,
-    src: ROSE_SPECIMEN_IMAGE,
+    src: source,
     alt: label,
   });
   // PNG가 아직 폴더에 없더라도 작품 화면은 멈추지 않는다. 파일을 넣으면
   // 다음 새로고침부터 자동으로 실제 specimen 이미지가 사용된다.
   image.addEventListener('error', () => {
     if (image.dataset.fallback === 'true') return;
+    if (image.src.endsWith('/rose_specimen_animation.png')) {
+      image.src = ROSE_SPECIMEN_IMAGE;
+      return;
+    }
     image.dataset.fallback = 'true';
     image.src = './rose-bloom.svg';
   });
@@ -1784,7 +1789,7 @@ function patternAnimationStage(stationId) {
       el('span', { class: 'pattern-animation-guide guide-b' }),
       el('div', { class: 'pattern-animation-symbol', html: rosePatternSvg(stationId) }),
       el('div', { class: 'pattern-animation-specimen' },
-        roseSpecimenImage('', 'pattern-animation-specimen-image'),
+        roseSpecimenImage('', 'pattern-animation-specimen-image', ROSE_SPECIMEN_ANIMATION_IMAGE),
         el('i', { class: 'pattern-animation-tint' }),
         el('i', { class: 'pattern-animation-scan' }),
       ),
@@ -1805,11 +1810,33 @@ function patternAnimationStage(stationId) {
   );
 }
 
-function replayPatternAnimation(stage) {
+const patternAnimationRuns = new WeakMap();
+
+async function replayPatternAnimation(stage) {
   if (!stage) return;
+  const runId = (patternAnimationRuns.get(stage) || 0) + 1;
+  patternAnimationRuns.set(stage, runId);
   stage.classList.remove('is-playing');
-  void stage.offsetWidth;
-  requestAnimationFrame(() => stage.classList.add('is-playing'));
+  stage.classList.add('is-preparing');
+
+  const image = stage.querySelector('.pattern-animation-specimen-image');
+  try {
+    if (image && !image.complete) {
+      await new Promise((resolve) => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      });
+    }
+    if (image?.decode) await image.decode();
+  } catch {
+    // The existing image fallback will be used. Animation still remains usable.
+  }
+
+  if (patternAnimationRuns.get(stage) !== runId || !stage.isConnected) return;
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  if (patternAnimationRuns.get(stage) !== runId || !stage.isConnected) return;
+  stage.classList.remove('is-preparing');
+  stage.classList.add('is-playing');
 }
 
 function screenPatternAnimationPreview(stationId = '01') {
