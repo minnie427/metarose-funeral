@@ -1908,6 +1908,7 @@ function patternAnimationStage(stationId, { compact = false } = {}) {
 }
 
 const patternAnimationRuns = new WeakMap();
+const PATTERN_ANIMATION_LIVE_DURATION_MS = 4200;
 
 async function decodePatternAnimationImage(stage) {
   const image = stage.querySelector('.pattern-animation-specimen-image');
@@ -2071,14 +2072,31 @@ function patternEntryFeedback(stationId, entryStatus = null) {
 }
 
 async function playPatternSuccessTransition(panel, button, stationId) {
-  // Phase 1 deliberately stays light: the contract and DOM hook are fixed,
-  // while the full Rose Specimen colour-overlay animation can be added here
-  // later without touching station claiming, TD, or the pattern choices.
   panel.dataset.state = 'matched';
   panel.dataset.matchedStation = stationId;
   button.classList.add('is-matched');
-  await new Promise((resolve) => setTimeout(resolve, 260));
-  panel.dataset.state = 'connecting';
+  const stage = patternAnimationStage(stationId);
+  stage.classList.add('is-live-entry');
+  const overlay = el('div', {
+    class: 'pattern-entry-transition-overlay',
+    role: 'status',
+    'aria-label': tr('장미를 작품에 연결하고 있습니다', 'CONNECTING YOUR ROSE TO THE WORK'),
+  }, stage);
+  document.body.appendChild(overlay);
+
+  try {
+    await replayPatternAnimation(stage);
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    await new Promise((resolve) => setTimeout(
+      resolve,
+      reducedMotion ? 520 : PATTERN_ANIMATION_LIVE_DURATION_MS,
+    ));
+    overlay.classList.add('is-leaving');
+    await new Promise((resolve) => setTimeout(resolve, 180));
+  } finally {
+    overlay.remove();
+    panel.dataset.state = 'connecting';
+  }
 }
 
 function patternEntryPanel(stationId, entryStatus = null) {
@@ -2139,8 +2157,10 @@ function patternEntryPanel(stationId, entryStatus = null) {
               `당신의 장미를 ${module.ko}에 연결하고 있습니다.`,
               `CONNECTING YOUR ROSE TO ${module.en}.`,
             );
-            await playPatternSuccessTransition(panel, button, stationId);
             await screenModule(stationId, { enter: true, via: 'pattern' });
+            if (ensureSession().connected_station === stationId) {
+              await playPatternSuccessTransition(panel, button, stationId);
+            }
           },
         }, el('span', {
           class: 'rose-pattern-graphic',
