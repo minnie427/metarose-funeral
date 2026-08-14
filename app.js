@@ -594,7 +594,7 @@ function applySessionColor(hex) {
 }
 
 function displayName(session = getSession()) {
-  return session?.emotional_name || tr('아직 이름 없음', 'NOT YET NAMED');
+  return session?.emotional_name || tr('장미 이름 없음', 'ROSE NOT YET NAMED');
 }
 
 function stationFromQuery() {
@@ -936,7 +936,7 @@ function openRoseMenu() {
         menuAction(tr('목격', 'WITNESS'), () => guardedNavigation(() => screenModule('03', { via: 'menu' })), '03'),
         menuAction(tr('기록', 'RECORD'), () => guardedNavigation(() => screenModule('04', { via: 'menu' })), '04'),
         menuAction(tr('현재 표본', 'MY SPECIMEN'), () => guardedNavigation(screenMySpecimen)),
-        menuAction(tr('오늘의 이름', 'NAME GIVEN TODAY'), () => guardedNavigation(() => screenFinalReflection({ exitFlow: false }))),
+        menuAction(tr('장미 이름', 'NAME OF MY ROSE'), () => guardedNavigation(() => screenFinalReflection({ exitFlow: false }))),
         menuAction(tr('전체 프로젝트', 'ABOUT THE PROJECT'), () => guardedNavigation(() => screenAboutProject())),
       ),
       isTestMode() ? testPreviewPanel() : null,
@@ -1015,6 +1015,14 @@ function textButton(label, action, className = '') {
 
 function screenArrival() {
   const session = ensureSession();
+  const sessionCreatedAt = new Intl.DateTimeFormat(session.lang === 'en' ? 'en-US' : 'ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(session.created_at));
   rememberView('arrival');
   clearStationQuery();
   applySessionColor('#D9D4CF');
@@ -1023,35 +1031,44 @@ function screenArrival() {
     globalHeader(),
     el('section', { class: 'arrival-cover' },
       el('div', { class: 'cover-meta' },
-        el('span', {}, 'MINNIE PARK'),
-        el('span', {}, '2026'),
+        el('span', {}, 'AUDIOVISUAL INTERACTIVE EXHIBITION'),
+        el('span', {}, 'SEOUL / 2026'),
       ),
-      el('h1', { class: 'arrival-title' },
+      el('h1', { class: 'arrival-project-title' }, 'META ROSE 2026: THE FUNERAL'),
+      el('h2', { class: 'arrival-title' },
         el('span', {}, tr('오늘 나는', 'TODAY I KILL')),
         el('span', {}, tr('죽인다, 나를', 'MY SELF')),
       ),
+      el('p', { class: 'arrival-byline' }, 'BY MINNIE PARK · 박지민'),
       assetFrame('arrival_hero.png', {
         className: 'arrival-asset',
         label: 'META ROSE SPECIMEN arrival hero',
         type: 'ARRIVAL HERO / P0',
         note: tr('입구 표지용 고정 비주얼 사진', 'Fixed visual photograph for the entry cover'),
       }),
+      el('section', { class: 'arrival-summary' },
+        el('span', { class: 'micro-label' }, tr('이 전시에 대하여', 'ABOUT THIS EXHIBITION')),
+        el('p', {}, tr(
+          '〈오늘 나는 죽인다, 나를〉은 생화 장미와 스켈레톤, 빛, 소리, 실시간 영상이 관객의 손과 몸에 반응하는 오디오비주얼 인터랙티브 전시입니다. 바니타스가 꽃과 해골을 한 화면에 놓아 삶과 죽음이 분리되지 않음을 말해왔듯, 이 전시는 삶과 죽음, 돌봄과 파괴, 아름다움과 가시가 동시에 존재하는 방식을 바라봅니다. 이 양가성은 둘 중 하나를 없애야 하는 오류가 아니라 장미와 나, 더 넓게는 세계와 우주를 이루는 조건입니다. 서로 모순되어 보이는 두 얼굴이 함께 있음을 먼저 인정하고 천천히 마주할 때, 우리는 그 안에서도 무엇을 가까이 하고 어느 쪽에 힘을 줄지 선택할 수 있습니다. 네 작품의 다양한 상호작용을 지나며 관객은 자신의 장미를 만들고, 만지고, 개입하고, 목격하고, 기록합니다.',
+          'Today I Kill My Self is an audiovisual interactive exhibition in which fresh roses, a skeleton, light, sound, and real-time images respond to the audience\'s hands and body. As vanitas placed flowers and skulls together to show that life and death cannot be separated, this exhibition considers how life and death, care and destruction, beauty and thorns exist at the same time. Ambivalence is not an error to remove, but a condition shared by the rose, the self, the world, and the universe. By first acknowledging these contradictory faces and looking at them slowly, we may recover the power to choose what to approach and where to place our strength.',
+        )),
+      ),
       el('div', { class: 'record-line' },
         el('span', {}, tr('당신의 장미 번호', 'YOUR ROSE NUMBER')),
         el('strong', {}, `ROSE NO. ${session.display_record_no}`),
       ),
       el('section', { class: 'arrival-thesis' },
         el('p', {}, tr(
-          '바니타스의 꽃과 해골은 삶이 사라진다는 사실을 말해왔습니다.',
-          'The flowers and skulls of vanitas have long spoken of life passing away.',
+          '바니타스는 꽃, 해골, 썩는 과일과 꺼지는 촛불 같은 상징을 한 장면에 놓아 삶의 유한함과 죽음을 기억하게 한 정물화의 전통입니다.',
+          'Vanitas is a still-life tradition that brings together flowers, skulls, decaying fruit, and extinguishing candles to remind us that life is finite.',
         )),
         el('p', {}, tr(
-          '여기서는 질문이 조금 달라집니다. 우리는 왜 살아 있는 동안에도 자기 안의 어떤 부분을 계속 죽일까요.',
-          'Here, the question shifts: why do we keep killing parts of ourselves while we are still alive?',
+          '여기서는 그 질문을 오늘의 나에게 옮깁니다. 나는 살아 있는 동안 내 안의 어떤 면을 계속 밀어내고 죽여 왔을까요.',
+          'Here, that question is turned toward the self: what part of myself have I kept pushing away and killing while still alive?',
         )),
         el('p', {}, tr(
-          '이 장례식은 그 ‘나’를 다시 불러, 무엇을 살리고 어느 쪽에 물을 줄지 고르는 자리입니다.',
-          'This funeral calls that self back, and returns the choice of what to keep alive and what to water.',
+          '이 장례식은 그 나를 다시 불러 두 얼굴이 동시에 존재했음을 마주하고, 그 안에서 무엇을 선택할지 스스로 정하는 자리입니다.',
+          'This funeral calls that self back, holds both faces at once, and returns the choice of what to do next.',
         )),
       ),
       el('p', { class: 'intro-copy phone-role-copy' }, tr(
@@ -1067,7 +1084,7 @@ function screenArrival() {
           )),
           el('p', {}, tr(
             '얼굴을 식별하기 위한 정보와 휴대폰의 위치 정보는 저장하지 않습니다. 수집한 기록은 작품 연구와 전시 경험 개선을 위해서만 사용하며 다른 관객에게 공개하지 않습니다.',
-            'Original face images and phone location are not stored.',
+            'Facial identification data and phone location are not collected. Records are used only for artwork research and exhibition improvement, and are not shown to other visitors.',
           )),
         ),
         'record_info',
@@ -1076,8 +1093,8 @@ function screenArrival() {
         tr('당신의 속도로 보셔도 됩니다', 'MOVE AT YOUR OWN PACE'),
         el('div', { class: 'copy-stack' },
           el('p', {}, tr(
-            '이 작품에는 자기혐오, 죽음과 애도의 이미지가 등장합니다. 그러나 무엇을 가까이 보고, 무엇을 만지고, 언제 멈출지는 당신이 정합니다.',
-            'This work contains images of self-hatred, death, and mourning. You decide what to approach, touch, or leave.',
+            '이 작품에는 죽음, 애도, 스스로 밀어내거나 없애려 했던 나의 면에 관한 이미지가 등장합니다. 그러나 무엇을 가까이 보고, 무엇을 만지고, 언제 멈출지는 당신이 정합니다.',
+            'This work contains images of death, mourning, and parts of the self we have pushed away or tried to erase. You decide what to approach, touch, or leave.',
           )),
           el('p', {}, tr(
             '불편하면 지나가도 되고, 잠시 쉬었다 돌아와도 됩니다. 당신의 속도와 선택도 이 작품의 일부입니다.',
@@ -1087,7 +1104,8 @@ function screenArrival() {
         'pace_info',
       ),
       el('footer', { class: 'screen-footer-meta' },
-        el('span', {}, `SESSION CREATED / ${new Date(session.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`),
+        el('span', {}, 'SESSION CREATED'),
+        el('strong', {}, sessionCreatedAt),
       ),
     ),
   ], [
@@ -1178,31 +1196,31 @@ function screenPersonalSetup() {
         el('span', {}, '01 / REGISTRATION'),
         el('span', {}, `ROSE NO. ${session.display_record_no}`),
       ),
-      el('h1', { class: 'screen-title' }, tr('나의 장미 색을 고릅니다', 'CHOOSE MY ROSE COLOR')),
+      el('h1', { class: 'screen-title' }, tr('장미 색을 정합니다', 'CHOOSE THE COLOR OF YOUR ROSE')),
       roseVisual('registration', 'MY ROSE PREVIEW'),
       el('div', { class: 'input-group color-group' },
         el('label', {}, 'MY ROSE COLOR'),
         colorPicker,
-        el('span', { class: 'input-note' }, tr('색의 이름은 정해두지 않았습니다. 팔레트에서 지금 당신의 장미로 남기고 싶은 색을 직접 골라주세요.', 'Choose the color you want to keep as your rose directly from the palette.')),
+        el('span', { class: 'input-note' }, tr('색은 눈에 보이는 빛의 파장이 몸 안으로 들어와 남기는 감각입니다. 색의 의미와 이름은 미리 정해두지 않았습니다. 오늘 이 전시에서 만나고 싶은 경험을 떠올리며, 당신의 장미가 될 색을 직접 골라주세요.', 'Color is a wavelength of visible light that enters the body and remains as sensation. No meaning or name has been assigned in advance. Choose the color of your rose while thinking about the experience you want to meet today.')),
         error,
       ),
       el('section', { class: 'emotional-naming-intro' },
-        el('span', { class: 'section-code' }, 'NAME GIVEN TODAY'),
-        el('h2', {}, tr('이름은 아직 짓지 않습니다', 'THE NAME COMES LATER')),
+        el('span', { class: 'section-code' }, 'NAME OF THE ROSE'),
+        el('h2', {}, tr('장미의 이름을 정합니다', 'YOU WILL NAME YOUR ROSE')),
         el('p', {}, tr(
-          '01의 장미 정원에서 손으로 먼저 만난 뒤, 당신의 말로 하나의 이름을 짓습니다. 그 이름은 02와 03에서 다시 나타납니다.',
-          'After meeting the roses by hand in 01, you will make one name in your own words.',
+          '01 명명을 지난 뒤, 오늘의 경험을 담아 장미의 이름을 직접 짓습니다. 이 이름은 전시를 통과하는 동안 끝까지 당신과 당신의 장미를 함께 부르는 이름입니다.',
+          'After 01 Naming, you will make a name for your rose from today\'s experience. It will accompany you and your rose through the exhibition.',
         )),
         disclosure(
           tr('이름을 짓는 일에 대하여', 'ABOUT NAMING'),
           el('div', { class: 'copy-stack emotional-naming-guide' },
             el('p', {}, tr(
-              '이름을 짓는 일은 이미 정해진 감정 단어를 고르는 과정이 아닙니다. 작품을 지나며 발견한 서로 다른 두 모습을 한 문장 안에 함께 남기고, 오늘의 나를 부를 임시적인 이름을 직접 만드는 과정입니다.',
-              'Emotional naming is not a matter of choosing from a fixed list. It brings two different sides you encounter into one sentence and lets you make a temporary name for yourself today.',
+              '장미가 꽃잎과 가시를 한 몸에 가지고 있듯, 나에게도 여러 모양의 내가 있고 그 여러 모습에는 서로 다른 얼굴의 감정이 함께 있습니다. 장미의 이름을 짓는 일은 이미 정해진 감정 단어를 고르는 과정이 아니라, 작품을 지나며 발견한 서로 다른 두 모습을 한 문장 안에 함께 남기는 과정입니다.',
+              'Just as a rose carries petals and thorns in one body, the self contains many forms and many faces of emotion. Naming the rose is not choosing from a fixed list, but holding two different sides you encounter in one sentence.',
             )),
             el('p', {}, tr(
-              '먼저 내가 없애고 싶거나 미워했던 한 면을 적습니다. 예를 들면 “쉽게 겁먹는 나”, “자꾸 멈추는 나”처럼 지금 실제로 느껴지는 말이면 충분합니다. 그다음, 바로 그 모습 안에 동시에 존재했던 다른 한 면을 찾습니다. 두려워하면서도 자리를 지켰거나, 멈췄지만 다시 움직였던 나일 수 있습니다.',
-              'First, write one side of yourself that you wanted to erase or rejected. Then look for another side that existed inside it at the same time: perhaps the self that was afraid but stayed, or stopped and moved again.',
+              '먼저 내가 밀어내거나 없애고 싶었던 한 면을 적습니다. 예를 들면 “쉽게 겁먹는 나”, “자꾸 멈추는 나”처럼 지금 실제로 느껴지는 말이면 충분합니다. 그다음, 바로 그 모습 안에 동시에 존재했던 다른 한 면을 찾습니다. 두려워하면서도 자리를 지켰거나, 멈췄지만 다시 움직였던 나일 수 있습니다.',
+              'First, write one side of yourself that you pushed away or wanted to erase. Then look for another side that existed inside it at the same time: perhaps the self that was afraid but stayed, or stopped and moved again.',
             )),
             el('p', {}, tr(
               '두 번째 문장은 첫 번째를 지우거나 긍정적으로 고쳐 쓰기 위한 것이 아닙니다. 서로 모순되어 보이는 두 모습이 동시에 나였다는 사실을 그대로 두는 것이 중요합니다.',
@@ -1218,8 +1236,8 @@ function screenPersonalSetup() {
               'There is no correct or polished answer. It does not need to be a complete sentence or easy to explain. This is not a diagnosis or a fixed identity, but a marker for the self moving through the exhibition today.',
             )),
             el('p', {}, tr(
-              '01을 마친 뒤 이름을 짓는 것을 권합니다. 오늘 지은 이름은 02와 03의 화면에 나타나고, 마지막에는 당신의 장미 번호와 함께 유품에 남습니다. 발인 전 다시 읽고 다듬을 수 있습니다.',
-              'We recommend naming after 01. Your completed name reappears in 02 and 03 and remains with your rose number in the final record. You can read and refine it again at the end.',
+              '01을 마친 뒤 이름을 짓는 것을 권합니다. 오늘 지은 장미의 이름은 전시가 끝날 때까지 당신을 따라가고, 마지막에는 장미 번호와 함께 유품에 남습니다. 출구에 도착하기 전 언제든 다시 읽고 다듬을 수 있습니다.',
+              'We recommend naming after 01. The name of your rose follows you through the exhibition and remains with your rose number in the final record. You can read and refine it before reaching the exit.',
             )),
           ),
           'emotional_naming_intro',
@@ -1284,13 +1302,15 @@ function floorplanRouteOrder(session) {
   return el('nav', { class: 'floorplan-route-order', 'aria-label': tr('권장 관람 순서', 'Suggested route') },
     routeStep('01'),
     el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
-    el('div', { class: 'route-order-pair' }, routeStep('02'), routeStep('03')),
+    routeStep('02'),
+    el('span', { class: 'route-order-arrow route-order-choice', 'aria-hidden': 'true' }, '↔'),
+    routeStep('03'),
     el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
     routeStep('04'),
     el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
     el('button', { class: 'route-order-step route-order-exit', type: 'button', onclick: screenExitJourney },
-      el('strong', {}, '⇅'),
-      el('span', {}, tr('출입구', 'IN / OUT')),
+      el('strong', {}, '5'),
+      el('span', {}, tr('출구', 'EXIT')),
     ),
   );
 }
@@ -1430,7 +1450,7 @@ function screenHome() {
         el('span', { class: 'micro-label' }, 'TODAY I KILL MY SELF / 2026'),
         el('h1', {}, tr('오늘 나는 죽인다, 나를', 'TODAY I KILL MY SELF')),
         el('p', {}, tr(
-          '바니타스의 꽃과 해골은 삶이 사라진다는 사실을 말해왔습니다. 이 작품은 질문을 바꿉니다. 우리는 왜 살아 있는 동안에도 자기 안의 어떤 부분을 계속 죽일까요.',
+          '바니타스의 꽃과 스켈레톤은 삶이 사라진다는 사실을 말해왔습니다. 이 작품은 질문을 바꿉니다. 우리는 왜 살아 있는 동안에도 자기 안의 어떤 부분을 계속 죽일까요.',
           'The flowers and skulls of vanitas speak of life passing. This work asks what we keep killing while we are still alive.',
         )),
         textButton(tr('전체 프로젝트 읽기', 'READ THE FULL PROJECT'), () => screenAboutProject('about-intro'), 'home-about-primary'),
@@ -1445,8 +1465,8 @@ function screenHome() {
       floorplanRouteOrder(session),
       floorplanViewer(session),
       el('p', { class: 'route-note route-note-primary' }, tr(
-        '01의 장미 정원에서 이름을 지은 뒤, 02와 03은 원하는 순서로 지나가셔도 됩니다. 04는 언제든 보실 수 있습니다.',
-        'Make your name in 01, then visit 02 and 03 in either order. 04 is open at any time.',
+        '01 명명에서 장미 이름을 지은 뒤,\n02와 03은 원하는 순서로 지나가셔도 됩니다.\n04는 언제든 보실 수 있고, 마지막에는 05 출구로 이동합니다.',
+        'Name your rose in 01.\nVisit 02 and 03 in either order.\n04 is open at any time; finish at 05 Exit.',
       )),
       el('div', { class: 'module-index-list' },
         ...modules.map((stationId) => el('button', { class: 'module-index-row module-index-key', type: 'button', onclick: () => screenModule(stationId, { via: 'floorplan_list' }) },
@@ -1455,11 +1475,17 @@ function screenHome() {
           el('span', { class: 'visit-status' }, moduleStatus(session, stationId)),
           el('span', { class: 'module-code' }, stationLabel(stationId)),
         )),
+        el('button', { class: 'module-index-row module-index-key module-index-exit', type: 'button', onclick: screenExitJourney },
+          el('span', { class: 'module-number' }, '05'),
+          el('strong', {}, tr('출구', 'EXIT')),
+          el('span', { class: 'visit-status' }, tr('마지막', 'FINAL')),
+          el('span', { class: 'module-code' }, 'DEPARTURE'),
+        ),
       ),
       isTestMode() ? testPreviewPanel({ home: true }) : null,
       el('div', { class: 'home-name-action' },
-        el('span', {}, session.emotional_name ? tr('오늘 지은 이름', 'NAME GIVEN TODAY') : tr('아직 이름 없음', 'NOT YET NAMED')),
-        textButton(session.emotional_name ? tr('오늘의 이름 보기', 'VIEW NAME') : tr('오늘의 이름 짓기', 'NAME YOURSELF'), () => screenFinalReflection({ exitFlow: false })),
+        el('span', {}, session.emotional_name ? tr('나의 장미 이름', 'NAME OF MY ROSE') : tr('장미 이름 없음', 'ROSE NOT YET NAMED')),
+        textButton(session.emotional_name ? tr('장미 이름 보기', 'VIEW ROSE NAME') : tr('장미 이름 짓기', 'NAME MY ROSE'), () => screenFinalReflection({ exitFlow: false })),
       ),
     ),
   ]);
@@ -1525,7 +1551,7 @@ function screenAboutProject(initialSection = null) {
         el('h1', {}, tr('프로젝트에 대하여', 'ABOUT THE PROJECT')),
         el('p', {}, '〈오늘 나는 죽인다, 나를〉'),
         el('p', { class: 'about-hero-lead' }, tr(
-          '내가 죽인 나를 위해 치르는 장례식. 꽃과 해골, 사람의 손과 기계, 살리는 행동과 죽이는 행동이 한 시간 안에 함께 놓입니다.',
+          '내가 죽인 나를 위해 치르는 장례식. 꽃과 스켈레톤, 사람의 손과 기계, 살리는 행동과 죽이는 행동이 한 시간 안에 함께 놓입니다.',
           'A funeral for the self I have killed.',
         )),
       ),
@@ -1551,10 +1577,10 @@ function screenAboutProject(initialSection = null) {
           '〈오늘 나는 죽인다, 나를〉은 그렇게 죽여 온 ‘나’를 위한 장례식입니다. 그러나 이 장례는 완전히 보내버리기 위한 의식이 아닙니다. 죽였다고 믿은 것이 어떤 모습으로 다시 돌아오는지 보고, 그 존재를 다시 부를 이름을 만드는 자리입니다.',
         ],
         deeper: [
-          '이 작품은 자기혐오를 하나의 개인적 결함으로만 보지 않습니다. 완벽함을 요구하는 시선, 쓸모와 생산성을 기준으로 자신을 평가하는 습관, 좋아 보이는 모습만 남기려는 이미지 문화가 한 사람의 내부에서 어떻게 작동하는지를 함께 봅니다.',
+          '이 작품은 스스로 밀어내거나 없애려 한 나의 면을 하나의 개인적 결함으로만 보지 않습니다. 완벽함을 요구하는 시선, 쓸모와 생산성을 기준으로 자신을 평가하는 습관, 좋아 보이는 모습만 남기려는 이미지 문화가 한 사람의 내부에서 어떻게 작동하는지를 함께 봅니다.',
           '장례식이라는 형식은 끝을 선언하기 위해서가 아니라, 평소에는 보이지 않던 관계를 잠시 드러내기 위해 사용됩니다. 누가 죽였고, 무엇이 죽었으며, 남은 사람은 누구인지. 여기서는 세 질문의 답이 모두 ‘나’일 수 있습니다.',
           '이 작품에서 죽인 사람과 죽은 사람, 그리고 장례 뒤에 남은 사람은 모두 나일 수 있습니다. 그래서 이 장례는 누군가를 완전히 보내기 위한 의식이 아닙니다. 내가 없앴다고 믿은 것이 어떤 모습으로 돌아오는지 보고, 그 존재와 맺고 있던 관계를 다시 바라보는 자리입니다.',
-          '작품은 자기혐오가 사라졌다고 선언하지 않습니다. 대신 미워했던 면을 제거해야만 앞으로 갈 수 있다는 생각을 멈추고, 그 면 안에 함께 있었던 다른 얼굴까지 같은 시간에 놓아봅니다.',
+          '작품은 불편했던 나의 면이 사라졌다고 선언하지 않습니다. 대신 그 면을 제거해야만 앞으로 갈 수 있다는 생각을 멈추고, 그 안에 함께 있었던 다른 얼굴까지 같은 시간에 놓아봅니다.',
         ],
       }),
       aboutSection({
@@ -1567,10 +1593,10 @@ function screenAboutProject(initialSection = null) {
           '이 작품은 그 구조를 오늘의 자기 인식으로 옮깁니다. “우리는 언젠가 죽는다”는 오래된 문장 옆에 “나는 살아 있는 동안 무엇을 계속 죽이고 있는가”라는 질문을 둡니다.',
         ],
         deeper: [
-          '그래서 여기의 장미와 해골은 단순한 장례 장식이나 고딕 이미지가 아닙니다. 장미는 만져야 소리를 얻고, 해골은 관객에게 손을 내밉니다. 정물화 속에서 멈춰 있던 상징이 관객의 행동을 기다리는 물체로 바뀝니다.',
+          '그래서 여기의 장미와 스켈레톤은 단순한 장례 장식이나 고딕 이미지가 아닙니다. 장미는 만져야 소리를 얻고, 스켈레톤은 관객에게 손을 내밉니다. 정물화 속에서 멈춰 있던 상징이 관객의 행동을 기다리는 물체로 바뀝니다.',
           '바니타스가 죽음을 기억하게 했다면, 이 작업은 자신이 무엇을 죽이고 있는지 보게 합니다. 기억은 관찰로 끝나지 않고, 무엇을 살리고 무엇에 물을 줄지 다시 고르는 행동으로 이어집니다.',
           '바니타스의 꽃은 피어 있는 순간에도 시들고 있고, 해골은 한때 살아 움직였던 몸의 시간을 품습니다. 이 작품은 서로 반대되는 상태가 한 화면 안에 동시에 존재하는 구조를 가져오되, 죽음을 멀리 있는 운명으로만 다루지 않습니다.',
-          '살아 있으면서도 자기 안의 일부를 반복해서 제거하고, 말하지 못하게 하고, 존재하지 않았던 것처럼 만드는 일에 주목합니다. 장미와 해골은 그 질문을 바라보는 상징에서 관객의 선택을 받아 움직이는 몸으로 바뀝니다.',
+          '살아 있으면서도 자기 안의 일부를 반복해서 제거하고, 말하지 못하게 하고, 존재하지 않았던 것처럼 만드는 일에 주목합니다. 장미와 스켈레톤은 그 질문을 바라보는 상징에서 관객의 선택을 받아 움직이는 몸으로 바뀝니다.',
         ],
       }),
       aboutSection({
@@ -1596,13 +1622,13 @@ function screenAboutProject(initialSection = null) {
         lead: '미워한 면과 그것의 다른 얼굴을 동시에 바라볼 수 있을까요.',
         body: [
           '이 전시에서 살리는 행동과 죽이는 행동은 선과 악으로 나뉘지 않습니다. 물과 햇빛도 지나치면 한 존재를 압도할 수 있고, 독과 괴물에 반응하는 방식에서도 관객 자신의 태도가 드러납니다. 중요한 것은 어느 버튼이 옳은가가 아니라, 자신이 무엇을 반복해서 선택하는가입니다.',
-          '오늘의 이름도 같은 구조를 가집니다. 관객은 먼저 없애고 싶었던 자기의 한 면을 쓰고, 그 안에 함께 있었던 다른 한 면을 씁니다. 두 번째 문장은 첫 번째를 미화하거나 취소하지 않습니다. 서로 모순되는 두 얼굴이 한 이름 안에 함께 남습니다.',
+          '장미 이름도 같은 구조를 가집니다. 관객은 먼저 자신이 죽여 온 한 면을 쓰고, 그와 동시에 존재했던 반대편의 면을 씁니다. 두 번째 문장은 첫 번째를 미화하거나 취소하지 않습니다. 서로 모순되는 두 얼굴이 한 이름 안에 함께 남습니다.',
         ],
         deeper: [
           '작품의 끝은 부정적인 면을 제거하고 긍정적인 면이 승리하는 장면이 아닙니다. 죽음 뒤에는 리스폰이 있고, 이전의 흔적은 완전히 사라지지 않습니다. 살아남음과 상처, 돌봄과 파괴가 한 화면 안에서 공존하는 상태가 마지막에 가깝습니다.',
           '그래서 Phone Hub는 관객에게 점수나 성격 분석을 보여주지 않습니다. 내부의 변화는 장미의 모양에만 반영됩니다. 숫자는 모순을 다시 한 줄의 평가로 줄여버리기 때문입니다.',
           '돌봄은 언제나 순수하게 선하지 않고 파괴 역시 하나의 의미로만 닫히지 않습니다. 무엇을 살린다는 명목으로 지나치게 통제할 수도 있고, 없애려던 행동이 오히려 다른 흔적을 드러낼 수도 있습니다.',
-          '오늘의 이름도 같은 구조를 가집니다. 두 번째 문장은 첫 번째를 미화하거나 취소하지 않습니다. 둘은 한 사람 안에서 동시에 존재하며, 이름은 한쪽이 다른 쪽을 이긴 결과가 아니라 두 얼굴을 함께 부르는 방식이 됩니다.',
+          '장미 이름도 같은 구조를 가집니다. 두 번째 문장은 첫 번째를 미화하거나 취소하지 않습니다. 둘은 한 사람 안에서 동시에 존재하며, 이름은 한쪽이 다른 쪽을 이긴 결과가 아니라 두 얼굴을 함께 부르는 방식이 됩니다.',
         ],
       }),
       aboutSection({
@@ -1625,33 +1651,33 @@ function screenAboutProject(initialSection = null) {
         id: 'about-ritual',
         index: '06',
         title: '장례식의 순서',
-        lead: '명명하고, 개입하고, 목격하고, 마지막에 오늘 지은 이름을 내려놓습니다.',
+        lead: '명명하고, 개입하고, 목격하고, 기록한 뒤 장미의 이름과 함께 돌아갑니다.',
         body: [
-          '첫 번째 작품에서 관객은 다른 사람의 손을 빌려 장미를 만지고 이름을 짓습니다. 두 번째에서는 그 이름을 가진 존재를 직접 살리고 죽이며 자신이 자신을 대하는 방식을 다시 연기합니다. 세 번째에서는 자기 화면을 벗어나 다른 사람들의 장례 속에서 자신의 자리를 찾습니다.',
-          '마지막의 “놓아주기”는 이름을 삭제하는 일이 아닙니다. 그 이름을 더 이상 혼자 들고 있지 않겠다고 정하는 일입니다. 장례식이 끝나도 죽인 것은 사라지지 않습니다. 다만 다시 부를 수 있는 이름과, 어느 쪽에 물을 줄지 고를 가능성이 남습니다.',
+          '첫 번째 작품에서 관객은 스켈레톤의 왼손을 잡고 다른 손으로 생화 장미를 만져 하나의 회로를 완성합니다. 두 번째에서는 장미이자 스켈레톤인 자기 형상에 직접 개입하고, 세 번째에서는 세계의 장례 서사 속에서 왜곡된 자기 장미의 자리를 목격합니다.',
+          '네 번째 기록은 완성된 작품 뒤의 손과 물질의 시간을 보여줍니다. 마지막 출구에서 다시 읽는 장미의 이름은 삭제하거나 버릴 결론이 아니라, 전시 밖에서도 돌아볼 수 있는 오늘의 표식입니다.',
         ],
         deeper: [
           '이 순서는 치료의 단계나 회복의 정답을 제시하지 않습니다. 작품을 본 뒤 더 나아졌다고 말하도록 요구하지도 않습니다. 의식의 역할은 한 사람 안의 모순을 없애는 것이 아니라, 평소에는 겹쳐 보이지 않던 것들을 같은 시간 안에 놓는 것입니다.',
-          '01은 다른 사람의 손을 빌려 자기 안으로 가장 가까이 들어가는 자리입니다. 02는 그 이름을 가진 존재를 직접 살리고 죽이며 자신이 자신을 대하는 방식을 행동으로 반복합니다.',
+          '01은 살아 있는 손, 생화 장미와 스켈레톤이 하나의 회로가 되어 자기 안으로 가장 가까이 들어가는 자리입니다. 02는 그 이름을 가진 존재를 직접 돌보고 해치며 자신이 자신을 대하는 방식을 행동으로 반복합니다.',
           '03에서는 자기 내부에서 한 걸음 물러나 세계의 장례들 사이에서 자신의 색과 형체를 목격합니다. 04는 완성된 작품 뒤에서 사라지는 제작의 손과 실패를 이 시신의 기록으로 남깁니다.',
-          '마지막 발인은 이름을 삭제하는 일이 아닙니다. 그 이름을 더 이상 혼자 들고 있지 않기로 하는 일입니다. 의식은 모순을 없애지 않고, 서로 겹쳐 보이지 않던 것들을 같은 시간 안에 놓습니다.',
+          '마지막 출구는 이름을 삭제하는 자리가 아닙니다. 의식은 모순을 없애지 않고, 서로 겹쳐 보이지 않던 것들을 같은 시간 안에 둔 채 다시 선택할 가능성을 남깁니다.',
         ],
       }),
       aboutSection({
         id: 'about-work-01',
         index: '07',
         title: '01 명명 / NAMING',
-        lead: '혼자서는 소리가 나지 않는 생화 장미 정원입니다.',
+        lead: '살아 있는 손과 생화 장미, 스켈레톤이 하나의 회로가 되는 작품입니다.',
         body: [
-          '한 사람의 몸은 물에서 시작하고, 다른 사람의 손을 거쳐 장미까지 이어집니다. 서로 다른 몸이 잠시 하나의 회로가 될 때 생화와 기계가 함께 소리를 냅니다. 장미를 오래 쥐거나 여러 송이를 함께 만지면 정원의 반응도 달라집니다.',
-          '이 작품에서 관계는 감상해야 할 주제가 아니라 작동 조건입니다. 누군가의 손을 잡지 않으면 자기 장미도 들을 수 없습니다. “나는 혼자 존재할 수 있는가”라는 질문이 설명문이 아니라 끊어지고 이어지는 회로로 나타납니다.',
+          '스켈레톤의 왼손을 잡고 다른 손으로 생화 장미를 만지면 회로가 완성됩니다. 열다섯 송이는 각각 다른 소리와 빛, 픽셀의 반응을 가지고 있으며 오래 머물수록 반응은 더 깊어집니다.',
+          '장미를 만지는 순서와 조합에 따라 빛과 소리가 겹쳐집니다. 열다섯 송이를 한 번씩 모두 거치는 순서만 계산해도 15! = 1,307,674,368,000가지입니다. 숫자를 모두 소유하는 것이 아니라, 오늘의 나와 가장 깊게 공명하는 하나의 균형을 충분히 탐색합니다.',
         ],
         deeper: [
-          '관객은 장미의 소리를 들은 뒤 오늘의 이름을 짓습니다. 먼저 미워했던 자기의 한 면을 적고, 그 안의 다른 얼굴을 적은 다음, 둘이 함께 남을 수 있는 하나의 문장을 만듭니다. 명명은 감정을 분류하는 검사가 아니라 서로 밀어내던 두 얼굴을 같은 이름 아래 잠시 두는 행동입니다.',
-          '장미마다 어떤 의미가 있는지는 미리 적어두지 않습니다. 의미를 먼저 읽고 맞는 꽃을 고르는 대신, 손의 감각과 소리의 반응이 먼저 오게 합니다.',
-          '장면을 남기는 마지막 행동은 메인1이 내민 손과의 악수입니다. 사람과 사람이 손을 이어 회로를 만들었던 몸이, 이번에는 작품의 몸과 직접 손을 맞잡으며 그 순간을 기록합니다.',
-          '정원의 회로는 물에서 시작해 사람의 피부와 손을 지나 생화에 닿습니다. 자연과 기계, 나와 타인의 경계가 하나의 신호 안에서 잠시 흐려지고, 반응의 원인을 한 사람에게만 돌릴 수 없게 됩니다.',
-          '생화는 전시가 진행되는 동안 실제로 상하고 시듭니다. 관객의 접촉은 흔적 없이 사라지는 입력이 아니라 꽃의 몸에 남는 시간이며, 명명은 그 접촉 뒤에 오는 응답입니다.',
+          '스켈레톤은 죽은 타인이 아니라 오늘 장례를 치르는 또 하나의 나를 가리킵니다. 살아 있는 손이 스켈레톤과 생화에 동시에 닿아야만 빛과 소리가 발생한다는 조건은 삶과 죽음이 분리된 두 상태가 아니라 한 회로 안의 동시적인 조건임을 드러냅니다.',
+          '비주얼은 일부러 감정의 이름을 직접 설명하지 않습니다. 겹겹의 추상 이미지가 경계를 흐리고, 아주 어두운 글리치가 한순간 반짝이는 핑크빛으로 바뀝니다. 관객은 정해진 답을 읽는 대신 자기 몸이 반응하는 픽셀과 소리의 조합을 찾습니다.',
+          '원하는 균형을 찾았다면 스켈레톤의 양손을 잡습니다. 두 손이 맞닿는 순간 화면이 기록되고 짧은 기계음이 촬영을 알립니다. 기록은 정답의 인증이 아니라 그 순간의 공명을 붙잡는 행위입니다.',
+          '그 뒤 장미 이름을 짓습니다. 서로 밀어내던 두 얼굴을 같은 이름 안에 잠시 두는 명명은, 방금 몸으로 찾은 빛과 소리의 균형을 자신의 언어로 옮기는 과정입니다.',
+          '생화는 전시가 진행되는 동안 실제로 상하고 시듭니다. 관객의 접촉은 사라지는 입력이 아니라 꽃의 몸과 작품의 기록에 남는 시간입니다.',
         ],
       }),
       aboutSection({
@@ -1660,32 +1686,32 @@ function screenAboutProject(initialSection = null) {
         title: '02 개입 / INTERVENTION',
         lead: '01에서 지은 이름을 가진 존재가 화면 안에서 다시 살아납니다.',
         body: [
-          '관객은 화면 속 존재를 살리거나 해치는 행동을 반복합니다. 완전히 죽어도 존재는 다시 일어나지만, 이전의 흔적은 지워지지 않습니다. 반복할수록 화면에는 자신이 그 존재를 어떻게 대해왔는지가 쌓입니다.',
-          '관객의 몸과 화면 속 장미 인간은 살아 있는 나와 다시 연기되는 나라는 서로 다른 상태로 마주합니다. 관객이 누르는 선택은 화면에만 머물지 않고 다음 리스폰과 흔적에 이어집니다.',
+          '관객은 화면 속 존재의 균형과 생기를 바라보며 돌보고, 찌르고, 다시 개입합니다. 모든 것이 똑같이 공평하게 존재할 수 없듯 공평이나 불공평 어느 한쪽만으로도 이 몸은 유지되지 않습니다. 목표는 완벽한 평형이 아니라 계속 움직이는 불균형의 균형을 마주하는 것입니다.',
+          '화면 속 존재는 장미이자 스켈레톤이고, 죽음이자 삶이며, 내가 죽이는 나이면서 동시에 나를 죽이는 나입니다. 서로를 취소하지 않는 두 힘이 같은 몸에 남습니다.',
         ],
         deeper: [
-          '스크린샷을 남기려면 카메라를 바라보고 두 눈을 2초 동안 감습니다. 화면을 확인하며 포즈를 취하는 대신 잠시 시각을 닫고, 방금 자신이 그 존재를 어떻게 대했는지 몸 안에서 느낀 뒤 장면을 남깁니다.',
-          '이 작품에는 승리 화면이 없습니다. 긍정적인 선택만 반복하는 것도 하나의 답이 되지 않습니다. 돌봄과 파괴가 함께 지나간 뒤 그 존재와 어떤 상태로 머무는지가 중요합니다.',
-          '물과 햇빛, 독과 괴물은 선과 악의 버튼이 아닙니다. 중요한 것은 어느 선택이 옳은가가 아니라 어떤 행동을 반복하고 언제 바꾸며 서로 다른 행동을 어떻게 섞는가입니다.',
-          '관객은 화면 속 존재를 보면서 동시에 카메라 안의 자신을 봅니다. 손가락의 형상 안에 자기 모습이 나타나고, 행동하는 나와 그 행동을 지켜보는 내가 같은 장면에 놓입니다.',
+          '두 손가락으로 마스크를 그리면 카메라 속 내 모습이 거울처럼 스켈레톤 위에 투영됩니다. 독을 먹이고 돌보던 대상의 얼굴이 곧 나의 얼굴이 되면서, 행동하는 나와 그 행동을 바라보는 내가 같은 장면에 놓입니다.',
+          '다섯 손가락으로 마스크를 그리면 처음 정한 장미 색과 장미 이름이 스켈레톤 위에 나타납니다. 삶이 나이고 내가 죽음이며, 장미와 스켈레톤이 서로 다른 상징이 아니라 같은 존재의 두 얼굴임을 보여줍니다.',
+          '물과 햇빛, 독과 괴물은 선과 악의 버튼이 아닙니다. 중요한 것은 어떤 행동을 반복하고 언제 바꾸며 서로 다른 힘을 어떻게 섞어 오늘의 균형을 만드는가입니다.',
           '죽음은 끝이 되지 않습니다. 존재는 다시 일어나지만 이전 상태로 완전히 복구되지는 않습니다. 돌봄과 손상, 죽음과 재생이 서로를 취소하지 않고 같은 몸에 남습니다.',
+          '마지막에는 카메라를 바라보고 두 눈을 감습니다. 화면을 확인하며 포즈를 고르는 대신, 방금 그 존재에게 한 일을 몸 안에서 지나가게 한 뒤 그 순간을 기록합니다.',
         ],
       }),
       aboutSection({
         id: 'about-work-03',
         index: '09',
         title: '03 목격 / WITNESS',
-        lead: '다른 사람들의 장례가 흐르는 시간 속에서 자신의 자리를 찾습니다.',
+        lead: '세계의 장례 서사 안에서 왜곡된 나의 장미를 세 번 목격합니다.',
         body: [
-          '이전 작품들이 자기 안으로 가까이 들어갔다면, 이 작품은 시선을 바깥으로 돌립니다. 화면을 지나가는 장면은 모두 다른 사람의 장례입니다. 관객은 그 시간을 빨리 소비하지 않고, 일부 장면 앞에서 속도를 늦추며 머뭅니다.',
-          '자신의 형체는 정면에서 바로 알아볼 수 없는 왜상으로 나타납니다. 한 자리에서 비스듬히 바라볼 때만 형태가 서기 때문에, 무엇을 보는지는 어디에 서 있는가와 분리되지 않습니다.',
+          '헤드폰을 쓰고 손을 장미 가까이 가져가면 흐르는 시간에 개입할 수 있습니다. 세 번의 목격이 쌓이는 동안 이 서사 안에서 나의 위치가 정해지고, 처음에는 흐릿했던 장미가 찬찬히 바라볼수록 선명해집니다.',
+          '바니타스 회화의 해골처럼 나의 장미도 처음에는 왜곡된 모습으로 나타납니다. 관객은 왜곡의 반대 얼굴을 찾기 위해 시간의 흐름을 없애는 대신 충분히 늦추고, 자기 자신을 살펴볼 시간을 스스로에게 수여합니다.',
         ],
         deeper: [
-          '되감기가 없는 이유는 놓친 것을 벌주기 위해서가 아닙니다. 모든 장면을 확보하고 확인하는 방식 대신, 지나가는 동안 실제로 본 것이 남게 하기 위해서입니다. 찾기는 목적이 아니라 천천히 보게 만드는 도구입니다.',
-          '여러 언어의 인공적인 목소리와 한국어 자막은 타인의 기억에 완전히 들어갈 수 없다는 거리를 만듭니다. 충분히 오래 머문 순간에만 자신의 목소리와 가까운 단서가 나타납니다. 애도는 죽은 사람만을 위한 것이 아니라, 남아서 바라보는 사람의 위치를 다시 만드는 일이기도 합니다.',
-          '관객은 손의 높이로 시간의 속도를 바꾸고 일부 장면 앞에서 충분히 느려진 채 머뭅니다. 놓친 장면은 다시 소유할 수 없는 지나간 시간으로 남습니다.',
-          '왜상은 정면에서 풍경의 일부였던 죽음의 표식이 특정한 각도에서 드러나는 바니타스의 시각 구조를 가져옵니다. 여기서도 관객은 몸의 위치를 바꾸어야 자신의 형체를 볼 수 있습니다.',
-          '자기 색을 찾는 일은 특별한 존재가 되는 일이 아니라, 서로 같지 않은 수많은 죽음과 타인의 시간 사이에 자신도 놓여 있음을 알아보는 일입니다.',
+          '이전 작품들이 자기 안으로 가까이 들어갔다면, 03은 한 걸음 물러나 세계 속에서 자신을 바라보는 자리입니다. 화면을 지나가는 장면과 여러 언어는 서로 다른 문화와 장소에 존재하는 죽음의 서사를 이룹니다.',
+          '세 번의 목격은 정답을 세 번 확인하는 과정이 아닙니다. 같은 장미도 시간과 거리, 내가 선 위치에 따라 다르게 보인다는 사실을 몸으로 확인하는 과정입니다.',
+          '왜상은 정면에서 풍경의 일부였던 죽음의 표식이 특정한 각도에서 드러나는 바니타스의 시각 구조를 가져옵니다. 여기서도 관객은 손과 몸의 위치를 바꾸어야 자기 장미의 형체를 볼 수 있습니다.',
+          '시간은 여전히 흐릅니다. 관객은 시간을 멈춰 소유하는 대신 그 흐름에 찬찬히 개입해 자기 자신을 살펴볼 시간을 스스로에게 줍니다.',
+          '세 번의 목격 뒤에는 그 순간을 기록하거나 다시 시간에 개입해 서사를 마무리할 수 있습니다. 기록은 찾기의 종결이 아니라, 오늘 내가 서 있던 위치를 남기는 선택입니다.',
         ],
       }),
       aboutSection({
@@ -1694,7 +1720,7 @@ function screenAboutProject(initialSection = null) {
         title: '04 기록 / RECORD',
         lead: '완성된 작품 뒤에서 사라지는 손과 제작의 시간을 남긴 영상입니다.',
         body: [
-          '장미, 해골, 전선, 센서와 컨트롤러가 하나의 몸이 되는 동안의 손을 기록했습니다. 관객이 만나는 완성된 표면만이 아니라, 자르고 잇고 실패하고 다시 연결한 시간을 작품의 일부로 둡니다.',
+          '장미, 스켈레톤, 전선, 센서와 컨트롤러가 하나의 몸이 되는 동안의 손을 기록했습니다. 관객이 만나는 완성된 표면만이 아니라, 자르고 잇고 실패하고 다시 연결한 시간을 작품의 일부로 둡니다.',
           '영상에는 반드시 처음부터 봐야 하는 서사가 없습니다. 어느 순간에 들어오고 나가도 됩니다. 다른 작품을 기다리는 동안 보아도 되고, 모든 작품을 지난 뒤 돌아와도 됩니다.',
         ],
         deeper: [
@@ -1702,7 +1728,7 @@ function screenAboutProject(initialSection = null) {
           '인터랙티브 미디어 작품은 완성되면 기술이 보이지 않는 매끄러운 표면으로 나타나기 쉽습니다. 그러나 그 뒤에는 자르고 잇는 손, 실패한 테스트, 다시 시작된 연결, 사라진 버전과 고장 난 장치의 시간이 있습니다.',
           '이 작품은 그 과정을 숨겨 마술처럼 보이게 하지 않습니다. 기계 역시 몸을 가지고 있고, 그 몸은 수많은 손의 노동과 오류를 통해 만들어집니다.',
           '영상에 정해진 처음과 마지막이 없는 이유도 여기에 있습니다. 제작은 선명한 시작과 완성으로 정리되지 않습니다. 어느 장면에서 들어와도 손은 이미 무언가를 만들고 있고, 어느 순간 떠나도 작업은 다른 곳에서 계속됩니다.',
-          '04는 네 번째 성격 점수나 변화 축을 만들지 않습니다. 앞선 세 작품이 생겨난 물질적 시간과 그 시간을 감싸는 기록의 자리입니다.',
+          '04는 앞선 작품의 결과를 해석하거나 관객을 한 가지 결론으로 분류하지 않습니다. 완성된 장면 뒤에 감춰진 손, 실패, 반복과 물질의 시간을 독립된 기록으로 남깁니다.',
         ],
       }),
       aboutSection({
@@ -1711,7 +1737,7 @@ function screenAboutProject(initialSection = null) {
         title: '당신의 장미와 Phone Hub',
         lead: '휴대폰은 작품의 실시간 화면을 복제하지 않고, 흩어진 선택을 한 장미 아래 이어주는 얇은 실입니다.',
         body: [
-          '입장에서 고른 색, 01에서 지은 이름, 각 작품에서 직접 남긴 장면이 하나의 장미 번호에 연결됩니다. 입구의 NFC로 장미 번호를 시작하고 작품 앞의 패턴을 고르는 행동은, 디지털 기록을 시작하는 동시에 전시장 전체에 흩어진 정원을 이어줍니다.',
+          '입장에서 고른 색, 01에서 지은 장미 이름, 각 작품에서 직접 남긴 장면이 하나의 장미 번호에 연결됩니다. 입구의 NFC로 장미 번호를 시작하고 작품 앞의 패턴을 고르는 행동은, 디지털 기록을 시작하는 동시에 네 작품에 흩어진 장면을 이어줍니다.',
           'Phone Hub는 관객을 분석한 점수나 성격 유형을 보여주지 않습니다. 중간의 현재 표본도 완성된 해석이 아니라 지금까지의 흔적입니다. 변화는 숫자가 아니라 장미의 모양과 남겨진 장면으로만 보입니다.',
         ],
         deeper: [
@@ -1732,17 +1758,17 @@ function screenAboutProject(initialSection = null) {
           '동시에 모든 선택이 가볍게 사라지지는 않습니다. 한 작품에서 한 행동이 다음 작품의 색과 이름, 화면과 위치에 이어집니다. 자유는 아무 결과도 없는 상태가 아니라, 자신의 선택이 남긴 모양을 다시 볼 수 있는 상태에 가깝습니다.',
         ],
         deeper: [
-          '이 장례식은 치료를 약속하지 않습니다. 자기혐오가 사라졌다고 선언하지도 않습니다. 다만 미워했던 면과 그 안의 다른 얼굴을 동시에 바라볼 수 있는 짧은 시간을 만들고자 합니다.',
+          '이 장례식은 치료를 약속하지 않습니다. 스스로 밀어냈던 면이 사라졌다고 선언하지도 않습니다. 다만 그 면과 그 안의 다른 얼굴을 동시에 바라볼 수 있는 짧은 시간을 만들고자 합니다.',
           '모순은 없어지지 않아도, 어느 쪽에 물을 줄지는 고를 수 있습니다. 이 문장은 작품이 관객에게 주는 결론이 아니라, 전시장을 나간 뒤에도 다시 선택할 수 있도록 남겨두는 질문입니다.',
-          '인터랙션은 무엇을 느껴야 하는지 명령하기 위한 장치가 아니라 자기 선택을 자기 눈앞에 돌려놓기 위한 구조입니다. 오늘의 이름은 작품이 부여하는 진단이 아니며, 관객이 원하지 않으면 기록 없이 입장할 수도 있습니다.',
-          '선택권은 작품의 책임을 관객에게 떠넘기기 위한 말이 아닙니다. 죽음, 애도, 자기혐오를 다루는 만큼 화면은 강요보다 예고를, 평가보다 복구 가능한 선택을 먼저 제공합니다.',
+          '인터랙션은 무엇을 느껴야 하는지 명령하기 위한 장치가 아니라 자기 선택을 자기 눈앞에 돌려놓기 위한 구조입니다. 장미 이름은 작품이 부여하는 진단이 아니며, 관객이 원하지 않으면 기록 없이 입장할 수도 있습니다.',
+          '선택권은 작품의 책임을 관객에게 떠넘기기 위한 말이 아닙니다. 죽음과 애도, 스스로 밀어낸 나의 면을 다루는 만큼 화면은 강요보다 예고를, 평가보다 복구 가능한 선택을 먼저 제공합니다.',
           '기술이 실패하더라도 작품을 계속 볼 수 있는 경로를 남기고, 남겨진 데이터보다 관객의 경험을 우선합니다. 관객은 정답을 찾는 사람이 아니라 서로 모순되는 자기 모습을 같은 시간 안에 둘 수 있는지 시험하는 사람입니다.',
         ],
       }),
       el('footer', { class: 'about-page-end' },
         el('span', { class: 'micro-label' }, 'ARTIST / MINNIE PARK'),
         el('p', {}, tr('Minnie Park은 인간, 자연, 기계 사이에서 감정이 어떻게 물질과 행동으로 번역되는지 탐구하는 인터랙티브 미디어 아티스트입니다.', 'Minnie Park is an interactive media artist.')),
-        el('p', {}, tr('생화, 해골, 전선, 센서, 실시간 이미지와 관객의 몸을 연결해 한 사람이 혼자서는 완성할 수 없는 장면을 만듭니다.', 'Her work connects organic matter, machines, real-time images, and the audience body.')),
+        el('p', {}, tr('생화, 스켈레톤, 전선, 센서, 실시간 이미지와 관객의 몸을 연결해 한 사람이 혼자서는 완성할 수 없는 장면을 만듭니다.', 'Her work connects organic matter, machines, real-time images, and the audience body.')),
         el('a', { class: 'text-button', href: ARTIST_INSTAGRAM_URL, target: '_blank', rel: 'noopener noreferrer' }, tr('작가에게 메시지 보내기', 'MESSAGE THE ARTIST'), el('span', { 'aria-hidden': 'true' }, '↗')),
         textButton('HOME', screenHome),
         textButton(tr('장미 메뉴를 엽니다', 'OPEN ROSE MENU'), openRoseMenu),
@@ -1760,55 +1786,55 @@ function screenAboutProject(initialSection = null) {
 const MODULES = {
   '01': {
     en: 'NAMING', ko: '명명', phaseKo: '명명', visual: 'naming',
-    essentialKo: '다른 사람과 손을 이어 장미를 만집니다. 혼자 고른 장미가 아니라, 잠시 함께 만든 회로 안에서 들린 장미를 기억해주세요. 마지막에는 작품이 내민 손과 악수해 이 장면을 남깁니다.',
-    essentialEn: 'Place one hand in the water and hold the person beside you. Touch the roses with your free hand to make today\'s resonance.',
-    helpKo: '물에서 시작해 사람의 손을 지나 장미까지 하나의 회로를 만듭니다.',
-    helpEn: 'Make a chain of hands from the water to the roses. Touch a rose while connected to activate sound and light.',
-    helpDetailKo: ['한 사람이 물에 한 손을 담급니다.', '남은 손으로 옆 사람의 손을 잡습니다. 여러 명이면 같은 방식으로 손을 이어갑니다.', '사슬 끝에 선 사람이 남은 손으로 장미를 만집니다. 짧게 스치거나 오래 쥐고, 여러 송이를 함께 잡아도 됩니다.', '작품이 손을 내밀면 악수합니다. 손을 맞잡은 순간의 장면이 당신의 장미에 남습니다.', '장미를 지난 뒤 오늘의 이름을 짓습니다.'],
-    helpDetailEn: ['One person begins with one hand in the water.', 'Hold hands in a chain until the final person reaches the roses.', 'The last person touches the roses with their free hand. A brief touch or a long hold both work.', 'If the chain breaks, the sound stops. Reconnect your hands to continue.', 'When the work offers a hand, shake it to leave the scene. The circuit cannot close alone.'],
-    troubleshootKo: ['소리가 나지 않으면 물에서 장미까지 손이 이어져 있는지 확인해주세요. 손과 손이 끊어지면 회로와 소리도 멈춥니다.', '손을 다시 잡은 뒤 장미를 만져주세요. 손이 젖었다면 장비를 만지기 전에 닦아주세요.', '악수 뒤 장면이 보이지 않아도 작품은 계속 진행할 수 있습니다. 잠시 뒤 다시 확인하거나 스태프에게 말씀해주세요.'],
-    aboutKo: '생화와 기계가 한 정원 안에 연결되어 있습니다. 장미는 손이 닿는 동안 소리를 얻지만, 그 소리는 혼자서는 나지 않습니다. 누군가 물에 손을 담그고 서로의 손을 이을 때 여러 몸이 잠시 하나의 회로가 됩니다. 여기서 손이 머문 장미들은 뒤이어 지을 오늘의 이름에 먼저 닿은 재료가 됩니다.',
-    aboutEn: 'As different bodies become one circuit, the combination of roses becomes material for one emotional name.',
-    aboutDetailKo: ['이 정원에서 관계는 감상해야 할 주제가 아니라 작동 조건입니다. 누군가의 손을 잡지 않으면 자기 앞의 장미도 들을 수 없습니다. “나는 혼자 존재할 수 있는가”라는 질문이 설명문이 아니라 끊어지고 이어지는 회로로 나타납니다.', '회로는 물에서 시작해 사람의 피부와 손을 지나 생화에 닿습니다. 자연과 기계, 나와 타인의 경계는 하나의 신호 안에서 잠시 흐려집니다. 누가 시작했고 누가 반응을 만들었는지 한 사람에게만 돌릴 수 없습니다.', '장미마다 정해진 감정 단어는 없습니다. 의미를 먼저 읽고 자신에게 맞는 꽃을 고르는 대신, 손의 감각과 소리의 반응이 말보다 먼저 오게 합니다.', '생화는 전시가 진행되는 동안 실제로 상하고 시듭니다. 관객의 접촉은 흔적 없이 사라지는 입력이 아니라 꽃의 몸에 남는 시간입니다.', '여러 송이를 함께 잡거나 오래 머무는 행동은 좋은 선택과 나쁜 선택으로 환산되지 않습니다. 그 조합은 점수로 돌아오지 않고, 이후 자기 언어로 이름을 지을 때 다시 떠올릴 감각으로 남습니다.', '마지막에 작품이 내민 손과 악수하면 한 장면이 남습니다. 처음에는 다른 사람의 손을 빌려 회로를 만들었다면, 끝에서는 작품의 몸과 직접 손을 맞잡습니다.'],
+    essentialKo: '스켈레톤의 왼손을 잡고, 다른 손으로 생화 장미를 만져 회로를 완성합니다. 열다섯 장미의 서로 다른 소리와 빛을 충분히 탐색한 뒤, 오늘의 나와 가장 공명하는 균형을 찾았다면 스켈레톤의 양손을 잡아 그 순간을 기록합니다.',
+    essentialEn: 'Hold the skeleton\'s left hand and touch the living roses with your other hand. Explore their sound and light, then hold both hands of the skeleton to record the balance that resonates with you.',
+    helpKo: '스켈레톤과 장미 사이에 자신의 몸을 연결해 열다섯 개의 소리와 빛을 탐색합니다.',
+    helpEn: 'Connect your body between the skeleton and fifteen living roses. Hold both skeleton hands when you find your balance.',
+    helpDetailKo: ['한 손으로 스켈레톤의 왼손을 잡습니다.', '다른 손으로 한 송이 또는 여러 송이의 생화 장미를 만집니다. 장미마다 서로 다른 소리와 빛이 나타납니다.', '같은 장미에 오래 머물거나 여러 장미를 조합해보세요. 머무는 시간이 길수록 소리와 빛의 층은 더 깊어집니다.', '아주 어두운 글리치부터 순간적으로 반짝이는 핑크빛까지 살피며, 오늘의 나와 가장 공명하는 픽셀과 소리의 균형을 찾습니다.', '그 순간을 기록하고 싶다면 스켈레톤의 양손을 잡습니다. 짧은 기계음과 함께 화면이 저장됩니다.', '01을 마친 뒤, 방금 찾은 균형을 떠올리며 장미 이름을 지을 수 있습니다.'],
+    helpDetailEn: ['Hold the skeleton\'s left hand with one hand.', 'Touch one or several living roses with the other. Each rose produces a different sound and light.', 'Stay longer or combine different roses. The layers deepen with time.', 'Find the balance of pixels and sound that resonates with you today.', 'Hold both hands of the skeleton to record it. A short mechanical sound confirms the capture.', 'After 01, you may give your rose its name.'],
+    troubleshootKo: ['반응이 없다면 스켈레톤의 왼손을 충분히 감싸 쥔 상태에서 장미를 다시 만져주세요.', '한 송이씩 천천히 만져 각 장미의 반응을 확인한 뒤 여러 송이를 조합해보세요.', '기록하려면 스켈레톤의 양손을 동시에 잡고 짧은 기계음이 들릴 때까지 잠시 유지합니다.', '계속 작동하지 않거나 기록이 보이지 않으면 스태프에게 말씀해주세요.'],
+    aboutKo: '바니타스가 꽃과 해골을 한 장면에 두어 삶과 죽음의 동시성을 드러냈듯, 이 작품은 생화 장미와 스켈레톤을 관객의 몸으로 연결합니다. 장미를 살리는 듯한 접촉은 동시에 꽃을 소모시키고, 죽음의 형상인 스켈레톤은 그 접촉을 통해 빛과 소리를 얻습니다. 무엇이 삶이고 무엇이 죽음인지 한쪽으로 고정되지 않는 자리에서, 관객은 오늘 자신에게 가장 가까운 균형을 직접 찾습니다.',
+    aboutEn: 'Living roses and a skeleton share one circuit through the audience body. Touch gives light and sound while also wearing the flowers down, holding life and death in the same act.',
+    aboutDetailKo: ['이 작품에서 스켈레톤은 단순한 죽음의 소품이 아닙니다. 장미와 관객 사이의 신호를 받아들이는 몸이자, 관객이 자신의 장례에서 처음 마주 잡는 상대입니다.', '열다섯 송이는 각각 다른 소리와 빛을 가집니다. 열다섯 장미를 순서 있게 모두 선택할 때 가능한 배열은 15!, 즉 1,307,674,368,000가지입니다. 관객은 그 거대한 가능성을 전부 계산하지 않고, 몸이 동하는 한순간의 조합을 감각으로 찾습니다.', '비주얼은 일부러 감정의 이름을 직접 보여주지 않습니다. 겹겹의 픽셀과 글리치는 경계를 흐리고, 어둠 속에서 잠깐 번지는 핑크빛은 하나의 감정이 고정된 얼굴로만 남지 않게 합니다.', '장미를 만지는 행동은 돌봄이면서 동시에 꽃의 시간을 앞당기는 접촉입니다. 장미는 소리를 얻고 시들며, 스켈레톤은 죽음의 형상을 가진 채 반응합니다. 서로 반대되어 보이는 상태가 하나의 회로 안에서 동시에 일어납니다.', '오래 머무를수록 빛과 소리는 심화되지만 더 높은 점수로 환산되지는 않습니다. 이 작품의 목적은 가장 좋은 조합을 맞히는 것이 아니라 오늘 자신의 몸이 실제로 공명하는 균형을 알아차리는 것입니다.', '스켈레톤의 양손을 잡는 마지막 동작은 악수이자 기록의 셔터입니다. 관객은 죽음을 밀어내지 않고 마주 잡은 채, 방금 선택한 삶과 죽음의 균형을 한 장면으로 남깁니다.'],
   },
   '02': {
     en: 'INTERVENTION', ko: '개입', phaseKo: '개입', visual: 'reenactment',
-    essentialKo: '컨트롤러로 화면 속 존재에게 개입합니다. 돌보고, 해치고, 다시 일어나는 모습을 지켜보세요. 한 방향만 반복할 필요는 없습니다. 마지막에는 카메라를 바라보고 두 눈을 감아 장면을 남깁니다.',
-    essentialEn: 'Open your hand toward the screen. Follow the hand and mask, then close both eyes for two seconds to be recorded.',
-    helpKo: '버튼마다 화면 속 존재에게 다른 변화가 일어납니다. 화면의 반응을 보며 행동을 고릅니다.',
-    helpEn: 'Use the controller buttons to intervene in the figure. When the hand and mask appear, face the camera and close both eyes to leave a scene.',
-    helpDetailKo: ['컨트롤러의 버튼을 눌러봅니다. 버튼마다 화면 속 존재에게 다른 변화가 일어납니다.', '화면의 반응을 보며 서로 다른 행동을 시도합니다. 무엇이 살리고 무엇이 해치는지는 직접 발견합니다.', '손 전체와 얼굴이 카메라 화면에 들어오도록 한 걸음 물러섭니다.', '화면에 손과 마스크가 나타나면 카메라를 바라봅니다.', '두 눈을 약 2초 동안 감습니다. 눈을 감은 순간의 장면이 당신의 장미에 남습니다.'],
-    helpDetailEn: ['Each controller button makes a different change. Discover what it protects or harms by watching the response.', 'You do not need to repeat only one kind of action. Notice what remains when different actions are mixed.', 'Step back until your full hand and face are visible to the camera.', 'When the hand and mask appear, face the camera and close both eyes for about two seconds. That moment is recorded.'],
+    essentialKo: '컨트롤러로 화면 속 스켈레톤의 균형과 생기에 개입합니다. 돌보고 해치며 다시 일어나는 과정을 충분히 탐색하세요. 두 손가락과 다섯 손가락으로 마스크를 만들면, 행동하는 나와 그 행동을 바라보는 나의 얼굴이 스켈레톤 위에 겹쳐집니다. 마지막에는 두 눈을 감아 그 장면을 기록합니다.',
+    essentialEn: 'Intervene in the skeleton\'s balance and vitality. Make masks with two or five fingers, then close both eyes to record the self who acts and the self who watches.',
+    helpKo: '서로 다른 행동으로 균형과 생기의 변화를 만들고, 손가락 마스크 안에서 자신의 얼굴을 마주합니다.',
+    helpEn: 'Use the controller to alter balance and vitality. Form two- and five-finger masks, then close your eyes to record the scene.',
+    helpDetailKo: ['컨트롤러의 서로 다른 행동을 시도합니다. 각 행동은 화면 속 스켈레톤의 균형과 생기를 다르게 바꿉니다.', '한 방향만 반복할 필요는 없습니다. 돌봄과 손상, 죽음과 다시 일어남이 한 몸에 함께 남는 과정을 지켜봅니다.', '카메라 앞에서 두 손가락으로 마스크를 그리면, 화면 속 스켈레톤 위에 현재의 내 얼굴이 거울처럼 투영됩니다.', '다섯 손가락으로 마스크를 그리면 내가 고른 장미 색과 장미 이름이 스켈레톤 위의 나와 함께 나타납니다.', '행동하는 나와 그 행동을 바라보는 나를 충분히 마주한 뒤, 카메라를 향해 두 눈을 약 2초 동안 감습니다.', '눈을 감은 순간의 화면이 당신의 장미 번호에 기록됩니다.'],
+    helpDetailEn: ['Try the different controller actions. Each changes the skeleton\'s balance and vitality.', 'Care and damage, death and return may remain in the same body.', 'Draw a two-finger mask so your face is mirrored onto the skeleton.', 'Draw a five-finger mask to reveal your rose color and rose name over the skeleton.', 'Face the camera and close both eyes for about two seconds to record the scene.'],
     troubleshootKo: ['버튼을 눌러도 반응이 없으면 컨트롤러의 전원이 켜져 있는지 확인해주세요.', '손과 마스크가 보이지 않으면 손 전체와 얼굴이 화면 안에 들어오도록 한 걸음 물러섭니다.', '스크린샷이 남지 않으면 카메라를 정면으로 바라보고 두 눈을 완전히 감은 채 약 2초간 기다립니다.', '계속 작동하지 않으면 스태프에게 말씀해주세요.'],
-    aboutKo: '01에서 지은 이름을 가진 존재가 화면 안에서 다시 살아납니다. 당신은 그 존재를 돌보거나 해칠 수 있습니다. 완전히 죽어도 다시 일어나지만 이전의 흔적은 지워지지 않습니다. 여기에는 승리도 패배도 없습니다. 남는 것은 그 존재를 대했던 방식입니다.',
-    aboutEn: 'This scene does not restore a lost emotion exactly. It leaves another form by performing it again with the body.',
-    aboutDetailKo: ['이 작품에서 관객은 관찰자가 아니라 개입하는 사람입니다. 화면 속 존재는 01에서 관객이 지은 이름을 받아 나타나고, 관객의 손은 그 존재를 살리거나 죽이는 사건을 만듭니다.', '물과 햇빛, 독과 괴물은 선과 악의 버튼이 아닙니다. 중요한 것은 어느 선택이 정답인가가 아니라 어떤 행동을 반복하고, 언제 바꾸며, 서로 다른 행동을 어떻게 섞는가입니다.', '죽음은 끝이 되지 않습니다. 존재는 다시 일어나지만 이전 상태로 완전히 복구되지는 않습니다. 돌봄과 손상, 죽음과 재생이 서로를 취소하지 않고 같은 몸에 남습니다.', '관객은 화면 속 존재를 보면서 동시에 카메라 안의 자신을 보게 됩니다. 손가락의 형상 안에 자신의 모습이 나타나고, 행동하는 나와 그 행동을 지켜보는 내가 같은 장면에 놓입니다.', '두 눈을 감는 행위는 정답을 찾았다는 신호가 아닙니다. 화면을 확인하며 포즈를 고르는 대신 잠시 시각을 닫고, 방금 자신이 그 존재를 어떻게 대해왔는지 몸 안에서 지나가게 합니다.', '그 순간 생성된 스크린샷은 결과 인증 사진이 아닙니다. 내가 이름 붙인 존재에게 무엇을 했고, 그 행위를 바라보는 나는 어떤 모습이었는지를 함께 남긴 장면입니다.'],
+    aboutKo: '모든 것이 공평하게 존재할 수 없듯 불공평만 존재할 수도 없습니다. 화면 속 나는 장미이자 스켈레톤이며, 삶이자 죽음입니다. 관객은 이 존재를 돌보고 해치며 균형을 바로잡으려 하지만, 완전한 평형에 도달하는 것이 아니라 계속 흔들리는 불균형의 균형을 마주하게 됩니다.',
+    aboutEn: 'The self on screen is rose and skeleton, life and death. Intervention does not produce perfect balance; it reveals the shifting balance inside imbalance.',
+    aboutDetailKo: ['이 작품에서 관객은 관찰자가 아니라 적극적으로 개입하는 사람입니다. 화면 속 존재는 관객의 장미 색과 이름을 받아 나타나고, 관객의 선택은 그 존재를 살리거나 죽이는 실제 사건이 됩니다.', '돌봄과 손상은 서로 깨끗하게 분리되지 않습니다. 살리기 위한 개입이 다른 균형을 무너뜨릴 수 있고, 파괴적인 행동 뒤에도 생명은 다시 일어납니다. 공평과 불공평 역시 서로를 배제하지 않은 채 함께 나타납니다.', '나를 죽이는 나와 내가 죽이는 나는 다른 인물이 아닙니다. 장미와 스켈레톤, 삶과 죽음도 같은 화면 안에서 하나의 몸을 공유합니다. 작품은 이 모순을 해결하기보다 그대로 마주 보게 합니다.', '두 손가락 마스크 안에는 지금의 얼굴이 거울처럼 투영됩니다. 관객은 자신이 해치고 돌보는 스켈레톤 위에서, 바로 그 행동을 선택하고 지켜보는 자신의 얼굴을 만나게 됩니다.', '다섯 손가락 마스크에는 관객이 고른 색과 장미 이름이 더해집니다. 그 순간 화면 속 존재는 타자가 아니라 장미 이름을 가진 나의 장미이자 나의 스켈레톤으로 구체화됩니다.', '두 눈을 감아 남기는 장면은 성공이나 실패의 증명이 아닙니다. 무엇을 했는지와 그 행동을 바라본 나는 누구였는지를 같은 기록 안에 두는 일입니다.'],
   },
   '03': {
     en: 'WITNESS', ko: '목격', phaseKo: '목격', visual: 'mourning',
-    essentialKo: '흰 장미 위에 손을 올려 흐르는 시간을 늦춥니다. 가장 느린 시간에 머문 뒤 화면을 비스듬히 바라보며 자신의 장미 색을 찾습니다. 찾은 자리에서 흰 장미를 눌러 그 순간을 남깁니다.',
-    essentialEn: 'Place your hand above the flower. Move time with its height and slowly find your color inside the passing images.',
-    helpKo: '손의 높이로 시간을 늦추고, 몸의 위치를 바꾸어 정면에서는 보이지 않는 자신의 형체를 찾습니다.',
-    helpEn: 'Slow time by holding your hand over the white rose, then look from an angle to find your color.',
-    helpDetailKo: ['흰 장미 위에 손을 올립니다. 손이 가까워질수록 화면의 시간이 느려집니다.', '가장 느린 시간에 약 3초 동안 머뭅니다. 짧은 소리가 나면 손을 떼어도 느려진 시간이 유지됩니다.', '화면 앞에서 몸을 옆으로 옮기며 비스듬히 바라봅니다. 정면에서는 보이지 않던 형체와 자신의 장미 색을 찾습니다.', '찾았다고 생각되는 자리에서 흰 장미를 누릅니다.', '지나간 영상은 되감기지 않습니다. 놓친 장면도 이곳을 지나온 시간의 일부로 남습니다.'],
-    helpDetailEn: ['Bring your hand close to the white rose to slow the image.', 'Stay at the slowest speed for about three seconds to hear a short sound. The slowed speed remains briefly after you remove your hand.', 'A form invisible from the front appears when you look at the screen from an angle. Find your rose color slowly.', 'Press the white rose where you find it. The video does not rewind; a missed scene remains part of the passing time.'],
-    troubleshootKo: ['시간이 느려지지 않으면 손을 장미 위에서 완전히 뺐다가 다시 가져와주세요.', '가장 느린 속도에서 약 3초 머물면 짧은 소리가 납니다. 소리가 난 뒤에는 손을 떼고 화면을 비스듬히 볼 수 있습니다.', '형체가 보이지 않으면 화면 정면에만 서 있지 말고 좌우로 천천히 움직이며 바라보는 각도를 바꿔주세요.', '흰 장미를 눌러도 반응하지 않으면 조금 더 머물며 다음 장면을 바라봐주세요.'],
-    aboutKo: '다른 사람들의 장례가 흐르는 시간 속에서 자신의 자리를 찾습니다. 손을 가까이 가져갈수록 시간은 느려지고, 오래 바라본 장면과 처음 고른 장미의 색이 당신이 나타날 자리를 정합니다. 찾기는 목적이 아니라 지나가는 것을 천천히 보게 만드는 방법입니다.',
-    aboutEn: 'Here, mourning is not a still scene but finding your trace again among other people\'s time.',
-    aboutDetailKo: ['01과 02가 자기 안으로 가까이 들어가는 작품이었다면, 03은 한 걸음 물러나 세계 속에서 자신을 바라보는 자리입니다. 화면을 지나가는 장면은 서로 다른 문화와 장소에 존재하는 장례의 이미지입니다.', '관객은 영상을 자유롭게 되감거나 목록처럼 훑을 수 없습니다. 손의 높이로 시간의 속도를 바꾸고, 일부 장면 앞에서 충분히 느려진 채 머뭅니다. 놓친 장면은 다시 소유할 수 없는 지나간 시간으로 남습니다.', '자신의 형체는 정면에서 알아보기 어려운 왜상으로 나타납니다. 한 자리에서 비스듬히 바라볼 때만 형태가 서기 때문에, 무엇을 보는지는 어디에 서 있는가와 분리되지 않습니다.', '왜상은 바니타스의 계보 안에서 죽음을 숨겨두었던 시각 장치를 가져옵니다. 정면에서는 풍경의 일부였던 형상이 몸을 옮겨 특정한 각도에 섰을 때 드러나듯, 여기서도 관객은 자기 위치를 바꾸어야 자신을 볼 수 있습니다.', '여러 언어의 목소리와 한국어 자막은 타인의 기억에 완전히 들어갈 수 없다는 거리를 남깁니다. 관객은 세계의 죽음을 모두 자기 이야기로 소유하지 않은 채 바라봅니다.', '애도는 죽은 사람만을 위한 일이 아닙니다. 남아서 바라보는 사람이 자신의 위치를 다시 만드는 일이기도 합니다. 자기 색을 찾는 일은 특별한 존재가 되는 일이 아니라 수많은 타인 사이에 자신도 놓여 있음을 알아보는 일입니다.'],
+    essentialKo: '헤드폰을 쓰고, 손을 장미 가까이 가져가 세 번의 목격을 시작합니다. 각 목격은 흐르는 시간 안에서 당신의 자리를 정하고, 처음에는 왜곡되고 흐릿했던 장미는 찬찬히 바라볼수록 선명해집니다. 세 번째 목격 뒤에는 그 순간을 기록하거나 다시 시간에 개입해 서사를 마무리할 수 있습니다.',
+    essentialEn: 'Put on the headphones and bring your hand close to the rose for three acts of witness. Your distorted rose becomes clearer as you stay, after which you may record or enter time again.',
+    helpKo: '손을 장미 가까이 가져가 세 번 목격하고, 흐르는 시간을 늦추며 왜곡된 자신의 장미를 선명하게 만듭니다.',
+    helpEn: 'Bring your hand near the rose three times. Slow the passing time until your distorted rose becomes clear, then record or intervene again.',
+    helpDetailKo: ['헤드폰을 쓰고 화면과 장미 앞에 섭니다.', '손을 장미 가까이 가져가 첫 번째 목격을 시작합니다. 화면의 반응을 확인한 뒤 손을 완전히 뺍니다.', '같은 방식으로 두 번째와 세 번째 목격을 이어갑니다. 세 번의 선택은 이 서사 안에서 당신의 장미가 나타날 자리를 정합니다.', '처음에는 흐릿하고 왜곡되어 보이는 장미를 서두르지 말고 바라봅니다. 시간을 늦추어 찬찬히 머물수록 장미의 형체가 선명해집니다.', '세 번째 목격 뒤, 지금의 장면을 기록할지 다시 장미 가까이 손을 가져가 시간에 개입할지 선택합니다.', '지나간 장면을 모두 소유할 수는 없습니다. 놓친 시간까지 포함해 자신의 서사를 마무리합니다.'],
+    helpDetailEn: ['Put on the headphones and stand before the screen and rose.', 'Bring your hand near the rose for the first witness, then remove it completely.', 'Repeat for the second and third witnesses. These choices place your rose inside the narrative.', 'Stay with the initially blurred and distorted rose until it becomes clear.', 'After the third witness, record the scene or intervene in time once more.'],
+    troubleshootKo: ['목격이 시작되지 않으면 손을 장미에서 완전히 뺐다가 천천히 다시 가까이 가져가주세요.', '다음 목격으로 넘어가지 않으면 화면의 반응이 끝난 뒤 손을 충분히 멀리 뺐다가 다시 시도해주세요.', '장미가 선명해지지 않으면 손의 거리를 급하게 바꾸지 말고 한 위치에서 잠시 머물러주세요.', '헤드폰 소리가 들리지 않거나 화면이 반응하지 않으면 스태프에게 말씀해주세요.'],
+    aboutKo: '03은 세계 속에서 나의 죽음과 나의 장미를 목격하는 자리입니다. 바니타스의 왜상 속 해골처럼 장미는 처음부터 온전한 모습으로 주어지지 않습니다. 관객은 세 번 시간에 개입하고, 여전히 흘러가는 장면을 찬찬히 바라볼 시간을 스스로에게 수여함으로써 왜곡의 반대편 얼굴을 찾습니다.',
+    aboutEn: 'The rose first appears as a distortion, like the skull hidden in a vanitas image. Three acts of witness give you time to find its other face inside a world that continues to move.',
+    aboutDetailKo: ['01이 내 안의 공명을 찾고 02가 나의 행위를 조금 떨어져 바라보는 작품이라면, 03은 더 넓은 세계의 언어와 시간 속에 나의 죽음과 장미를 대입하는 자리입니다.', '세 번의 목격은 정답을 고르는 단계가 아닙니다. 어떤 장면에 얼마나 가까이 다가가고 언제 손을 거두었는지가, 흐르는 서사 안에서 관객의 자리를 만듭니다.', '관객의 장미는 처음에는 흐릿하고 왜곡된 모습으로 나타납니다. 바니타스 회화의 왜상이 특정한 위치와 충분한 바라봄을 요구했듯, 이 장미도 한눈에 소비되지 않고 시간을 필요로 합니다.', '시간은 완전히 멈추지 않습니다. 관객은 모든 장면을 붙잡을 수 없지만, 손을 가까이 가져가 속도에 개입하고 자신을 찬찬히 바라볼 시간을 스스로에게 수여할 수 있습니다.', '장미가 선명해지는 것은 죽음이 사라졌다는 뜻이 아닙니다. 왜곡되어 있던 한 얼굴과 그 반대편 얼굴을 같은 서사 안에서 함께 볼 수 있게 되었다는 뜻에 가깝습니다.', '세 번째 목격 뒤에는 기록하거나 다시 시간에 개입할 수 있습니다. 이미 정해진 결말을 확인하는 대신, 자신의 서사를 어디에서 마칠지 관객이 선택합니다.'],
   },
   '04': {
     en: 'RECORD', ko: '기록', phaseKo: '기록', visual: 'archive',
-    essentialKo: '헤드폰을 쓰고 원하는 만큼 머뭅니다. 영상에는 반드시 처음부터 보아야 하는 서사가 없습니다. 어느 장면에서 들어와도 되고, 한 장면만 본 뒤 나가도 됩니다.',
-    essentialEn: 'Look slowly through the scenes and specimen records left behind.',
+    essentialKo: '소리 없이 이어지는 제작의 시간을 원하는 만큼 바라봅니다. 영상에는 반드시 처음부터 보아야 하는 서사가 없습니다. 어느 장면에서 들어와도 되고, 한 장면만 본 뒤 나가도 됩니다.',
+    essentialEn: 'Watch the silent record of making for as long as you wish. There is no required beginning or ending.',
     helpKo: '정해진 시작과 끝 없이 제작의 장면 사이에 머뭅니다.',
-    helpEn: 'Put on the headphones and watch from any point for as long as you wish. Touch your phone to the rose to connect this stay.',
-    helpDetailKo: ['준비된 티슈로 헤드폰을 닦습니다.', '헤드폰을 쓰고 편한 자리에서 영상을 봅니다.', '원하는 장면만 보거나 오래 머물러도 됩니다.', '관람을 마친 뒤 헤드폰을 다시 닦아 제자리에 둡니다.', '휴대폰을 연결하지 않아도 영상을 볼 수 있습니다. 안내판과 같은 장미 패턴을 선택하면 머문 시간이 당신의 장미 번호에 남습니다.'],
-    helpDetailEn: ['Put on the headphones and sit or stand where you can watch comfortably. Please use the supplied tissue before and after use.', 'The film has no fixed beginning or ending. You may enter at any scene and leave at any time.', 'To connect this visit to your rose number, select the rose pattern that matches the sign. The film can also be watched without connecting your phone.'],
-    troubleshootKo: ['소리가 들리지 않으면 헤드폰이 끝까지 연결되어 있는지 확인해주세요. 음량은 준비된 조절 장치에서 천천히 올려주세요.', '영상에는 정해진 시작 화면이 없습니다. 중간 장면처럼 보여도 정상입니다.', '계속 소리가 들리지 않으면 스태프에게 말씀해주세요.'],
-    aboutKo: '완성된 작품 뒤에서 사라지는 손과 제작의 시간을 남긴 영상입니다. 장미, 해골, 전선과 센서가 하나의 몸이 되는 동안의 절단과 연결, 실패와 반복을 기록했습니다. 완성된 표면뿐 아니라 그 표면을 만들고 사라진 시간도 이 장례의 일부입니다.',
-    aboutEn: 'ARCHIVE is not a fourth distortion axis. It is the documentary frame around the other traces.',
-    aboutDetailKo: ['제작 기록은 다른 작품을 설명하는 부록이나 홍보 영상이 아닙니다. 이 시신이 어떤 노동과 반복을 지나 만들어졌는지를 보여주는 또 하나의 부검 기록에 가깝습니다.', '인터랙티브 미디어 작품은 완성되면 기술이 보이지 않는 매끄러운 표면으로 나타나기 쉽습니다. 그러나 그 뒤에는 자르고 잇는 손, 실패한 테스트, 다시 시작된 연결, 사라진 버전과 고장 난 장치의 시간이 있습니다.', '이 작품은 그 과정을 숨겨 마술처럼 보이게 하지 않습니다. 기계 역시 몸을 가지고 있고, 그 몸은 수많은 손의 노동과 오류를 통해 만들어집니다.', '장미와 해골, 센서와 케이블은 각각 독립된 재료였다가 전시가 시작되는 순간 하나의 작동하는 시신이 됩니다. 관객이 만나는 것은 완제품이 아니라 계속 유지되고 다시 연결되어야 하는 임시적인 몸입니다.', '영상에 정해진 처음과 마지막이 없는 이유도 여기에 있습니다. 제작은 선명한 시작과 완성으로 정리되지 않습니다. 어느 장면에서 들어와도 손은 이미 무언가를 만들고 있고, 어느 순간 떠나도 작업은 다른 곳에서 계속됩니다.', '04는 네 번째 성격 점수나 변화 축을 만들지 않습니다. 앞선 세 작품이 생겨난 물질적 시간과 그 시간을 감싸는 기록의 자리입니다.'],
+    helpEn: 'Watch the silent film from any point for as long as you wish. Select the matching rose pattern if you want this stay connected to your rose number.',
+    helpDetailKo: ['편한 자리에서 소리 없는 영상을 바라봅니다.', '영상에는 정해진 처음과 마지막이 없습니다. 중간 장면에서 시작해도 정상입니다.', '원하는 장면만 본 뒤 나가거나, 손의 노동과 반복을 오래 바라보아도 됩니다.', '휴대폰을 연결하지 않아도 영상을 볼 수 있습니다.', '안내판과 같은 장미 패턴을 선택하면 이곳에 머문 기록이 당신의 장미 번호에 이어집니다.'],
+    helpDetailEn: ['Watch the silent film from a comfortable place.', 'The film has no fixed beginning or ending. Enter at any scene and leave at any time.', 'You may watch without connecting your phone. Select the matching rose pattern to connect this stay to your rose number.'],
+    troubleshootKo: ['이 영상은 의도적으로 소리가 없습니다. 헤드폰도 사용하지 않습니다.', '영상에는 정해진 시작 화면이 없습니다. 중간 장면처럼 보여도 정상입니다.', '영상이 멈추거나 화면이 꺼진 경우 스태프에게 말씀해주세요.'],
+    aboutKo: '완성된 작품 뒤에서 사라지는 손과 제작의 시간을 남긴 영상입니다. 장미, 스켈레톤, 전선과 센서가 하나의 몸이 되는 동안의 절단과 연결, 실패와 반복을 기록했습니다. 완성된 표면뿐 아니라 그 표면을 만들고 사라진 시간도 이 장례의 일부입니다.',
+    aboutEn: 'RECORD preserves the labor, failed attempts, and repeated connections that disappear behind the completed works.',
+    aboutDetailKo: ['제작 기록은 다른 작품을 설명하는 부록이나 홍보 영상이 아닙니다. 이 시신이 어떤 노동과 반복을 지나 만들어졌는지를 보여주는 또 하나의 부검 기록에 가깝습니다.', '인터랙티브 미디어 작품은 완성되면 기술이 보이지 않는 매끄러운 표면으로 나타나기 쉽습니다. 그러나 그 뒤에는 자르고 잇는 손, 실패한 테스트, 다시 시작된 연결, 사라진 버전과 고장 난 장치의 시간이 있습니다.', '이 작품은 그 과정을 숨겨 마술처럼 보이게 하지 않습니다. 기계 역시 몸을 가지고 있고, 그 몸은 수많은 손의 노동과 오류를 통해 만들어집니다.', '장미와 스켈레톤, 센서와 케이블은 각각 독립된 재료였다가 전시가 시작되는 순간 하나의 작동하는 시신이 됩니다. 관객이 만나는 것은 완제품이 아니라 계속 유지되고 다시 연결되어야 하는 임시적인 몸입니다.', '영상에 정해진 처음과 마지막이 없는 이유도 여기에 있습니다. 제작은 선명한 시작과 완성으로 정리되지 않습니다. 어느 장면에서 들어와도 손은 이미 무언가를 만들고 있고, 어느 순간 떠나도 작업은 다른 곳에서 계속됩니다.', '04는 앞선 작품들이 생겨난 물질적 시간과 그 시간을 감싸는 독립된 기록의 자리입니다. 완성된 결과에서 지워지기 쉬운 노동과 실패, 반복의 몸을 다시 화면 앞으로 돌려놓습니다.'],
   },
 };
 
@@ -2540,15 +2566,15 @@ async function screenModule(stationId, options = {}) {
           }, 'local-only-connect'),
         ),
       ) : needsName ? el('section', { class: 'naming-prerequisite' },
-        el('span', { class: 'instruction-level' }, 'NAME GIVEN TODAY / REQUIRED'),
-        el('h2', {}, tr('이 작품에는 오늘 지은 이름이 필요합니다', 'THIS WORK NEEDS YOUR NAME')),
+        el('span', { class: 'instruction-level' }, 'NAME OF THE ROSE / REQUIRED'),
+        el('h2', {}, tr('이 작품에는 장미 이름이 필요합니다', 'THIS WORK NEEDS YOUR ROSE NAME')),
         el('p', {}, tr(
-          '01의 장미를 지난 뒤 이름을 짓는 것을 권합니다. 그 이름이 이 작품의 화면 안에 나타납니다.',
-          'We recommend making your name after the rose garden in 01. That name appears inside this work.',
+          '01 명명을 지난 뒤 장미 이름을 짓는 것을 권합니다. 이 이름은 전시가 끝날 때까지 당신과 장미를 함께 부르는 이름이며, 이 작품의 화면 안에도 나타납니다.',
+          'We recommend naming your rose after 01. This name follows you and your rose through the exhibition and appears inside this work.',
         )),
         el('div', { class: 'naming-prerequisite-actions' },
           textButton(tr('01 명명으로 갑니다', 'GO TO 01'), () => screenModule('01', { via: 'name_required' })),
-          textButton(tr('지금 오늘의 이름을 짓습니다', 'MAKE MY NAME NOW'), () => screenFinalReflection({ exitFlow: false, returnToStation: stationId })),
+          textButton(tr('지금 장미 이름을 짓습니다', 'NAME MY ROSE NOW'), () => screenFinalReflection({ exitFlow: false, returnToStation: stationId })),
         ),
       ) : connected ? el('div', { class: 'connected-banner' },
         el('span', {}, '● CONNECTED'),
@@ -2587,7 +2613,7 @@ async function screenModule(stationId, options = {}) {
       !connected ? textButton('HOME', screenHome, 'return-home') : null,
     ),
   ], connected && !needsName ? [
-    primaryButton(stationId === '01' ? tr('오늘의 이름을 짓습니다', 'NAME THIS FEELING') : tr('이 작품을 마칩니다', 'FINISH THIS WORK'), async () => {
+    primaryButton(stationId === '01' ? tr('장미 이름을 짓습니다', 'NAME MY ROSE') : tr('이 작품을 마칩니다', 'FINISH THIS WORK'), async () => {
       if (stationId === '01') {
         const activeSession = ensureSession();
         const closed = await leaveDbStation('01');
@@ -2641,7 +2667,7 @@ function screenMySpecimen({ returnTo = null } = {}) {
       ),
       roseVisual('specimen', 'CURRENT MY ROSE', traceProfile),
       el('div', { class: 'specimen-name' },
-        el('span', {}, session.emotional_name ? tr('오늘 지은 이름', 'NAME GIVEN TODAY') : tr('아직 이름 없음', 'NOT YET NAMED')),
+        el('span', {}, session.emotional_name ? tr('나의 장미 이름', 'NAME OF MY ROSE') : tr('장미 이름 없음', 'ROSE NOT YET NAMED')),
         el('h1', {}, displayName(session)),
       ),
       el('section', { class: 'trace-section' },
@@ -2659,7 +2685,7 @@ function screenMySpecimen({ returnTo = null } = {}) {
         }),
       ),
       el('div', { class: 'quiet-actions' },
-        textButton(session.emotional_name ? tr('오늘의 이름 보기', 'VIEW NAME') : tr('오늘의 이름 짓기', 'NAME GIVEN TODAY'), () => screenFinalReflection({ exitFlow: false })),
+        textButton(session.emotional_name ? tr('장미 이름 보기', 'VIEW ROSE NAME') : tr('장미 이름 짓기', 'NAME MY ROSE'), () => screenFinalReflection({ exitFlow: false })),
         textButton('HOME', screenHome),
       ),
     ),
@@ -2704,7 +2730,7 @@ async function screenExitJourney() {
         )),
       ) : null,
       el('p', { class: 'intro-copy' }, tr(
-        missing.length ? '모든 곳을 지나지 않아도 지금까지 남긴 것으로 유품을 만들 수 있습니다. 돌아가도 되고, 이대로 마쳐도 됩니다.' : '이제 오늘 지은 이름과 남긴 장면을 확인하고, 이 장례식의 마지막 기록을 남깁니다.',
+        missing.length ? '모든 곳을 지나지 않아도 지금까지 남긴 것으로 유품을 만들 수 있습니다. 돌아가도 되고, 이대로 마쳐도 됩니다.' : '이제 오늘의 장미 이름과 남긴 장면을 확인하고, 이 장례식의 마지막 기록을 남깁니다.',
         missing.length ? 'You may complete your rose with what you have left so far.' : 'Review the name and moments you left, then make the final record of this funeral.',
       )),
       missing.length ? textButton(tr('돌아가서 봅니다', 'RETURN TO EXHIBITION'), screenHome) : null,
@@ -2739,28 +2765,27 @@ function saveNaming(a, b, finalName, inputMeta = {}) {
 }
 
 // 치료·진단이 아니라 전시의 감정적 깊이·구조·매체 경험을 각각 한 번씩 묻는다.
-// 감정 깊이는 01 하나로만 직접 측정해 중복 척도를 피한다.
-// 1은 전혀 그렇지 않다, 10은 매우 그렇다. 자유소감은 선택 입력이다.
+// 1은 전혀 그렇지 않다, 10은 매우 그렇다. 자유소감은 빈칸으로도 제출할 수 있다.
 const SURVEY_QUESTIONS = [
   {
-    id: 'emotional_depth',
-    ko: '이 전시는 내게 깊고 분명한 감정적 경험으로 남았습니다.',
-    en: 'This exhibition remained with me as a deep and distinct emotional experience.',
+    id: 'emotional_presence',
+    ko: '이 전시는 감정을 빠르게 설명하거나 판단하기보다, 충분히 느끼고 머물게 했습니다.',
+    en: 'This exhibition gave me time to feel and stay with emotion rather than explain or judge it quickly.',
   },
   {
-    id: 'self_relevance',
-    ko: '이 전시에서 마주한 장미 또는 장면은 지금의 나와 연결되어 있었습니다.',
-    en: 'A rose or scene in this exhibition felt connected to who I am now.',
+    id: 'rose_self_connection',
+    ko: '전시를 지나는 동안 장미가 오늘의 나를 대신하는 존재로 느껴졌습니다.',
+    en: 'As I moved through the exhibition, the rose felt like a figure for who I was today.',
   },
   {
-    id: 'ambivalence',
-    ko: '내 안의 서로 다른 면을 한쪽만 지우지 않고 함께 바라볼 수 있었습니다.',
-    en: 'I could look at different sides of myself without erasing either one.',
+    id: 'simultaneity',
+    ko: '삶과 죽음, 돌봄과 파괴처럼 반대되어 보이는 상태가 동시에 존재할 수 있다는 점이 전해졌습니다.',
+    en: 'The exhibition conveyed that apparent opposites—life and death, care and destruction—can exist at the same time.',
   },
   {
-    id: 'emotional_reframing',
-    ko: '관람 전과 비교해, 내 감정을 조금 다른 방식으로 바라보게 되었습니다.',
-    en: 'I came to view my emotions in a somewhat different way.',
+    id: 'ambivalent_self',
+    ko: '서로 모순되어 보이는 나의 여러 면을 한쪽만 지우지 않고 함께 바라볼 수 있었습니다.',
+    en: 'I could look at seemingly contradictory sides of myself without erasing either one.',
   },
   {
     id: 'agency',
@@ -2768,14 +2793,14 @@ const SURVEY_QUESTIONS = [
     en: 'I felt that I could choose what to approach, touch, or leave.',
   },
   {
-    id: 'interaction_meaning',
-    ko: '손과 몸으로 한 상호작용이 단순한 조작 이상으로 느껴졌습니다.',
-    en: 'The interactions I made with my hands and body felt like more than simple controls.',
+    id: 'embodied_interaction',
+    ko: '손과 몸으로 직접 개입하는 방식이 작품의 의미를 이해하는 데 필요했습니다.',
+    en: 'Intervening directly with my hands and body was necessary to understand the work.',
   },
   {
-    id: 'journey_continuity',
-    ko: '각 작품이 흩어진 경험이 아니라 하나의 흐름으로 이어졌습니다.',
-    en: 'The works felt like one connected flow rather than separate experiences.',
+    id: 'ritual_continuity',
+    ko: '명명, 개입, 목격, 기록과 출구가 하나의 장례 의식처럼 이어졌습니다.',
+    en: 'Naming, intervention, witness, record, and departure formed one continuous funeral ritual.',
   },
   {
     id: 'lingering',
@@ -2799,9 +2824,9 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
   rememberView('reflection', { exitFlow, returnToStation });
   clearStationQuery();
 
-  const aInput = el('input', { type: 'text', value: session.emotional_name_a || '', placeholder: tr('내가 미워했던 나의 한 면', 'A side of myself I rejected'), maxlength: 60 });
-  const bInput = el('input', { type: 'text', value: session.emotional_name_b || '', placeholder: tr('그 안에 있던 다른 한 면', 'Another side that was there'), maxlength: 60 });
-  const finalInput = el('input', { type: 'text', value: session.emotional_name || '', placeholder: tr('오늘의 나에게 붙이는 이름', 'A name for today\'s self'), maxlength: 60 });
+  const aInput = el('input', { type: 'text', value: session.emotional_name_a || '', placeholder: tr('오늘 마주한, 내가 죽여 온 나', 'The self I have been killing, met today'), maxlength: 60 });
+  const bInput = el('input', { type: 'text', value: session.emotional_name_b || '', placeholder: tr('그와 동시에 존재했던 반대편의 나', 'The other side that existed at the same time'), maxlength: 60 });
+  const finalInput = el('input', { type: 'text', value: session.emotional_name || '', placeholder: tr('오늘 나를 부를 장미의 이름', 'The rose name that calls me today'), maxlength: 60 });
   const error = el('p', { class: 'field-error', 'aria-live': 'polite' });
   const reflectionOpenedAt = performance.now();
   const inputTracking = {
@@ -2814,7 +2839,7 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
     rows: 4,
     maxlength: 600,
     value: session.survey?.reflection || '',
-    placeholder: tr('지금 남기고 싶은 문장', 'A sentence you want to leave'),
+    placeholder: tr('당신의 경험을 자유롭게 남겨주세요.', 'Leave your experience in your own words.'),
   });
   const surveyTextTracking = trackInput(surveyTextInput, 'survey_reflection');
   const sliderAnswers = {};
@@ -2864,8 +2889,8 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
     ...SURVEY_QUESTIONS.map(surveySlider),
     el('div', { class: 'survey-text-question' },
       el('label', { for: 'survey-reflection' }, tr(
-        '오늘 이 장례식에서, 잠시 남겨두고 싶은 마음이나 장면이 있다면 적어주세요. (선택)',
-        'If there is a feeling or scene from this funeral you want to leave for a while, write it here. (Optional)',
+        '오늘의 인터랙티브 전시 경험이 어땠는지 자유롭게 들려주세요. 자세한 경험을 나누어주시면 작가에게 아주 큰 도움이 됩니다.',
+        'Tell us about your interactive exhibition experience in your own words. Sharing the details is a great help to the artist.',
       )),
       surveyTextInput,
     ),
@@ -2874,25 +2899,25 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
   render([
     globalHeader(),
     el('section', { class: 'screen reflection-screen' },
-      el('span', { class: 'micro-label' }, exitFlow ? 'FINAL RECORD' : 'NAME GIVEN TODAY'),
-      el('h1', { class: 'screen-title' }, tr(exitFlow ? '놓아주기 전에' : '오늘의 이름을 짓습니다', exitFlow ? 'BEFORE LETTING GO' : 'NAME GIVEN TODAY')),
+      el('span', { class: 'micro-label' }, exitFlow ? 'FINAL RECORD' : 'NAME OF THE ROSE'),
+      el('h1', { class: 'screen-title' }, tr(exitFlow ? '놓아주기 전에' : '장미 이름을 짓습니다', exitFlow ? 'BEFORE LETTING GO' : 'NAME OF THE ROSE')),
       el('p', { class: 'intro-copy' }, tr(
-        exitFlow ? '오늘 지은 이름을 이곳에 두고 갈 시간입니다. 두고 간다는 것은 지우는 일이 아닙니다. 더 이상 혼자 들고 있지 않기로 하는 일입니다.' : '방금 손이 머문 장미를 떠올려주세요. 없애고 싶었던 한 면과 그 안에 함께 있었던 다른 한 면을 적고, 두 얼굴이 함께 남을 수 있는 하나의 이름을 짓습니다.',
-        'Place two sides together and make one name that can hold them both.',
+        exitFlow ? '마지막으로 오늘 만난 두 얼굴과 그 둘을 함께 부르는 장미 이름을 다시 읽습니다. 이 이름은 결론이 아니라, 전시 밖에서도 다시 돌아볼 수 있는 오늘의 표식입니다.' : '이 전시에서 장미는 오늘의 당신을 대신하는 표본입니다. 꽃잎과 가시처럼 동시에 존재하는 두 얼굴을 적고, 그 둘이 함께 남을 수 있는 장미 이름을 지어주세요. 장미에 붙이는 이름은 곧 오늘의 당신을 부르는 이름입니다.',
+        exitFlow ? 'Read the two faces you met today and the rose name that can hold them together. It is not a conclusion, but a mark you may return to beyond the exhibition.' : 'In this exhibition, the rose stands in for who you are today. Name its two coexisting faces, then give the rose one name that can hold them together.',
       )),
       el('div', { class: 'numbered-input' },
         el('span', {}, '01'),
-        el('label', {}, tr('내가 미워했던 나의 한 면', 'A SIDE OF MYSELF I REJECTED')),
+        el('label', {}, tr('오늘 마주한, 내가 죽여 온 나', 'THE SELF I HAVE BEEN KILLING, MET TODAY')),
         aInput,
       ),
       el('div', { class: 'numbered-input' },
         el('span', {}, '02'),
-        el('label', {}, tr('그 안에 있던 다른 한 면', 'ANOTHER SIDE THAT WAS THERE')),
+        el('label', {}, tr('그와 동시에 존재했던 반대편의 나', 'THE OTHER SIDE THAT EXISTED AT THE SAME TIME')),
         bInput,
       ),
       el('div', { class: 'numbered-input final-name-input' },
         el('span', {}, '03'),
-        el('label', {}, tr('두 얼굴을 함께 부를 오늘의 이름', 'FINALLY, GIVE TODAY\'S SELF ONE NAME.')),
+        el('label', {}, tr('두 얼굴을 함께 부를 오늘의 장미 이름', 'THE ROSE NAME THAT HOLDS BOTH FACES')),
         finalInput,
       ),
       exitFlow ? survey : null,
@@ -2900,12 +2925,12 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
       !exitFlow ? textButton('HOME', screenHome) : null,
     ),
   ], [
-    primaryButton(exitFlow ? tr('이 이름을 두고 갑니다', 'LEAVE THIS NAME') : tr('오늘의 이름을 남깁니다', 'SAVE THIS NAME'), () => {
+    primaryButton(exitFlow ? tr('이 장미와 함께 돌아갑니다', 'RETURN WITH THIS ROSE') : tr('장미 이름을 저장합니다', 'SAVE ROSE NAME'), () => {
       const a = aInput.value.trim();
       const b = bInput.value.trim();
       const finalName = finalInput.value.trim();
       if (!a || !b || !finalName) {
-        error.textContent = tr('세 문장을 모두 당신의 말로 적어주세요.', 'Complete all three lines.');
+        error.textContent = tr('세 항목을 모두 당신의 말로 적어주세요.', 'Complete all three fields.');
         (!a ? aInput : !b ? bInput : finalInput).focus();
         return;
       }
@@ -3017,7 +3042,7 @@ function saveResultImage() {
   canvas.height = 1440;
   const context = canvas.getContext('2d');
   const session = ensureSession();
-  const title = session.emotional_name || '아직 이름 없음';
+  const title = session.emotional_name || '장미 이름 없음';
 
   context.fillStyle = '#070707';
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -3041,7 +3066,7 @@ function saveResultImage() {
   context.font = '400 28px Menlo, monospace';
   context.fillStyle = '#b6b2aa';
   context.fillText(`ROSE NO. ${session.display_record_no}`, 84, 962);
-  context.fillText('NAME GIVEN TODAY / META ROSE', 84, 1012);
+  context.fillText('NAME OF MY ROSE / META ROSE', 84, 1012);
   context.fillText('MINNIE PARK / META ROSE 2026', 84, 1320);
 
   const link = document.createElement('a');
@@ -3053,7 +3078,7 @@ function saveResultImage() {
 
 async function shareResult() {
   const session = ensureSession();
-  const text = `FINAL MEMENTO / META ROSE 2026\n${session.emotional_name || '아직 이름 없음'}\nROSE NO. ${session.display_record_no}`;
+  const text = `FINAL MEMENTO / META ROSE 2026\n${session.emotional_name || '장미 이름 없음'}\nROSE NO. ${session.display_record_no}`;
   try {
     if (navigator.share) {
       await navigator.share({ title: 'META ROSE SPECIMEN', text, url: location.href });
@@ -3104,8 +3129,8 @@ function screenFinalSpecimen({ refresh = false } = {}) {
         roseVisual('final', 'FINAL META ROSE SPECIMEN', traceProfile),
         el('div', { class: 'specimen-stem stem-top', 'aria-hidden': 'true' }),
         el('div', { class: 'final-emotional-name' },
-          el('span', {}, tr('오늘 지은 이름', 'NAME GIVEN TODAY')),
-          el('h1', {}, session.emotional_name || tr('아직 이름 없음', 'NOT YET NAMED')),
+          el('span', {}, tr('오늘의 장미 이름', 'NAME OF MY ROSE')),
+          el('h1', {}, session.emotional_name || tr('장미 이름 없음', 'ROSE NOT YET NAMED')),
         ),
         el('div', { class: 'specimen-stem', 'aria-hidden': 'true' }),
         specimenReference('01', session),
@@ -3120,7 +3145,7 @@ function screenFinalSpecimen({ refresh = false } = {}) {
         el('p', {}, tr('모순은 없어지지 않아도, 어느 쪽에 물을 줄지는 다시 고를 수 있습니다.', 'THE CONTRADICTION MAY REMAIN, BUT YOU MAY CHOOSE AGAIN WHAT TO WATER.')),
       ),
       el('footer', { class: 'specimen-label' },
-        el('div', {}, el('span', {}, tr('오늘 지은 이름', 'NAME GIVEN TODAY')), el('strong', {}, session.emotional_name || tr('아직 이름 없음', 'NOT YET NAMED'))),
+        el('div', {}, el('span', {}, tr('오늘의 장미 이름', 'NAME OF MY ROSE')), el('strong', {}, session.emotional_name || tr('장미 이름 없음', 'ROSE NOT YET NAMED'))),
         el('div', {}, el('span', {}, 'ROSE NO.'), el('strong', {}, session.display_record_no)),
         el('div', {}, el('span', {}, 'DATE'), el('strong', {}, new Date().toLocaleDateString('ko-KR'))),
         el('p', {}, 'META ROSE 2026 / MINNIE PARK'),

@@ -301,7 +301,7 @@ body.has-dock .app {
 .module-coordinate {
   color: var(--ink-dim);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.16em;
   line-height: 1.5;
   text-transform: uppercase;
@@ -388,20 +388,57 @@ body.has-dock .app {
   padding-top: 42px;
 }
 
+.arrival-project-title {
+  max-width: 14ch;
+  margin: 30px auto 18px;
+  font-family: var(--display);
+  font-size: clamp(2rem, 9.5vw, 3rem);
+  font-weight: 400;
+  letter-spacing: -.055em;
+  line-height: .98;
+  text-align: center;
+}
+
 .arrival-title {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 24px auto 10px;
-  font-size: clamp(2.8rem, 13.5vw, 4rem);
+  margin: 24px auto 12px;
+  font-size: clamp(2.65rem, 12.5vw, 3.8rem);
   font-weight: 300;
   letter-spacing: -0.065em;
-  line-height: 0.86;
+  line-height: .9;
 }
 
 .arrival-title span:last-child {
   margin-left: 0.43em;
   color: var(--ink-dim);
+}
+
+.arrival-byline {
+  margin: 0 auto 28px;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .11em;
+  line-height: 1.5;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.arrival-summary {
+  margin: 28px 0 22px;
+  padding: 26px 0;
+  border-top: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+}
+
+.arrival-summary > p {
+  margin: 16px 0 0;
+  color: #ffffff;
+  font-size: 15px;
+  letter-spacing: -.02em;
+  line-height: 1.85;
 }
 
 .rose-visual {
@@ -661,10 +698,19 @@ body.has-dock .app {
 .screen-footer-meta {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
   padding: 28px 0 8px;
   color: var(--ink-faint);
   border-top: 1px dotted var(--line);
+  text-align: center;
+}
+
+.screen-footer-meta strong {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: .06em;
 }
 
 .site-footer {
@@ -904,7 +950,7 @@ body.has-dock .app {
 
 .input-note {
   color: var(--ink-faint);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -1584,15 +1630,15 @@ body.has-dock .app {
   margin: 0 0 30px;
   color: var(--ink-faint);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.5;
 }
 
 .floorplan-route-order {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.2fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 5px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 3px;
   margin: 20px 0 14px;
   padding: 14px 0;
   border-top: 1px dotted #ffffff;
@@ -1601,8 +1647,10 @@ body.has-dock .app {
 
 .route-order-step {
   display: flex;
-  min-width: 0;
-  min-height: 42px;
+  width: 48px;
+  min-width: 48px;
+  min-height: 50px;
+  flex: 0 0 48px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1614,7 +1662,7 @@ body.has-dock .app {
 
 .route-order-step strong {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -1622,7 +1670,7 @@ body.has-dock .app {
   overflow: hidden;
   max-width: 100%;
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 8px;
   letter-spacing: .04em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1635,17 +1683,17 @@ body.has-dock .app {
   box-shadow: 0 0 14px var(--session);
 }
 
-.route-order-pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
 .route-order-arrow {
+  flex: 0 1 12px;
+  min-width: 10px;
   color: #ffffff;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 14px;
   text-align: center;
+}
+
+.route-order-choice {
+  color: var(--session);
 }
 
 .route-note-primary {
@@ -1659,6 +1707,7 @@ body.has-dock .app {
   letter-spacing: -.015em;
   line-height: 1.65;
   text-align: center;
+  white-space: pre-line;
 }
 
 .module-index-list {
@@ -1830,12 +1879,44 @@ body.has-dock .app {
   min-height: 42px;
   color: var(--ink-dim);
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: .1em;
   text-align: center;
   text-transform: uppercase;
   margin-right: auto;
   margin-left: auto;
+}
+
+/* Audience-facing small type stays readable on older and smaller phones. */
+.language-button,
+.quiet-entry.local-only-entry,
+.record-line,
+.input-group label,
+.numbered-input label,
+.personal-copy small,
+.connection-state,
+.header-arrow,
+.module-number,
+.visit-status,
+.row-arrow,
+.home-name-action > span,
+.connected-banner,
+.instruction-level,
+.specimen-name span,
+.final-emotional-name span,
+.trace-row,
+.missing-list span,
+.menu-index,
+.menu-arrow,
+.menu-language {
+  font-size: 10px;
+}
+
+.module-code,
+.home-work-about-link > span,
+.about-anchor-nav button span,
+.about-to-top {
+  font-size: 9px;
 }
 
 .screen a,
@@ -3344,20 +3425,21 @@ body.has-dock .app {
 .survey-question,
 .survey-text-question {
   min-width: 0;
-  margin: 0;
-  padding: 22px 0;
+  margin: 0 0 14px;
+  padding: 30px 0 38px;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255,255,255,.82);
+  border-bottom: 1px dotted var(--line);
 }
 
 .survey-question legend,
 .survey-text-question label {
   display: block;
   width: 100%;
-  margin: 0 0 16px;
+  margin: 0 0 22px;
   padding: 0;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.6;
 }
@@ -3388,7 +3470,7 @@ body.has-dock .app {
 }
 
 .survey-slider-question {
-  padding-bottom: 26px;
+  padding-bottom: 38px;
 }
 
 .survey-slider-header {
@@ -3399,7 +3481,7 @@ body.has-dock .app {
   margin: 0 0 13px;
   color: var(--ink-dim);
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: .04em;
   line-height: 1.35;
 }
@@ -3420,7 +3502,7 @@ body.has-dock .app {
 .survey-slider-input {
   display: block;
   width: 100%;
-  height: 28px;
+  height: 44px;
   margin: 0;
   padding: 0;
   appearance: none;
@@ -3435,14 +3517,14 @@ body.has-dock .app {
 }
 
 .survey-slider-input::-webkit-slider-runnable-track {
-  height: 1px;
+  height: 2px;
   background: #ffffff;
 }
 
 .survey-slider-input::-webkit-slider-thumb {
-  width: 18px;
-  height: 18px;
-  margin-top: -8.5px;
+  width: 32px;
+  height: 32px;
+  margin-top: -15px;
   appearance: none;
   -webkit-appearance: none;
   border: 1px solid #ffffff;
@@ -3451,13 +3533,13 @@ body.has-dock .app {
 }
 
 .survey-slider-input::-moz-range-track {
-  height: 1px;
+  height: 2px;
   background: #ffffff;
 }
 
 .survey-slider-input::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 30px;
+  height: 30px;
   border: 1px solid #ffffff;
   border-radius: 50%;
   background: var(--bg);
@@ -3473,7 +3555,7 @@ body.has-dock .app {
 .survey-slider-ticks {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
-  margin-top: 3px;
+  margin-top: 5px;
   color: var(--ink-dim);
   font-family: var(--mono);
   font-size: 9px;
@@ -4010,16 +4092,20 @@ body.has-dock .app {
   }
 
   .route-order-step {
+    width: 42px;
+    min-width: 42px;
     min-height: 38px;
+    flex-basis: 42px;
   }
 
   .route-order-step span {
-    font-size: 6px;
+    font-size: 7px;
     letter-spacing: 0;
   }
 
   .route-order-arrow {
-    font-size: 9px;
+    min-width: 6px;
+    font-size: 11px;
   }
 }
 
