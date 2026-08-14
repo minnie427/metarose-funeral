@@ -1970,6 +1970,15 @@ body.has-dock .app {
   line-height: 1.65;
 }
 
+.local-only-station-notice .text-button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 0;
+  border-top: 1px dotted var(--line);
+  border-bottom: 1px dotted var(--line);
+  line-height: 1.5;
+}
+
 .naming-prerequisite {
   margin: 28px 0;
   padding: 26px 0;

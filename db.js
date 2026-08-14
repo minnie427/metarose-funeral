@@ -16,11 +16,18 @@ const LS = {
   analytics:'fringe26.analytics',
   seq:      'fringe26.seq',
   state:    'fringe26.state',
+  generation:'fringe26.generation',
+  controlQuarantine:'fringe26.control_quarantine',
 };
+
+// 한 번의 NFC/QR 태그가 Safari 탭을 중복으로 열 때만 같은 결합으로 본다.
+// 그 이후의 명시적 재태그는 새 presence를 만들어 전시 현장 상태를 갱신한다.
+const STATION_TAG_DEDUPE_MS = 15 * 1000;
 
 let sb = null;               // Supabase client
 let ready = false;
 let online = navigator.onLine;
+let initPromise = null;
 // iOS NFC/QR은 새 Safari 탭을 열 수 있다. Phone Hub의 최신 탭 하나만
 // DB 기록·전송을 수행하게 app.js의 cross-tab guard가 이 값을 제어한다.
 let runtimeActive = true;
@@ -46,28 +53,35 @@ async function ensureAudienceAuth() {
   return data.user || null;
 }
 
-// 오프라인 입장도 잃지 않는다. 입장 당시 인터넷이 없어서 auth_uid가 없던
-// session은 연결이 돌아온 뒤 같은 session id에 익명 권한만 붙여 전송한다.
-// 이미 queue에 들어간 sessions insert 행도 함께 갱신해야 순서가 뒤집히지 않는다.
-async function attachAudienceAuthToActiveSession() {
+// 앱 초기화 중 만들어진 canonical local session에 Anonymous Auth를 붙인다.
+// 세션 시작과 station presence는 온라인 확인 전용이며, 오프라인 큐는
+// 이벤트·설문·아티팩트 같은 기록 데이터만 담당한다.
+async function attachAudienceAuthToCurrentSession() {
   const current = loadSession();
-  if (!current || current.status !== 'active' || current.auth_uid || !ready || !online) return current;
+  if (!current || !ready || !online || !runtimeActive) return current;
+  if (current.auth_uid) return current;
+  const expectedSessionId = current.id;
   const user = await ensureAudienceAuth();
   if (!user) return current;
 
-  const next = { ...current, auth_uid: user.id };
+  // Anonymous Auth may finish after a reset, a new audience session, or a
+  // newer NFC Safari tab has taken ownership. Never let that late completion
+  // resurrect the session object captured before the await.
+  const latest = loadSession();
+  if (!runtimeActive || !latest || latest.id !== expectedSessionId) {
+    return latest;
+  }
+
+  const next = { ...latest, auth_uid: user.id };
   saveSession(next);
 
   const q = readQueue();
-  let queuedInsert = false;
   for (const job of q) {
     if (job.table === 'sessions' && job.op === 'insert' && job.row?.id === next.id) {
       job.row.auth_uid = user.id;
-      queuedInsert = true;
     }
   }
-  if (queuedInsert) writeQueue(q);
-  else enqueue({ table: 'sessions', op: 'update', id: next.id, row: { auth_uid: user.id } });
+  writeQueue(q);
   return next;
 }
 
@@ -75,7 +89,8 @@ async function attachAudienceAuthToActiveSession() {
 // 초기화 — Supabase SDK를 CDN에서 동적 import.
 // 실패해도 앱은 로컬 모드로 계속 간다.
 // ------------------------------------------------------------
-export async function initDB() {
+async function initializeDB() {
+  quarantineLegacyActivationJobs();
   if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
     console.warn('[db] Supabase 미설정 — 로컬 전용 모드');
     startFlushLoop();
@@ -93,7 +108,7 @@ export async function initDB() {
       },
     });
     ready = true;
-    await attachAudienceAuthToActiveSession();
+    await attachAudienceAuthToCurrentSession();
   } catch (e) {
     console.error('[db] Supabase 로드 실패 — 로컬 모드로 계속', e);
     ready = false;
@@ -102,13 +117,26 @@ export async function initDB() {
   return { ready };
 }
 
+// Boot and a fast Arrival tap may ask for initialization at the same time.
+// One shared promise prevents duplicate clients, auth races, and flush loops.
+export function initDB() {
+  if (!initPromise) {
+    initPromise = initializeDB().then((result) => {
+      if (!result.ready) initPromise = null;
+      return result;
+    });
+  }
+  return initPromise;
+}
+
 export const isReady   = () => ready;
 export const isOnline  = () => online;
 
 window.addEventListener('online', async () => {
   online = true;
   try {
-    await attachAudienceAuthToActiveSession();
+    if (!ready) await initDB();
+    await attachAudienceAuthToCurrentSession();
   } catch (e) {
     console.warn('[db] 재연결 익명 인증 실패 — 다음 재시도까지 로컬 보관', e);
   }
@@ -123,6 +151,15 @@ window.addEventListener('offline', () => { online = false; });
 export function loadSession() {
   try { return JSON.parse(localStorage.getItem(LS.session) || 'null'); }
   catch { return null; }
+}
+
+export function activeSessionMatches(expectedSessionId) {
+  const current = loadSession();
+  return Boolean(
+    expectedSessionId
+    && current?.id === expectedSessionId
+    && current.status === 'active'
+  );
 }
 
 function saveSession(s) {
@@ -154,32 +191,73 @@ function nextSeq() {
   return n;
 }
 
+function sessionGeneration() {
+  return parseInt(localStorage.getItem(LS.generation) || '0', 10) || 0;
+}
+
+function advanceSessionGeneration() {
+  const next = sessionGeneration() + 1;
+  localStorage.setItem(LS.generation, String(next));
+  return next;
+}
+
 // ------------------------------------------------------------
 // A1. 세션 발급
 //   ★ 세션 id를 클라이언트에서 만든다. 그래야 오프라인에서도 발급되고,
 //     나중에 연결되면 그 id 그대로 서버에 올라간다.
 // ------------------------------------------------------------
-export async function startSession({ consent = false, roundNo = null } = {}) {
+export async function startSession({ consent = false, roundNo = null, sessionId = null } = {}) {
+  // Arrival is a control-plane boundary. Wait for Supabase/Auth instead of
+  // creating a remote-consent session that may only exist in a delayed queue.
+  const invocationGeneration = sessionGeneration();
+  await initDB();
+  if (!runtimeActive || sessionGeneration() !== invocationGeneration) return loadSession();
   const existing = loadSession();
-  if (existing && existing.status === 'active') {
-    try { await attachAudienceAuthToActiveSession(); }
+  const requestedId = sessionId || existing?.id || uuid();
+  if (existing && existing.status === 'active' && existing.id === requestedId) {
+    const existingGeneration = sessionGeneration();
+    try { await attachAudienceAuthToCurrentSession(); }
     catch (e) { console.warn('[db] 기존 세션 익명 인증 보류', e); }
-    return loadSession() || existing;
+    const current = loadSession() || existing;
+    const serverConfirmed = await confirmServerSession(current);
+    if (serverConfirmed && controlPlaneStillCurrent(current.id, existingGeneration)) {
+      return loadSession();
+    }
+    if (!runtimeActive || sessionGeneration() !== existingGeneration) return loadSession();
+    // A prior offline/dev attempt may have created only local state. Recreate
+    // the same canonical UUID below after ensuring Anonymous Auth.
   }
+
+  if (!ready || !online || !sb || !runtimeActive) return null;
+
+  const generationAtStart = invocationGeneration;
+  const existingIdAtStart = existing?.id || null;
 
   let audienceUser = null;
   if (ready && online) {
     try {
       audienceUser = await ensureAudienceAuth();
     } catch (e) {
-      // 인증 문제가 있어도 작품 흐름은 중단하지 않는다. local queue에 남기고
-      // 연결 복구 뒤 다시 전송한다.
-      console.warn('[db] 익명 인증 실패 — 로컬 기록 모드로 계속', e);
+      console.warn('[db] 익명 인증 실패 — 원격 세션 시작 보류', e);
     }
   }
 
+
+  // A reset or another tab may replace the visitor while auth is pending.
+  // Abort the stale request instead of overwriting the newer UUID.
+  const latest = loadSession();
+  const sessionWasReplaced = latest
+    && latest.id !== requestedId
+    && latest.id !== existingIdAtStart;
+  if (!runtimeActive
+      || sessionGeneration() !== generationAtStart
+      || sessionWasReplaced) {
+    return latest;
+  }
+
   const s = {
-    id: uuid(),
+    ...(existing?.id === requestedId ? existing : {}),
+    id: requestedId,
     status: 'active',
     entered_at: new Date().toISOString(),
     consent,
@@ -191,7 +269,22 @@ export async function startSession({ consent = false, roundNo = null } = {}) {
     auth_uid: audienceUser?.id || null,
     schema_version: 'fringe2026.1',
   };
+  // Auth may resolve after a newer NFC tab claimed runtime ownership.
+  if (!runtimeActive || sessionGeneration() !== generationAtStart) return loadSession();
   saveSession(s);
+
+  // The canonical session row is inserted and read back before Arrival may
+  // continue. Delayed analytics still use the separate offline queue.
+  const { error: insertError } = await sb.from('sessions').insert(s);
+  if (insertError && !/duplicate|unique/i.test(insertError.message || '')) {
+    return null;
+  }
+  if (!await confirmServerSession(s)) {
+    return null;
+  }
+  if (!controlPlaneStillCurrent(s.id, generationAtStart)) {
+    return null;
+  }
 
   // ★ 동의 화면에서 이미 쌓인 이벤트(읽기 행동·스크롤 깊이)를 이 세션에 붙인다.
   //   세션 발급 전에 일어난 행동도 이 관객의 것이다 — 22 §1-1의
@@ -200,9 +293,21 @@ export async function startSession({ consent = false, roundNo = null } = {}) {
   backfillSession(s.id);
   backfillAnalyticsSession(s.id);
 
-  enqueue({ table: 'sessions', op: 'insert', row: s });
   logEvent('session_start', { scope: 'individual' });
   return s;
+}
+
+async function confirmServerSession(session) {
+  if (!session?.id || !session.auth_uid || !ready || !online || !sb || !runtimeActive) {
+    return false;
+  }
+  const { data, error } = await sb.from('sessions')
+    .select('id,status,auth_uid')
+    .eq('id', session.id)
+    .eq('auth_uid', session.auth_uid)
+    .eq('status', 'active')
+    .maybeSingle();
+  return !error && data?.id === session.id;
 }
 
 function backfillSession(sessionId) {
@@ -237,6 +342,40 @@ export async function updateSession(patch) {
   saveSession(next);
   enqueue({ table: 'sessions', op: 'update', id: s.id, row: patch });
   return next;
+}
+
+// Color/name/language are TD control inputs. Before a station can open, write
+// and read back these canonical fields synchronously so TD never starts with a
+// correct UUID but stale/null visitor metadata.
+export async function confirmSessionControlFields(expectedSessionId, fields = {}) {
+  const control = await controlPlaneSession(expectedSessionId);
+  if (!control) return null;
+  const allowed = ['color', 'lang', 'final_name', 'final_name_a', 'final_name_b'];
+  const patch = Object.fromEntries(Object.entries(fields)
+    .filter(([key, value]) => allowed.includes(key) && value !== undefined));
+  if (Object.keys(patch).length) {
+    const { error } = await sb.from('sessions')
+      .update(patch)
+      .eq('id', control.session.id)
+      .eq('auth_uid', control.session.auth_uid)
+      .eq('status', 'active');
+    if (error || !controlPlaneStillCurrent(control.session.id, control.generation)) return null;
+  }
+  const columns = ['id', ...Object.keys(patch)].join(',');
+  const { data, error } = await sb.from('sessions')
+    .select(columns)
+    .eq('id', control.session.id)
+    .eq('auth_uid', control.session.auth_uid)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (error || !data || !controlPlaneStillCurrent(control.session.id, control.generation)) {
+    return null;
+  }
+  const exact = Object.entries(patch).every(([key, value]) => data[key] === value);
+  if (!exact) return null;
+  const current = loadSession();
+  saveSession({ ...current, ...patch });
+  return data;
 }
 
 // ------------------------------------------------------------
@@ -339,42 +478,105 @@ export function flushAnalyticsEvents(reason = 'checkpoint') {
 // ------------------------------------------------------------
 // 태깅 — QR/NFC로 스테이션에 들어왔다 = "결합"
 // ------------------------------------------------------------
-export async function enterStation(stationId, via = 'qr') {
-  const s = loadSession();
-  if (!s || !runtimeActive) return null;
-  const now = new Date().toISOString();
-
-  // 이전 스테이션을 닫는다
-  const st = getState();
-  // 같은 태그를 다시 읽거나 새 Safari 탭으로 동일 URL이 열려도 열린
-  // presence를 중복 생성하지 않는다. 태깅 자체만 별도 event로 남긴다.
-  if (st.presenceId && st.station === stationId) {
-    logEvent('station_tag_repeat', {
+export async function enterStation(stationId, via = 'qr', expectedSessionId = null) {
+  if (stationEntryInFlight) return null;
+  stationEntryInFlight = true;
+  try {
+  const control = await controlPlaneSession(expectedSessionId);
+  if (!control) return null;
+  const { session: s, generation } = control;
+  if (expectedSessionId && s.id !== expectedSessionId) {
+    console.error('[db] station bind rejected: session mismatch', {
+      expected: expectedSessionId,
+      actual: s.id,
       station: stationId,
-      payload: { via },
-      occurredAt: now,
     });
-    return stationId;
+    return null;
   }
-  if (st.presenceId && st.station && st.station !== stationId) {
-    enqueue({
-      table: 'station_presence', op: 'update',
-      id: st.presenceId, row: { left_at: now },
-    });
+  const now = new Date().toISOString();
+  const st = getState();
+  const presenceEnteredAtMs = Date.parse(st.stationEnteredAt || '');
+  const presenceAgeMs = Date.now() - presenceEnteredAtMs;
+  const recentSameStationTag = st.presenceId
+    && st.station === stationId
+    && Number.isFinite(presenceEnteredAtMs)
+    && presenceAgeMs >= 0
+    && presenceAgeMs < STATION_TAG_DEDUPE_MS;
+  // One NFC read can open the same URL twice. Reuse only an exact, already
+  // confirmed server row for a short window.
+  if (recentSameStationTag) {
+    const confirmed = await serverHasOpenPresence(st.presenceId, s.id, stationId);
+    if (!controlPlaneStillCurrent(s.id, generation)) return null;
+    if (confirmed) {
+      logEvent('station_tag_repeat', {
+        station: stationId,
+        payload: { via },
+        occurredAt: now,
+      });
+      return stationId;
+    }
+    if (getState().presenceId === st.presenceId) {
+      setState({ station: null, presenceId: null, stationEnteredAt: null });
+    }
+    queuePresenceClose(st.presenceId, new Date().toISOString());
+    return null;
+  }
+
+  // A new station may open only after the exact previous presence is closed.
+  // If closing fails, retain the previous confirmed state and fail closed.
+  if (st.presenceId && st.station) {
+    const closed = await directClosePresence(st.presenceId, now);
+    if (!closed || !controlPlaneStillCurrent(s.id, generation)) return null;
+    if (getState().presenceId === st.presenceId) {
+      setState({ station: null, presenceId: null, stationEnteredAt: null });
+    }
   }
 
   const presenceId = uuid();
-  enqueue({
-    table: 'station_presence', op: 'insert',
-    row: {
-      id_client: presenceId,   // 클라 생성 id — 서버는 bigserial이라
-                               // payload로만 쓰고 실제 매칭은 시각으로 한다
-      session_id: s.id,
-      station_id: stationId,
-      entered_at: now,
-      via,
-    },
-  });
+  const presenceRow = {
+    client_ref: presenceId,
+    session_id: s.id,
+    station_id: stationId,
+    entered_at: now,
+    via,
+  };
+
+  if (!controlPlaneStillCurrent(s.id, generation)) return null;
+
+  let inserted = null;
+  try {
+    const { data, error } = await sb.from('station_presence')
+      .insert(presenceRow)
+      .select('client_ref,session_id,station_id,entered_at,left_at')
+      .single();
+    if (error) throw error;
+    inserted = data;
+  } catch (error) {
+    // The request may have reached Supabase even if its response was lost.
+    // Best-effort compensation uses the unique client_ref and never queues a
+    // delayed activation.
+    const failedAt = new Date().toISOString();
+    if (!await directClosePresence(presenceId, failedAt)) {
+      queuePresenceClose(presenceId, failedAt);
+    }
+    console.warn('[db] station bind failed', error);
+    return null;
+  }
+
+  const exactInsert = inserted?.client_ref === presenceId
+    && inserted?.session_id === s.id
+    && inserted?.station_id === stationId
+    && inserted?.left_at == null;
+  const exactReadback = exactInsert
+    && await serverHasOpenPresence(presenceId, s.id, stationId);
+  if (!exactReadback || !controlPlaneStillCurrent(s.id, generation)) {
+    const cancelledAt = new Date().toISOString();
+    if (!await directClosePresence(presenceId, cancelledAt)) {
+      queuePresenceClose(presenceId, cancelledAt);
+    }
+    return null;
+  }
+
   setState({ station: stationId, presenceId, stationEnteredAt: now });
   logEvent('station_enter', {
     station: stationId,
@@ -382,21 +584,108 @@ export async function enterStation(stationId, via = 'qr') {
     occurredAt: now,
   });
   return stationId;
+  } finally {
+    stationEntryInFlight = false;
+  }
+}
+let stationEntryInFlight = false;
+
+async function controlPlaneSession(expectedSessionId = null) {
+  const generation = sessionGeneration();
+  await initDB();
+  if (!ready || !online || !sb || !runtimeActive
+      || sessionGeneration() !== generation) return null;
+  await attachAudienceAuthToCurrentSession();
+  const session = loadSession();
+  if (!session
+      || session.status !== 'active'
+      || !session.auth_uid
+      || (expectedSessionId && session.id !== expectedSessionId)
+      || !await confirmServerSession(session)) {
+    return null;
+  }
+  if (!controlPlaneStillCurrent(session.id, generation)) return null;
+  return { session: loadSession(), generation };
+}
+
+function controlPlaneStillCurrent(sessionId, generation) {
+  const current = loadSession();
+  return Boolean(
+    runtimeActive
+    && current?.id === sessionId
+    && current.status === 'active'
+    && sessionGeneration() === generation
+  );
+}
+
+async function serverHasOpenPresence(clientRef, sessionId, stationId) {
+  if (!clientRef || !sessionId || !stationId || !sb || !online) return false;
+  const { data, error } = await sb.from('station_presence')
+    .select('client_ref,session_id,station_id,left_at')
+    .eq('client_ref', clientRef)
+    .eq('session_id', sessionId)
+    .eq('station_id', stationId)
+    .is('left_at', null)
+    .maybeSingle();
+  return !error && data?.client_ref === clientRef;
+}
+
+async function directClosePresence(clientRef, leftAt = new Date().toISOString()) {
+  if (!clientRef || !sb || !online) return false;
+  try {
+    const { error: updateError } = await sb.from('station_presence')
+      .update({ left_at: leftAt })
+      .eq('client_ref', clientRef)
+      .is('left_at', null);
+    if (updateError) throw updateError;
+    const { data, error: readError } = await sb.from('station_presence')
+      .select('client_ref,left_at')
+      .eq('client_ref', clientRef)
+      .maybeSingle();
+    return !readError && Boolean(data?.left_at);
+  } catch (error) {
+    console.warn('[db] presence close failed', error);
+    return false;
+  }
+}
+
+function queuePresenceClose(clientRef, leftAt = new Date().toISOString()) {
+  if (!clientRef) return null;
+  // A superseded Safari tab may be inactive exactly when its direct insert
+  // response returns. Deactivation is safe to persist even from that tab;
+  // activations remain forbidden.
+  const q = readQueue();
+  q.push({
+    table: 'station_presence',
+    op: 'update',
+    id: clientRef,
+    row: { left_at: leftAt },
+    _id: uuid(),
+    _tries: 0,
+    _nextAt: 0,
+  });
+  writeQueue(q);
+  updateBadge();
+  if (runtimeActive && online && ready) setTimeout(() => flushQueue(), 50);
+  return clientRef;
 }
 
 // 스테이션을 떠날 때 열린 presence를 닫는다.
 // UI의 event 기록은 app.js가 별도로 남기므로 여기서는 결합 상태만 갱신한다.
-export function leaveStation(stationId = getState().station) {
+export async function leaveStation(stationId = getState().station) {
+  const state = getState();
   const s = loadSession();
-  if (!s || !stationId) return null;
+  if (!s || !stationId || !state.presenceId || state.station !== stationId) return false;
+  const control = await controlPlaneSession(s.id);
+  if (!control) return false;
   const now = new Date().toISOString();
-  enqueue({
-    table: 'station_presence', op: 'update',
-    id: getState().presenceId,
-    row: { left_at: now },
-  });
-  setState({ station: null, presenceId: null, stationEnteredAt: null });
-  return stationId;
+  const closed = await directClosePresence(state.presenceId, now);
+  if (!closed) return false;
+  if (controlPlaneStillCurrent(s.id, control.generation)
+      && getState().presenceId === state.presenceId) {
+    setState({ station: null, presenceId: null, stationEnteredAt: null });
+  }
+  return true;
 }
 
 // ------------------------------------------------------------
@@ -582,8 +871,34 @@ function writeQueue(q) {
   }
 }
 
+// Builds before this contract could queue a session/presence activation while
+// offline. Preserve those jobs locally for diagnosis, but never replay them
+// later and unexpectedly start a TD installation.
+function quarantineLegacyActivationJobs() {
+  const queue = readQueue();
+  const unsafe = queue.filter(job => job?.op === 'insert'
+    && job.table === 'station_presence');
+  if (!unsafe.length) return 0;
+
+  let archive = [];
+  try {
+    archive = JSON.parse(localStorage.getItem(LS.controlQuarantine) || '[]');
+  } catch { archive = []; }
+  archive.push(...unsafe.map(job => ({
+    quarantined_at: new Date().toISOString(),
+    reason: 'legacy_delayed_activation_blocked',
+    job,
+  })));
+  localStorage.setItem(LS.controlQuarantine, JSON.stringify(archive.slice(-100)));
+  writeQueue(queue.filter(job => !unsafe.includes(job)));
+  return unsafe.length;
+}
+
 function enqueue(job) {
   if (!runtimeActive) return null;
+  if (job.table === 'station_presence' && job.op === 'insert') {
+    throw new Error('station_presence insert is online control-plane only');
+  }
   const q = readQueue();
   q.push({ ...job, _id: uuid(), _tries: 0, _nextAt: 0 });
   writeQueue(q);
@@ -616,9 +931,10 @@ function startFlushLoop() {
 // (11 로그 8/5 S11-H `upload_reconnect_wake` 와 같은 처리)
 export async function flushQueue(wake = false) {
   if (!runtimeActive || flushing || !ready || !online) return;
-  let q = readQueue();
+  const q = readQueue();
   if (!q.length) return;
   flushing = true;
+  const snapshotIds = new Set(q.map(job => job._id));
 
   const now = Date.now();
   const stillPending = [];
@@ -640,7 +956,10 @@ export async function flushQueue(wake = false) {
       stillPending.push(job);
     }
   }
-  writeQueue(stillPending);
+  // Do not overwrite jobs enqueued while an awaited network request was in
+  // flight. Merge those new jobs with the retry set from this snapshot.
+  const newlyEnqueued = readQueue().filter(job => !snapshotIds.has(job._id));
+  writeQueue([...stillPending, ...newlyEnqueued]);
   updateBadge();
   flushing = false;
 }
@@ -649,9 +968,11 @@ async function sendJob(job) {
   const { table, op, row, id } = job;
 
   if (op === 'insert') {
+    if (table === 'station_presence') {
+      throw new Error('queued station activation is forbidden');
+    }
     const clean = { ...row };
     delete clean.id_client;
-    if (table === 'station_presence') clean.client_ref = row.id_client;
     const { error } = await sb.from(table).insert(clean);
     // 중복(같은 session+seq)은 성공으로 친다 — 재전송 시 정상 상황
     if (error && !/duplicate|unique/i.test(error.message || '')) throw error;
@@ -665,11 +986,26 @@ async function sendJob(job) {
       return;
     }
     if (table === 'station_presence') {
-      // 클라 id로는 못 찾으므로 세션+스테이션의 열린 행을 닫는다
-      const s = loadSession();
-      const { error } = await sb.from('station_presence')
-        .update(row).eq('session_id', s?.id).is('left_at', null);
-      if (error) throw error;
+      // enqueue 당시의 고유 client_ref로 그 presence 한 행만 닫는다.
+      // 전송 시점의 현재 session을 사용하면 다음 관객의 행을 닫을 수 있다.
+      if (!id) {
+        console.warn('[db] station_presence close skipped: missing client_ref');
+        return;
+      }
+      const { error: updateError } = await sb.from('station_presence')
+        .update(row).eq('client_ref', id).is('left_at', null);
+      if (updateError) throw updateError;
+      // A lost INSERT response can race its compensating close. Treat a
+      // zero-row update as pending rather than success, so the close remains
+      // in the queue until the exact row is visible and confirmed closed.
+      const { data, error: readError } = await sb.from('station_presence')
+        .select('client_ref,left_at')
+        .eq('client_ref', id)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (data?.client_ref !== id || !data?.left_at) {
+        throw new Error('presence close is not yet server-confirmed');
+      }
       return;
     }
   }
@@ -688,9 +1024,34 @@ function updateBadge() {
 // ------------------------------------------------------------
 // 스태프용 — 세션 초기화 (다음 관객)
 // ------------------------------------------------------------
-export function resetSession() {
+export function resetSession(reason = 'staff_reset') {
   const hadRemoteSession = loadSession();
-  flushAnalyticsEvents('staff_reset');
+  const previousState = getState();
+  const now = new Date().toISOString();
+  flushAnalyticsEvents(reason);
+  if (hadRemoteSession?.status === 'active') {
+    if (previousState.presenceId) {
+      // Reset is an explicit takeover. A delayed activation is never queued;
+      // closing an already confirmed row is safe to retry in the background.
+      enqueue({
+        table: 'station_presence',
+        op: 'update',
+        id: previousState.presenceId,
+        row: { left_at: now },
+      });
+    }
+    enqueue({
+      table: 'sessions',
+      op: 'update',
+      id: hadRemoteSession.id,
+      row: {
+        status: 'ended',
+        exited_at: now,
+        end_reason: reason,
+      },
+    });
+  }
+  advanceSessionGeneration();
   localStorage.removeItem(LS.session);
   localStorage.removeItem(LS.state);
   localStorage.removeItem(LS.seq);

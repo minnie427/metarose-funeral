@@ -18,6 +18,9 @@ import {
   fetchMyCaptureArtifacts,
   createCaptureSignedUrl,
   setRuntimeActive as setDbRuntimeActive,
+  activeSessionMatches as activeDbSessionMatches,
+  confirmSessionControlFields,
+  getState as getDbState,
 } from './db.js';
 import {
   beginRead,
@@ -121,7 +124,17 @@ function enforceActiveTabOwnership() {
   }
 }
 
-function initializeActiveTabGuard() {
+function ownsActiveTab(sessionId = null) {
+  const lease = readActiveTabLease();
+  const currentSession = getSession();
+  return Boolean(
+    tabRuntimeActive
+    && lease?.id === TAB_INSTANCE_ID
+    && (!sessionId || currentSession?.id === sessionId)
+  );
+}
+
+function initializeActiveTabGuard({ forceClaim = false } = {}) {
   if ('BroadcastChannel' in window) {
     tabChannel = new BroadcastChannel('meta_rose_phone_hub_tabs_v1');
     tabChannel.addEventListener('message', (event) => observeActiveTabLease(event.data));
@@ -144,7 +157,7 @@ function initializeActiveTabGuard() {
   // 아직 소유자가 없거나 같은 탭을 새로고침한 경우에만 주도권을 갖는다.
   // 이전 탭 자동 복구는 하지 않는다. iOS가 백그라운드 타이머를 중단해도
   // 두 탭이 동시에 활성화되지 않게 하는 것이 전시 데이터에는 더 안전하다.
-  if (taggedEntry || !lease?.id || lease.id === TAB_INSTANCE_ID) claimActiveTab();
+  if (forceClaim || taggedEntry || !lease?.id || lease.id === TAB_INSTANCE_ID) claimActiveTab();
   else setTabRuntimeActive(false);
 }
 
@@ -331,14 +344,18 @@ function syncSessionToDb(patch) {
 }
 
 async function createRemoteSession(consent) {
-  const remote = await startDbSession({ consent });
-  if (!remote) return null;
   const local = ensureSession();
+  const remote = await startDbSession({ consent, sessionId: local.id });
+  const current = getSession();
+  if (!remote
+      || remote.id !== local.id
+      || current?.id !== local.id
+      || !ownsActiveTab(local.id)) return null;
   saveSession({
-    ...local,
+    ...current,
     id: remote.id,
     display_record_no: remote.id.slice(0, 8).toUpperCase(),
-    created_at: remote.entered_at || local.created_at,
+    created_at: remote.entered_at || current.created_at,
   });
   return remote;
 }
@@ -956,11 +973,18 @@ function screenArrival() {
   ], [
     primaryButton(tr('내 장미를 만들고 입장합니다', 'CREATE MY ROSE AND ENTER'), async () => {
       logEvent('arrival_enter_clicked', {}, '00');
+      const remote = await createRemoteSession(true);
+      if (!remote) {
+        alert(tr(
+          '세션 연결을 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
+          'The session could not be confirmed. Check the network and try again.',
+        ));
+        return;
+      }
       updateSession({ intro_seen: true, consent: true, local_only: false });
-      await createRemoteSession(true);
       screenPersonalSetup();
     }),
-    textButton(tr('이 기기에만 저장하고 입장합니다', 'CONTINUE ON THIS DEVICE ONLY'), () => {
+    textButton(tr('기록 없이 작품 안내만 보겠습니다', 'VIEW THE GUIDE WITHOUT A RECORD'), () => {
       logEvent('arrival_local_only_clicked', {}, '00');
       updateSession({ intro_seen: true, consent: false, local_only: true });
       screenPersonalSetup();
@@ -1691,6 +1715,7 @@ function moduleHero(stationId, module) {
 function captureResultPanel(stationId) {
   if (!['01', '02', '03'].includes(stationId)) return null;
   const isSub1 = stationId === '02';
+  const autoPollsCapture = ['01', '02'].includes(stationId);
   return el('section', {
     class: 'module-capture-panel',
     id: `module-capture-${stationId}`,
@@ -1708,7 +1733,7 @@ function captureResultPanel(stationId) {
             : '이 작품에서 남긴 장면이 이곳에 나타납니다.',
           'The moment you leave in this work will appear here.',
         )),
-        isSub1 ? el('small', {}, tr('연결 중에는 새 장면을 자동으로 확인합니다.', 'New captures are checked automatically while connected.')) : null,
+        autoPollsCapture ? el('small', {}, tr('연결 중에는 새 장면을 자동으로 확인합니다.', 'New captures are checked automatically while connected.')) : null,
       ),
     ),
   );
@@ -1786,29 +1811,40 @@ function startModuleCapturePolling(stationId, connected) {
   const poll = async () => {
     if (currentView.name !== 'module' || currentView.data.stationId !== stationId) return;
     await refreshCaptureResultPanel(stationId);
-    // 현재는 SUB1만 자동 반환이 연결된다. 다른 모듈은 페이지 진입 때 한 번만
-    // 확인하고, 각 TD adapter가 완성되면 같은 계약으로 반복 확인을 켠다.
-    if (stationId === '02' && connected && currentView.name === 'module') {
+    // 캡처 adapter가 연결된 MAIN1·SUB1은 같은 계약으로 반복 확인한다.
+    if (['01', '02'].includes(stationId)
+        && connected
+        && currentView.name === 'module'
+        && currentView.data.stationId === stationId) {
       capturePollTimer = setTimeout(poll, 4000);
     }
   };
   capturePollTimer = setTimeout(poll, 0);
 }
 
-function leaveStation(stationId) {
-  markStationComplete(stationId);
+async function leaveStation(stationId) {
   const session = ensureSession();
   if (session.connected_station === stationId) {
+    const closed = await leaveDbStation(stationId);
+    if (!ownsActiveTab(session.id)) return false;
+    if (!closed) {
+      alert(tr(
+        '작품 연결 종료를 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
+        'The station could not be disconnected. Check the network and try again.',
+      ));
+      return false;
+    }
     updateSession({ connected_station: null });
-    leaveDbStation(stationId);
     window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
     logEvent('station_leave', { reason: 'manual' }, stationId);
     flushAnalyticsEvents('station_leave');
   }
+  markStationComplete(stationId);
   screenHome();
+  return true;
 }
 
-function screenModule(stationId, options = {}) {
+async function screenModule(stationId, options = {}) {
   const session = ensureSession();
   const module = MODULES[stationId];
   if (!module) {
@@ -1826,14 +1862,49 @@ function screenModule(stationId, options = {}) {
   }
 
   const via = options.via || 'floorplan';
-  const needsName = ['02', '03'].includes(stationId) && !session.emotional_name;
-  if (options.enter && needsName) {
+  const localOnly = Boolean(session.local_only);
+  const needsName = !localOnly
+    && ['02', '03'].includes(stationId)
+    && !session.emotional_name;
+  if (options.enter && localOnly) {
+    // A local-only visitor may read every page, but must explicitly opt in
+    // before a Supabase presence can activate TD or return a capture.
+    logEvent('station_local_only_view', { via }, stationId);
+  } else if (options.enter && needsName) {
     updateSession({ pending_station: stationId, pending_station_via: via });
     logEvent('station_name_required', { via }, stationId);
   } else if (options.enter) {
-    updateSession({ connected_station: stationId });
-    enterDbStation(stationId, via);
-    window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: stationId } }));
+    const uiSessionId = ensureSession().id;
+    const controlFields = {
+      color: ensureSession().color,
+      lang: ensureSession().lang,
+      final_name: ensureSession().emotional_name || null,
+      final_name_a: ensureSession().emotional_name_a || null,
+      final_name_b: ensureSession().emotional_name_b || null,
+    };
+    const controlsConfirmed = activeDbSessionMatches(uiSessionId)
+      ? await confirmSessionControlFields(uiSessionId, controlFields)
+      : null;
+    const boundStation = controlsConfirmed && ownsActiveTab(uiSessionId)
+      ? await enterDbStation(stationId, via, uiSessionId)
+      : null;
+    if (boundStation === stationId && ownsActiveTab(uiSessionId)) {
+      updateSession({ connected_station: stationId });
+      window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: stationId } }));
+    } else if (ownsActiveTab(uiSessionId)) {
+      // Reconcile from the last server-confirmed DB state. If closing the old
+      // station failed it remains here; if it closed before a new bind failed,
+      // this is null. The phone must never display a false CONNECTED state.
+      const confirmedDbStation = getDbState()?.station || null;
+      const latestUi = ensureSession();
+      if (latestUi.connected_station !== confirmedDbStation) {
+        updateSession({ connected_station: confirmedDbStation });
+        window.dispatchEvent(new CustomEvent('fringe:station', {
+          detail: { station: confirmedDbStation },
+        }));
+      }
+      console.warn('[phone-hub] station bind failed', { stationId, via });
+    }
   }
 
   const freshSession = ensureSession();
@@ -1852,7 +1923,28 @@ function screenModule(stationId, options = {}) {
         el('p', { class: 'module-korean-title' }, tr(module.phaseKo, module.en)),
       ),
       moduleHero(stationId, module),
-      needsName ? el('section', { class: 'naming-prerequisite' },
+      freshSession.local_only ? el('section', { class: 'tag-instruction local-only-station-notice' },
+        el('span', { class: 'tag-symbol', 'aria-hidden': 'true' }, '⌑'),
+        el('div', {},
+          el('h2', {}, tr('지금은 작품 안내만 보고 있습니다', 'YOU ARE VIEWING THE GUIDE ONLY')),
+          el('p', {}, tr(
+            '전시 화면과 장미를 연결하려면 익명 장미 번호가 필요합니다. 연결하기 전에는 이 기기 밖으로 기록을 보내지 않습니다.',
+            'An anonymous rose number is required to connect to the installation and receive captures. Nothing leaves this device until you choose to connect.',
+          )),
+          textButton(tr('익명 장미 번호를 만들고 연결합니다', 'CREATE AN ANONYMOUS ROSE NUMBER AND CONNECT'), async () => {
+            const remote = await createRemoteSession(true);
+            if (!remote) {
+              alert(tr(
+                '세션 연결을 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
+                'The session could not be confirmed. Check the network and try again.',
+              ));
+              return;
+            }
+            updateSession({ consent: true, local_only: false });
+            await screenModule(stationId, { enter: true, via });
+          }, 'local-only-connect'),
+        ),
+      ) : needsName ? el('section', { class: 'naming-prerequisite' },
         el('span', { class: 'instruction-level' }, 'NAME GIVEN TODAY / REQUIRED'),
         el('h2', {}, tr('이 작품에는 오늘 지은 이름이 필요합니다', 'THIS WORK NEEDS YOUR NAME')),
         el('p', {}, tr(
@@ -1906,17 +1998,26 @@ function screenModule(stationId, options = {}) {
       !connected ? textButton('HOME', screenHome, 'return-home') : null,
     ),
   ], connected && !needsName ? [
-    primaryButton(stationId === '01' ? tr('오늘의 이름을 짓습니다', 'NAME THIS FEELING') : tr('이 작품을 마칩니다', 'FINISH THIS WORK'), () => {
+    primaryButton(stationId === '01' ? tr('오늘의 이름을 짓습니다', 'NAME THIS FEELING') : tr('이 작품을 마칩니다', 'FINISH THIS WORK'), async () => {
       if (stationId === '01') {
-        markStationComplete('01');
+        const activeSession = ensureSession();
+        const closed = await leaveDbStation('01');
+        if (!ownsActiveTab(activeSession.id)) return;
+        if (!closed) {
+          alert(tr(
+            '작품 연결 종료를 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
+            'The station could not be disconnected. Check the network and try again.',
+          ));
+          return;
+        }
         updateSession({ connected_station: null });
-        leaveDbStation('01');
+        markStationComplete('01');
         window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
         logEvent('station_leave', { reason: 'manual' }, '01');
         flushAnalyticsEvents('station_leave');
         screenFinalReflection({ exitFlow: false });
       } else {
-        leaveStation(stationId);
+        await leaveStation(stationId);
       }
     }),
   ] : []);
@@ -1977,13 +2078,21 @@ function screenMySpecimen({ returnTo = null } = {}) {
   void refreshRemoteTraceSummaries();
 }
 
-function screenExitJourney() {
+async function screenExitJourney() {
   const session = ensureSession();
   rememberView('exit');
   clearStationQuery();
 
   if (session.connected_station) {
-    leaveDbStation(session.connected_station);
+    const closed = await leaveDbStation(session.connected_station);
+    if (!ownsActiveTab(session.id)) return;
+    if (!closed) {
+      alert(tr(
+        '현재 작품과의 연결을 먼저 종료해야 합니다. 네트워크를 확인한 뒤 출구 태그를 다시 읽어주세요.',
+        'Disconnect the current station first. Check the network and scan the exit tag again.',
+      ));
+      return;
+    }
     window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
     logEvent('station_leave', { reason: 'exit' }, session.connected_station);
     updateSession({ connected_station: null });
@@ -2451,12 +2560,11 @@ function renderCurrentView() {
 }
 
 function boot() {
-  initializeActiveTabGuard();
-  // SDK 로드·네트워크 실패는 이 흐름을 막지 않는다. db.js가 local queue로 폴백한다.
-  void initDB();
-  startIdleTracking();
-  startUiActionTracking();
-  if (new URLSearchParams(location.search).get('reset') === '1') {
+  // Reset shared session state before any asynchronous Supabase/Auth work can
+  // capture and later restore the previous audience session.
+  const resetRequested = new URLSearchParams(location.search).get('reset') === '1';
+  initializeActiveTabGuard({ forceClaim: resetRequested });
+  if (resetRequested) {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(EVENTS_KEY);
     resetDbSession();
@@ -2464,7 +2572,10 @@ function boot() {
     cleanUrl.searchParams.delete('reset');
     history.replaceState({}, '', cleanUrl);
   }
-
+  // SDK 로드·네트워크 실패는 이 흐름을 막지 않는다. db.js가 local queue로 폴백한다.
+  void initDB();
+  startIdleTracking();
+  startUiActionTracking();
   const session = ensureSession();
   applySessionColor(session.color);
   $bar.replaceChildren();

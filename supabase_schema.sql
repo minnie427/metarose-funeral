@@ -30,9 +30,8 @@ create table if not exists teams (
 
 -- ------------------------------------------------------------
 -- 2. sessions — 관객 1인 = 1세션. 계정 없음, 신원 정보 없음
---    ★ status가 활성 판별의 유일한 기준 (11 로그 8/5 S11-F 교훈:
---      서버가 종료 후에도 마지막 metadata를 유지하므로
---      session_id가 비었는지로 판단하면 안 된다)
+--    session status는 전체 여정의 lifecycle이다. 종료된 관객이 다시
+--    체험하려면 새 UUID를 발급해 TD 귀속이 섞이지 않게 한다.
 -- ------------------------------------------------------------
 create table if not exists sessions (
   id             uuid primary key default gen_random_uuid(),
@@ -187,7 +186,18 @@ create policy audience_update_sessions on sessions for update to authenticated
   using (auth_uid = auth.uid()) with check (auth_uid = auth.uid());
 
 create policy audience_insert_presence on station_presence for insert to authenticated
-  with check (exists (select 1 from sessions s where s.id = session_id and s.auth_uid = auth.uid()));
+  with check (
+    station_presence.left_at is null
+    and station_presence.entered_at >= now() - interval '90 minutes'
+    and station_presence.entered_at <= now() + interval '5 minutes'
+    and exists (
+    select 1 from sessions s
+    where s.id = station_presence.session_id
+      and s.auth_uid = auth.uid()
+      and s.status = 'active'
+      and s.entered_at >= now() - interval '180 minutes'
+      and s.entered_at <= now() + interval '5 minutes'
+  ));
 create policy audience_select_presence on station_presence for select to authenticated
   using (exists (select 1 from sessions s where s.id = session_id and s.auth_uid = auth.uid()));
 create policy audience_update_presence on station_presence for update to authenticated
@@ -214,28 +224,57 @@ create policy audience_select_survey on survey for select to authenticated
 -- ------------------------------------------------------------
 
 -- 9-1. TD가 폴링하는 "지금 이 스테이션의 활성 세션"
---      ★ status = 'active' 로 판별 (S11-F 교훈)
+--      스테이션별 최신 presence를 먼저 고른 뒤 유효성을 검사한다.
+--      그래야 최신 관객이 나간 뒤 과거의 열린 행이 되살아나지 않는다.
+--      종료된 관객은 새 UUID를 발급한 뒤에만 다시 체험한다.
 create or replace view v_active_at_station as
-select distinct on (p.station_id)
-       p.station_id,
-       s.id   as session_id,
-       s.color,
-       s.color_name,
-       coalesce(s.final_name, s.pseudonym) as display_name,
-       s.final_name is not null as is_final,
-       p.entered_at
-from station_presence p
-join sessions s on s.id = p.session_id
-where p.left_at is null
-  and s.status = 'active'
-order by p.station_id, p.entered_at desc;
+select latest.station_id,
+       latest.session_id,
+       latest.color,
+       latest.color_name,
+       latest.display_name,
+       latest.is_final,
+       latest.entered_at
+from (
+  select distinct on (p.station_id)
+         p.station_id,
+         s.id as session_id,
+         s.color,
+         s.color_name,
+         coalesce(s.final_name, s.pseudonym) as display_name,
+         s.final_name is not null as is_final,
+         p.entered_at,
+         p.left_at,
+         s.status as session_status,
+         s.entered_at as session_entered_at
+  from station_presence p
+  join sessions s on s.id = p.session_id
+  order by p.station_id, p.entered_at desc, p.id desc
+) latest
+where latest.left_at is null
+  and latest.session_status = 'active'
+  and latest.entered_at >= now() - interval '90 minutes'
+  and latest.entered_at <= now() + interval '5 minutes'
+  and latest.session_entered_at >= now() - interval '180 minutes'
+  and latest.session_entered_at <= now() + interval '5 minutes';
 
 -- 9-2. 운영 모니터링 — 지금 몇 명이 안에 있나 (혼잡도 B3의 소스)
 create or replace view v_live_count as
-select count(*) filter (where status = 'active') as active_now,
+select count(*) filter (
+         where status = 'active'
+           and entered_at >= now() - interval '180 minutes'
+           and entered_at <= now() + interval '5 minutes'
+       ) as active_now,
        count(*)                                  as total_today
 from sessions
-where entered_at >= date_trunc('day', now() at time zone 'Asia/Seoul');
+where entered_at >= (
+        date_trunc('day', now() at time zone 'Asia/Seoul')
+        at time zone 'Asia/Seoul'
+      )
+  and entered_at < (
+        (date_trunc('day', now() at time zone 'Asia/Seoul') + interval '1 day')
+        at time zone 'Asia/Seoul'
+      );
 
 -- 9-3. 되돌아옴 — 같은 세션이 같은 스테이션에 2회 이상 (22 §4-2)
 create or replace view v_returning as
@@ -267,13 +306,28 @@ create or replace function close_stale_sessions(minutes int default 90)
 returns int language plpgsql as $$
 declare n int;
 begin
+  if minutes is null or minutes < 1 then
+    raise exception 'minutes must be a positive integer';
+  end if;
+
   update sessions
      set status = 'ended',
-         exited_at = now(),
-         end_reason = 'round_timeout'
+         exited_at = coalesce(exited_at, now()),
+         end_reason = coalesce(end_reason, 'round_timeout')
    where status = 'active'
-     and entered_at < now() - (minutes || ' minutes')::interval;
+     and (
+       entered_at < now() - (minutes || ' minutes')::interval
+       or entered_at > now() + interval '5 minutes'
+     );
   get diagnostics n = row_count;
+
+  update station_presence p
+     set left_at = greatest(p.entered_at, coalesce(s.exited_at, now()))
+    from sessions s
+   where s.id = p.session_id
+     and p.left_at is null
+     and s.status <> 'active';
+
   return n;
 end $$;
 
