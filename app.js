@@ -2073,6 +2073,7 @@ async function screenModule(stationId, options = {}) {
     logEvent('station_name_required', { via }, stationId);
   } else if (options.enter) {
     const uiSessionId = ensureSession().id;
+    const previousConnectedStation = ensureSession().connected_station || null;
     const controlFields = {
       color: ensureSession().color,
       lang: ensureSession().lang,
@@ -2088,6 +2089,14 @@ async function screenModule(stationId, options = {}) {
       : null;
     entryStatus = getLastStationEntryStatus();
     if (boundStation === stationId && ownsActiveTab(uiSessionId)) {
+      if (previousConnectedStation && previousConnectedStation !== stationId) {
+        markStationComplete(previousConnectedStation);
+        logEvent('station_leave', {
+          reason: 'station_switch',
+          next_station: stationId,
+        }, previousConnectedStation);
+        flushAnalyticsEvents('station_switch');
+      }
       updateSession({ connected_station: stationId });
       window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: stationId } }));
     } else if (ownsActiveTab(uiSessionId)) {
