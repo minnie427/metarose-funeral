@@ -23,7 +23,7 @@ import {
   getState as getDbState,
   getLastStationEntryStatus,
   notePhoneActivity,
-} from './db.js?v=unlimited-session-v1-20260814';
+} from './db.js?v=capture-revalidation-v2-20260814';
 import {
   beginRead,
   endRead,
@@ -193,6 +193,8 @@ let remoteTraceCache = {
 let capturePollTimer = null;
 let capturePollFocusHandler = null;
 let capturePollVisibilityHandler = null;
+let capturePollPageShowHandler = null;
+let capturePollOnlineHandler = null;
 let capturePollGeneration = 0;
 const captureUrlCache = new Map();
 
@@ -301,6 +303,14 @@ function stopCapturePolling() {
   if (capturePollVisibilityHandler) {
     document.removeEventListener('visibilitychange', capturePollVisibilityHandler);
     capturePollVisibilityHandler = null;
+  }
+  if (capturePollPageShowHandler) {
+    window.removeEventListener('pageshow', capturePollPageShowHandler);
+    capturePollPageShowHandler = null;
+  }
+  if (capturePollOnlineHandler) {
+    window.removeEventListener('online', capturePollOnlineHandler);
+    capturePollOnlineHandler = null;
   }
 }
 
@@ -561,8 +571,26 @@ function markStationComplete(stationId) {
   updateSession({ completed_stations: [...completed] });
 }
 
+function sessionContrastInk(hex) {
+  let value = String(hex || '').trim().replace('#', '');
+  if (/^[0-9a-f]{3}$/i.test(value)) {
+    value = value.split('').map((character) => character + character).join('');
+  }
+  if (!/^[0-9a-f]{6}$/i.test(value)) return '#09090a';
+  const channels = [0, 2, 4].map((offset) => parseInt(value.slice(offset, offset + 2), 16) / 255)
+    .map((channel) => (
+      channel <= 0.03928
+        ? channel / 12.92
+        : ((channel + 0.055) / 1.055) ** 2.4
+    ));
+  const luminance = (0.2126 * channels[0]) + (0.7152 * channels[1]) + (0.0722 * channels[2]);
+  return luminance > 0.42 ? '#09090a' : '#ffffff';
+}
+
 function applySessionColor(hex) {
-  document.documentElement.style.setProperty('--session', hex || '#F25C94');
+  const color = hex || '#F25C94';
+  document.documentElement.style.setProperty('--session', color);
+  document.documentElement.style.setProperty('--session-ink', sessionContrastInk(color));
 }
 
 function displayName(session = getSession()) {
@@ -2250,7 +2278,11 @@ async function refreshCaptureResultPanel(stationId) {
   const panel = document.getElementById(`module-capture-${stationId}`);
   if (!panel || !panel.isConnected) return false;
   const normalizedStationId = String(stationId).padStart(2, '0');
+  panel.dataset.pollAttempt = String((Number(panel.dataset.pollAttempt) || 0) + 1);
+  panel.dataset.lastPollStartedAt = new Date().toISOString();
   const fetchedArtifacts = await fetchMyCaptureArtifacts(normalizedStationId);
+  panel.dataset.lastPollCompletedAt = new Date().toISOString();
+  panel.dataset.lastPollCount = String(fetchedArtifacts.length);
   // SUB2 may finish its private Storage upload just after station presence
   // closes. Keep every capture belonging to the persistent phone session,
   // remove duplicate rows/paths, and retain chronological carousel order.
@@ -2316,13 +2348,15 @@ async function refreshCaptureResultPanel(stationId) {
   return true;
 }
 
-function startModuleCapturePolling(stationId, connected) {
+function startModuleCapturePolling(stationId) {
   const normalizedStationId = String(stationId).padStart(2, '0');
   if (!['01', '02', '03'].includes(normalizedStationId)) return;
   stopCapturePolling();
   const generation = capturePollGeneration;
-  const persistentResultPolling = normalizedStationId === '03';
-  const repeatsWhileConnected = ['01', '02'].includes(normalizedStationId) && connected;
+  // A TD upload may complete just after station presence closes. Every capture
+  // page therefore revalidates by persistent session UUID while it remains
+  // open; presence is deliberately not a polling prerequisite.
+  const persistentResultPolling = true;
   let inFlight = false;
 
   const isCurrentCaptureView = () => (
@@ -2351,21 +2385,23 @@ function startModuleCapturePolling(stationId, connected) {
     } finally {
       inFlight = false;
     }
-    if (isCurrentCaptureView() && (persistentResultPolling || repeatsWhileConnected)) {
+    if (isCurrentCaptureView() && persistentResultPolling) {
       schedule(4000);
     }
   };
 
-  if (persistentResultPolling) {
-    capturePollFocusHandler = () => {
-      if (document.visibilityState === 'visible') schedule(0);
-    };
-    capturePollVisibilityHandler = () => {
-      if (document.visibilityState === 'visible') schedule(0);
-    };
-    window.addEventListener('focus', capturePollFocusHandler);
-    document.addEventListener('visibilitychange', capturePollVisibilityHandler);
-  }
+  capturePollFocusHandler = () => {
+    if (document.visibilityState === 'visible') schedule(0);
+  };
+  capturePollVisibilityHandler = () => {
+    if (document.visibilityState === 'visible') schedule(0);
+  };
+  capturePollPageShowHandler = () => schedule(0);
+  capturePollOnlineHandler = () => schedule(0);
+  window.addEventListener('focus', capturePollFocusHandler);
+  document.addEventListener('visibilitychange', capturePollVisibilityHandler);
+  window.addEventListener('pageshow', capturePollPageShowHandler);
+  window.addEventListener('online', capturePollOnlineHandler);
 
   schedule(0);
 }
@@ -2574,7 +2610,7 @@ async function screenModule(stationId, options = {}) {
       }
     }),
   ] : []);
-  startModuleCapturePolling(stationId, connected && !needsName);
+  startModuleCapturePolling(stationId);
 }
 
 function screenMySpecimen({ returnTo = null } = {}) {

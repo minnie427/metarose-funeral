@@ -132,6 +132,11 @@ async function initializeDB() {
         autoRefreshToken: true,
         detectSessionInUrl: false,
       },
+      // Capture lists are an exhibition control surface, not static content.
+      // Safari must never satisfy repeated PostgREST reads from its HTTP cache.
+      global: {
+        fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }),
+      },
     });
     ready = true;
     await attachAudienceAuthToCurrentSession();
@@ -1091,7 +1096,7 @@ export async function fetchLiveCount() {
   }
 }
 
-export async function fetchMyArtifacts() {
+export async function fetchMyArtifacts({ fresh = false } = {}) {
   const s = loadSession();
   if (!s) return [];
   // 오프라인이거나 미설정이면 큐에 있는 것으로라도 보여준다
@@ -1100,13 +1105,20 @@ export async function fetchMyArtifacts() {
     .map(j => j.row);
   if (!ready || !online) return local;
   try {
-    const { data, error } = await sb
+    let query = sb
       .from('artifacts').select('*')
-      .eq('session_id', s.id)
-      .order('occurred_at', { ascending: true });
+      .eq('session_id', s.id);
+    if (fresh) {
+      // A moving upper bound makes each polling URL unique as a second guard
+      // against intermediary/browser cache reuse. The +5m tolerance matches
+      // the accepted exhibition clock-skew window.
+      query = query.lte('occurred_at', new Date(Date.now() + (5 * 60 * 1000)).toISOString());
+    }
+    const { data, error } = await query.order('occurred_at', { ascending: true });
     if (error) throw error;
     return data && data.length ? data : local;
-  } catch {
+  } catch (error) {
+    console.warn('[db] artifact revalidation failed', error);
     return local;
   }
 }
@@ -1129,7 +1141,7 @@ export async function createCaptureSignedUrl(storagePath, expiresIn = 1800) {
 }
 
 export async function fetchMyCaptureArtifacts(stationId = null) {
-  const artifacts = await fetchMyArtifacts();
+  const artifacts = await fetchMyArtifacts({ fresh: true });
   return artifacts
     .filter((artifact) => artifact?.type === 'capture')
     .filter((artifact) => !stationId || String(artifact.station_id).padStart(2, '0') === String(stationId).padStart(2, '0'))

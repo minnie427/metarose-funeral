@@ -2114,8 +2114,8 @@ body.has-dock .app {
 
 .rose-pattern-button.is-selected,
 .rose-pattern-button.is-matched {
-  color: #09090a;
-  background: #ffffff;
+  color: var(--session-ink, #09090a);
+  background: var(--session);
 }
 
 .rose-pattern-button.is-matched .rose-pattern-graphic {
