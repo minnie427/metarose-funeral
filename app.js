@@ -55,6 +55,7 @@ let activeReadKey = null;
 let uiTrackingStarted = false;
 let tabRuntimeActive = true;
 let tabChannel = null;
+let phoneHubEntryInFlight = false;
 
 function readActiveTabLease() {
   try {
@@ -594,7 +595,88 @@ function applySessionColor(hex) {
 }
 
 function displayName(session = getSession()) {
-  return session?.emotional_name || tr('장미 이름 없음', 'ROSE NOT YET NAMED');
+  return session?.emotional_name || `ROSE ${session?.display_record_no || ''}`.trim();
+}
+
+function generatedRoseName(session = ensureSession()) {
+  return `ROSE ${session.display_record_no}`;
+}
+
+function randomRoseColor() {
+  const palette = Array.isArray(CONFIG.PALETTE) && CONFIG.PALETTE.length
+    ? CONFIG.PALETTE
+    : [{ hex: '#F25C94' }];
+  return palette[Math.floor(Math.random() * palette.length)].hex;
+}
+
+function routeAfterRoseSetup() {
+  const session = ensureSession();
+  const pendingStation = session.pending_station;
+  const pendingStationVia = session.pending_station_via || 'qr';
+  updateSession({ pending_station: null, pending_station_via: null });
+  if (pendingStation === '05') {
+    void screenExitJourney();
+  } else if (pendingStation && MODULES[pendingStation]) {
+    // QR/NFC and HOME now share one rule: the physical rose pattern is always
+    // selected once before a station claim is attempted.
+    void screenModule(pendingStation, { enter: false, via: pendingStationVia });
+  } else {
+    screenHome();
+  }
+}
+
+async function beginPhoneHub({ chooseColor = false, button = null } = {}) {
+  if (phoneHubEntryInFlight) return;
+  phoneHubEntryInFlight = true;
+  const entryButtons = [...document.querySelectorAll('.dock button')];
+  entryButtons.forEach((entryButton) => { entryButton.disabled = true; });
+  if (button) button.setAttribute('aria-busy', 'true');
+  logEvent('arrival_enter_clicked', { choose_color: chooseColor }, '00');
+  let remote = null;
+  try {
+    remote = await createRemoteSession(true);
+  } catch (error) {
+    console.warn('[phone-hub] quick entry failed', error);
+  }
+  if (!remote) {
+    phoneHubEntryInFlight = false;
+    entryButtons.forEach((entryButton) => { entryButton.disabled = false; });
+    if (button) button.removeAttribute('aria-busy');
+    alert(tr(
+      '휴대폰 연결을 만들지 못했습니다. 네트워크를 확인하고 다시 눌러주세요. 작품 옆의 바로 시작 버튼으로도 체험할 수 있습니다.',
+      'The phone connection could not be created. Check the network and try again. You can also use the START NOW button beside the work.',
+    ));
+    return;
+  }
+
+  const current = ensureSession();
+  const basePatch = {
+    intro_seen: true,
+    consent: true,
+    local_only: false,
+    emotional_name: current.name_source === 'visitor'
+      ? current.emotional_name
+      : generatedRoseName(current),
+    name_source: current.name_source === 'visitor' ? 'visitor' : 'generated',
+  };
+
+  if (chooseColor) {
+    updateSession({ ...basePatch, color_locked: false });
+    phoneHubEntryInFlight = false;
+    screenPersonalSetup();
+    return;
+  }
+
+  const color = randomRoseColor();
+  applySessionColor(color);
+  updateSession({ ...basePatch, color, color_locked: true });
+  logEvent('specimen_registered', {
+    color,
+    name_source: basePatch.name_source,
+    registration_mode: 'quick_random',
+  }, '00');
+  phoneHubEntryInFlight = false;
+  routeAfterRoseSetup();
 }
 
 function stationFromQuery() {
@@ -694,6 +776,56 @@ function roseMark(className = '') {
   );
 }
 
+async function releaseCurrentStation(reason = 'navigation') {
+  const session = ensureSession();
+  const stationId = session.connected_station;
+  if (!stationId) return true;
+
+  const closed = await leaveDbStation(stationId);
+  if (!ownsActiveTab(session.id)) return false;
+  if (!closed) {
+    alert(tr(
+      '작품 연결 종료를 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
+      'The station could not be disconnected. Check the network and try again.',
+    ));
+    return false;
+  }
+
+  updateSession({ connected_station: null });
+  markStationComplete(stationId);
+  window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
+  logEvent('station_leave', { reason }, stationId);
+  flushAnalyticsEvents(`station_leave_${reason}`);
+  return true;
+}
+
+async function navigateAfterStationRelease(action, reason = 'navigation') {
+  closeRoseMenu();
+  if (!(await releaseCurrentStation(reason))) return false;
+  action();
+  return true;
+}
+
+function openArtistInstagram(event) {
+  event?.preventDefault();
+  logEvent('artist_instagram_open', { handle: '@minniepark.studio' }, null);
+  void navigateAfterStationRelease(() => {
+    window.location.assign(ARTIST_INSTAGRAM_URL);
+  }, 'artist_instagram');
+}
+
+async function goHome() {
+  closeRoseMenu();
+  const session = ensureSession();
+  if (!isRegistered(session)) {
+    screenArrival();
+    return false;
+  }
+  if (!(await releaseCurrentStation('home'))) return false;
+  screenHome();
+  return true;
+}
+
 function globalHeader() {
   const session = ensureSession();
   return el('header', { class: 'global-header' },
@@ -701,11 +833,7 @@ function globalHeader() {
       class: 'wordmark',
       type: 'button',
       'aria-label': tr('홈으로 이동', 'Go to home'),
-      onclick: () => {
-        closeRoseMenu();
-        if (isRegistered(session)) screenHome();
-        else screenArrival();
-      },
+      onclick: () => { void goHome(); },
     },
       el('span', {}, 'META ROSE'),
       el('span', {}, '2026'),
@@ -746,11 +874,13 @@ function personalHeader(connectedStation = null) {
   return el('button', {
     class: 'personal-header',
     type: 'button',
-    onclick: () => screenMySpecimen({
-      returnTo: connectedStation
-        ? { name: 'module', data: { stationId: connectedStation, options: { via: 'back' } } }
-        : { name: 'home', data: {} },
-    }),
+    onclick: () => {
+      void navigateAfterStationRelease(() => screenMySpecimen({
+        returnTo: connectedStation
+          ? { name: 'module', data: { stationId: connectedStation, options: { via: 'back' } } }
+          : { name: 'home', data: {} },
+      }), 'specimen');
+    },
     'aria-label': tr('내 표본 보기', 'View my specimen'),
   },
     el('span', { class: 'personal-rose' },
@@ -778,8 +908,7 @@ function menuAction(label, action, index = null) {
     type: 'button',
     onclick: () => {
       logEvent('menu_item_selected', { item: label, navigation_via: 'menu' }, null);
-      closeRoseMenu();
-      action();
+      void navigateAfterStationRelease(action, 'menu_navigation');
     },
   },
     index ? el('span', { class: 'menu-index' }, index) : el('span', { class: 'menu-index' }, '·'),
@@ -930,7 +1059,7 @@ function openRoseMenu() {
         el('button', { class: 'menu-close', type: 'button', onclick: closeRoseMenu, 'aria-label': tr('메뉴 닫기', 'Close menu') }, '×'),
       ),
       el('nav', { class: 'rose-menu-nav', 'aria-label': 'ROSE MENU' },
-        menuAction('HOME', () => guardedNavigation(screenHome)),
+        menuAction('HOME', () => guardedNavigation(() => { void goHome(); })),
         menuAction(tr('명명', 'NAMING'), () => guardedNavigation(() => screenModule('01', { via: 'menu' })), '01'),
         menuAction(tr('개입', 'INTERVENTION'), () => guardedNavigation(() => screenModule('02', { via: 'menu' })), '02'),
         menuAction(tr('목격', 'WITNESS'), () => guardedNavigation(() => screenModule('03', { via: 'menu' })), '03'),
@@ -955,10 +1084,8 @@ function openRoseMenu() {
         el('a', {
           class: 'menu-instagram',
           href: ARTIST_INSTAGRAM_URL,
-          target: '_blank',
-          rel: 'noopener noreferrer',
           'aria-label': 'Instagram @minniepark.studio',
-          onclick: () => logEvent('artist_instagram_open', { handle: '@minniepark.studio' }, null),
+          onclick: openArtistInstagram,
         }, '@MINNIEPARK.STUDIO', el('span', { 'aria-hidden': 'true' }, '↗')),
         el('span', {}, 'META ROSE 2026 / THE FUNERAL'),
         el('span', { class: 'menu-copyright' }, '© 2026 MINNIE PARK. ALL RIGHTS RESERVED.'),
@@ -1015,14 +1142,6 @@ function textButton(label, action, className = '') {
 
 function screenArrival() {
   const session = ensureSession();
-  const sessionCreatedAt = new Intl.DateTimeFormat(session.lang === 'en' ? 'en-US' : 'ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(session.created_at));
   rememberView('arrival');
   clearStationQuery();
   applySessionColor('#D9D4CF');
@@ -1047,124 +1166,32 @@ function screenArrival() {
         note: tr('입구 표지용 고정 비주얼 사진', 'Fixed visual photograph for the entry cover'),
       }),
       el('section', { class: 'arrival-summary' },
-        el('span', { class: 'micro-label' }, tr('이 전시에 대하여', 'ABOUT THIS EXHIBITION')),
+        el('span', { class: 'micro-label' }, tr('오디오비주얼 인터랙티브 전시', 'AUDIOVISUAL INTERACTIVE EXHIBITION')),
         el('p', {}, tr(
-          '〈오늘 나는 죽인다, 나를〉은 생화 장미와 스켈레톤, 빛, 소리, 실시간 영상이 관객의 손과 몸에 반응하는 오디오비주얼 인터랙티브 전시입니다. 바니타스가 꽃과 해골을 한 화면에 놓아 삶과 죽음이 분리되지 않음을 말해왔듯, 이 전시는 삶과 죽음, 돌봄과 파괴, 아름다움과 가시가 동시에 존재하는 방식을 바라봅니다. 이 양가성은 둘 중 하나를 없애야 하는 오류가 아니라 장미와 나, 더 넓게는 세계와 우주를 이루는 조건입니다. 서로 모순되어 보이는 두 얼굴이 함께 있음을 먼저 인정하고 천천히 마주할 때, 우리는 그 안에서도 무엇을 가까이 하고 어느 쪽에 힘을 줄지 선택할 수 있습니다. 네 작품의 다양한 상호작용을 지나며 관객은 자신의 장미를 만들고, 만지고, 개입하고, 목격하고, 기록합니다.',
-          'Today I Kill My Self is an audiovisual interactive exhibition in which fresh roses, a skeleton, light, sound, and real-time images respond to the audience\'s hands and body. As vanitas placed flowers and skulls together to show that life and death cannot be separated, this exhibition considers how life and death, care and destruction, beauty and thorns exist at the same time. Ambivalence is not an error to remove, but a condition shared by the rose, the self, the world, and the universe. By first acknowledging these contradictory faces and looking at them slowly, we may recover the power to choose what to approach and where to place our strength.',
-        )),
-      ),
-      el('div', { class: 'record-line' },
-        el('span', {}, tr('당신의 장미 번호', 'YOUR ROSE NUMBER')),
-        el('strong', {}, `ROSE NO. ${session.display_record_no}`),
-      ),
-      el('section', { class: 'arrival-thesis' },
-        el('p', {}, tr(
-          '바니타스는 꽃, 해골, 썩는 과일과 꺼지는 촛불 같은 상징을 한 장면에 놓아 삶의 유한함과 죽음을 기억하게 한 정물화의 전통입니다.',
-          'Vanitas is a still-life tradition that brings together flowers, skulls, decaying fruit, and extinguishing candles to remind us that life is finite.',
-        )),
-        el('p', {}, tr(
-          '여기서는 그 질문을 오늘의 나에게 옮깁니다. 나는 살아 있는 동안 내 안의 어떤 면을 계속 밀어내고 죽여 왔을까요.',
-          'Here, that question is turned toward the self: what part of myself have I kept pushing away and killing while still alive?',
-        )),
-        el('p', {}, tr(
-          '이 장례식은 그 나를 다시 불러 두 얼굴이 동시에 존재했음을 마주하고, 그 안에서 무엇을 선택할지 스스로 정하는 자리입니다.',
-          'This funeral calls that self back, holds both faces at once, and returns the choice of what to do next.',
+          '생화 장미, 스켈레톤, 빛과 소리가 당신의 손과 몸에 반응합니다. 삶과 죽음, 돌봄과 파괴가 함께 있는 자리에서 오늘의 균형을 직접 찾아보세요.',
+          'Living roses, a skeleton, light, and sound respond to your hands and body. Find today\'s balance where life and death, care and destruction remain together.',
         )),
       ),
       el('p', { class: 'intro-copy phone-role-copy' }, tr(
-        '이 휴대폰은 당신이 고른 장미와 지은 이름, 각 작품에서 남긴 장면을 한곳에 모읍니다. 입구에서는 NFC로 Phone Hub를 열고, 각 작품 앞에서는 안내판과 같은 장미 패턴을 선택하면 지나온 과정이 당신의 장미에 차례로 남습니다.',
-        'This phone gathers your rose, the name you make, and the moments you leave in each work.',
+        '휴대폰은 작품 연결과 장면 기록에 사용됩니다. 본명과 연락처는 받지 않습니다.',
+        'Your phone connects the works and gathers the moments you record. No legal name or contact details are collected.',
       )),
-      disclosure(
-        tr('당신의 장미에 남는 것', 'WHAT STAYS WITH YOUR ROSE'),
-        el('div', { class: 'copy-stack' },
-          el('p', {}, tr(
-            '계정을 만들거나 본명을 묻지 않습니다. 당신이 고른 색, 직접 지은 이름, 작품을 지나며 남기기로 한 장면만 장미 번호와 연결됩니다.',
-            'No account or legal name is required. Only what you choose to leave is connected to your rose number.',
-          )),
-          el('p', {}, tr(
-            '얼굴을 식별하기 위한 정보와 휴대폰의 위치 정보는 저장하지 않습니다. 수집한 기록은 작품 연구와 전시 경험 개선을 위해서만 사용하며 다른 관객에게 공개하지 않습니다.',
-            'Facial identification data and phone location are not collected. Records are used only for artwork research and exhibition improvement, and are not shown to other visitors.',
-          )),
-        ),
-        'record_info',
-      ),
-      disclosure(
-        tr('당신의 속도로 보셔도 됩니다', 'MOVE AT YOUR OWN PACE'),
-        el('div', { class: 'copy-stack' },
-          el('p', {}, tr(
-            '이 작품에는 죽음, 애도, 스스로 밀어내거나 없애려 했던 나의 면에 관한 이미지가 등장합니다. 그러나 무엇을 가까이 보고, 무엇을 만지고, 언제 멈출지는 당신이 정합니다.',
-            'This work contains images of death, mourning, and parts of the self we have pushed away or tried to erase. You decide what to approach, touch, or leave.',
-          )),
-          el('p', {}, tr(
-            '불편하면 지나가도 되고, 잠시 쉬었다 돌아와도 됩니다. 당신의 속도와 선택도 이 작품의 일부입니다.',
-            'You may pass, pause, or return. Your pace and choices are part of the work.',
-          )),
-        ),
-        'pace_info',
-      ),
-      el('footer', { class: 'screen-footer-meta' },
-        el('span', {}, 'SESSION CREATED'),
-        el('strong', {}, sessionCreatedAt),
-      ),
+      el('p', { class: 'arrival-auto-note' }, tr(
+        '바로 입장하면 장미 색과 번호가 자동으로 만들어집니다.',
+        'Enter now to create a rose color and number automatically.',
+      )),
+      textButton(tr('프로젝트 자세히 보기', 'READ THE FULL PROJECT'), () => screenAboutProject('about-intro'), 'arrival-about-link'),
     ),
   ], [
-    primaryButton(tr('내 장미를 만들고 입장합니다', 'CREATE MY ROSE AND ENTER'), async () => {
-      logEvent('arrival_enter_clicked', {}, '00');
-      const remote = await createRemoteSession(true);
-      if (!remote) {
-        alert(tr(
-          '세션 연결을 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
-          'The session could not be confirmed. Check the network and try again.',
-        ));
-        return;
-      }
-      updateSession({ intro_seen: true, consent: true, local_only: false });
-      screenPersonalSetup();
+    primaryButton(tr('바로 입장합니다', 'ENTER NOW'), (event) => {
+      void beginPhoneHub({ button: event.currentTarget });
     }),
-    textButton(tr('기록 없이 작품 안내만 보겠습니다', 'VIEW THE GUIDE WITHOUT A RECORD'), () => {
-      logEvent('arrival_local_only_clicked', {}, '00');
-      updateSession({ intro_seen: true, consent: false, local_only: true });
-      screenPersonalSetup();
-    }, 'local-only-entry quiet-entry'),
+    textButton(tr('색을 직접 고르고 입장합니다', 'CHOOSE A COLOR FIRST'), (event) => {
+      void beginPhoneHub({ chooseColor: true, button: event.currentTarget });
+    }, 'quiet-entry'),
   ]);
   // 입장 전 읽기는 세션 발급 후 queue에서 해당 세션으로 귀속된다.
   startPageRead('arrival');
-}
-
-function openRegistrationConfirmation(color, selectionMeta = {}) {
-  const overlay = el('div', { class: 'confirmation-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': tr('장미 선택 확인', 'Confirm rose') },
-    el('div', { class: 'confirmation-card' },
-      el('span', { class: 'micro-label' }, 'CONFIRM / SPECIMEN'),
-      roseVisual('confirmation', 'SELECTED MY ROSE'),
-      el('h2', {}, tr('이 장미를 선택하시겠습니까?', 'CHOOSE THIS ROSE?')),
-      el('p', {}, tr(
-        '선택한 색은 작품 안에서 당신을 나타내고, 마지막 방에서 자신을 찾는 단서가 됩니다. 이번 관람 중에는 변경할 수 없습니다.',
-        'This color represents you throughout today\'s work and record. It cannot be changed during this exhibition.',
-      )),
-      primaryButton(tr('이 장미로 결정합니다', 'CONFIRM THIS ROSE'), () => {
-        applySessionColor(color);
-        updateSession({ nickname: '', color, color_locked: true });
-        logEvent('specimen_registered', { color, ...selectionMeta }, '00');
-        overlay.remove();
-        const pendingSession = getSession();
-        const pendingStation = pendingSession?.pending_station;
-        const pendingStationVia = pendingSession?.pending_station_via || 'qr';
-        if (pendingStation === '05') {
-          updateSession({ pending_station: null, pending_station_via: null });
-          screenExitJourney();
-        } else if (pendingStation) {
-          updateSession({ pending_station: null, pending_station_via: null });
-          screenModule(pendingStation, { enter: true, via: pendingStationVia });
-        } else {
-          screenHome();
-        }
-      }),
-      textButton(tr('다시 선택하기', 'SELECT AGAIN'), () => overlay.remove()),
-    ),
-  );
-
-  document.body.append(overlay);
 }
 
 function screenPersonalSetup() {
@@ -1193,7 +1220,7 @@ function screenPersonalSetup() {
     globalHeader(),
     el('section', { class: 'screen registration-screen' },
       el('div', { class: 'screen-kicker' },
-        el('span', {}, '01 / REGISTRATION'),
+        el('span', {}, 'MY ROSE / COLOR'),
         el('span', {}, `ROSE NO. ${session.display_record_no}`),
       ),
       el('h1', { class: 'screen-title' }, tr('장미 색을 정합니다', 'CHOOSE THE COLOR OF YOUR ROSE')),
@@ -1201,60 +1228,53 @@ function screenPersonalSetup() {
       el('div', { class: 'input-group color-group' },
         el('label', {}, 'MY ROSE COLOR'),
         colorPicker,
-        el('span', { class: 'input-note' }, tr('색은 눈에 보이는 빛의 파장이 몸 안으로 들어와 남기는 감각입니다. 색의 의미와 이름은 미리 정해두지 않았습니다. 오늘 이 전시에서 만나고 싶은 경험을 떠올리며, 당신의 장미가 될 색을 직접 골라주세요.', 'Color is a wavelength of visible light that enters the body and remains as sensation. No meaning or name has been assigned in advance. Choose the color of your rose while thinking about the experience you want to meet today.')),
+        el('span', { class: 'input-note' }, tr('오늘 눈에 머무는 색을 고르세요.', 'Choose the color that holds your eye today.')),
         error,
       ),
-      el('section', { class: 'emotional-naming-intro' },
-        el('span', { class: 'section-code' }, 'NAME OF THE ROSE'),
-        el('h2', {}, tr('장미의 이름을 정합니다', 'YOU WILL NAME YOUR ROSE')),
-        el('p', {}, tr(
-          '01 명명을 지난 뒤, 오늘의 경험을 담아 장미의 이름을 직접 짓습니다. 이 이름은 전시를 통과하는 동안 끝까지 당신과 당신의 장미를 함께 부르는 이름입니다.',
-          'After 01 Naming, you will make a name for your rose from today\'s experience. It will accompany you and your rose through the exhibition.',
-        )),
-        disclosure(
-          tr('이름을 짓는 일에 대하여', 'ABOUT NAMING'),
-          el('div', { class: 'copy-stack emotional-naming-guide' },
-            el('p', {}, tr(
-              '장미가 꽃잎과 가시를 한 몸에 가지고 있듯, 나에게도 여러 모양의 내가 있고 그 여러 모습에는 서로 다른 얼굴의 감정이 함께 있습니다. 장미의 이름을 짓는 일은 이미 정해진 감정 단어를 고르는 과정이 아니라, 작품을 지나며 발견한 서로 다른 두 모습을 한 문장 안에 함께 남기는 과정입니다.',
-              'Just as a rose carries petals and thorns in one body, the self contains many forms and many faces of emotion. Naming the rose is not choosing from a fixed list, but holding two different sides you encounter in one sentence.',
-            )),
-            el('p', {}, tr(
-              '먼저 내가 밀어내거나 없애고 싶었던 한 면을 적습니다. 예를 들면 “쉽게 겁먹는 나”, “자꾸 멈추는 나”처럼 지금 실제로 느껴지는 말이면 충분합니다. 그다음, 바로 그 모습 안에 동시에 존재했던 다른 한 면을 찾습니다. 두려워하면서도 자리를 지켰거나, 멈췄지만 다시 움직였던 나일 수 있습니다.',
-              'First, write one side of yourself that you pushed away or wanted to erase. Then look for another side that existed inside it at the same time: perhaps the self that was afraid but stayed, or stopped and moved again.',
-            )),
-            el('p', {}, tr(
-              '두 번째 문장은 첫 번째를 지우거나 긍정적으로 고쳐 쓰기 위한 것이 아닙니다. 서로 모순되어 보이는 두 모습이 동시에 나였다는 사실을 그대로 두는 것이 중요합니다.',
-              'The second sentence does not erase, correct, or make the first one positive. What matters is allowing two seemingly contradictory sides to remain true at once.',
-            )),
-            el('div', { class: 'emotional-naming-example' },
-              el('span', {}, tr('예시', 'EXAMPLE')),
-              el('p', {}, tr('“겁이 많은 나” + “그래도 계속 가는 나”', '“The self who is afraid” + “The self who keeps going”')),
-              el('strong', {}, tr('→ 겁이 많지만 계속 가는 나', '→ THE SELF WHO IS AFRAID BUT KEEPS GOING')),
-            ),
-            el('p', {}, tr(
-              '정답이나 좋은 표현은 없습니다. 완전한 문장이 아니어도 되고, 타인에게 설명하기 어려운 말이어도 됩니다. 이 이름은 진단이나 성격 규정이 아니라, 오늘 이 전시를 통과한 나를 잠시 붙잡아 두는 표식입니다.',
-              'There is no correct or polished answer. It does not need to be a complete sentence or easy to explain. This is not a diagnosis or a fixed identity, but a marker for the self moving through the exhibition today.',
-            )),
-            el('p', {}, tr(
-              '01을 마친 뒤 이름을 짓는 것을 권합니다. 오늘 지은 장미의 이름은 전시가 끝날 때까지 당신을 따라가고, 마지막에는 장미 번호와 함께 유품에 남습니다. 출구에 도착하기 전 언제든 다시 읽고 다듬을 수 있습니다.',
-              'We recommend naming after 01. The name of your rose follows you through the exhibition and remains with your rose number in the final record. You can read and refine it before reaching the exit.',
-            )),
-          ),
-          'emotional_naming_intro',
-        ),
-      ),
+      el('p', { class: 'intro-copy compact-setup-note' }, tr(
+        '장미 이름은 나중에 원할 때 지을 수 있습니다.',
+        'You may name your rose later if you wish.',
+      )),
     ),
   ], [
-    primaryButton(tr('이 색으로 나의 장미를 만듭니다', 'CREATE MY ROSE'), () => {
+    primaryButton(tr('이 색으로 입장합니다', 'ENTER WITH THIS COLOR'), () => {
       if (!selectedColor) {
         error.textContent = tr('나의 장미 색을 골라주세요.', 'Choose my rose color.');
         return;
       }
       error.textContent = '';
-      openRegistrationConfirmation(selectedColor, {
+      const current = ensureSession();
+      updateSession({
+        nickname: '',
+        color: selectedColor,
+        color_locked: true,
+        emotional_name: current.name_source === 'visitor'
+          ? current.emotional_name
+          : generatedRoseName(current),
+        name_source: current.name_source === 'visitor' ? 'visitor' : 'generated',
+      });
+      logEvent('specimen_registered', {
+        color: selectedColor,
         selection_duration_ms: Math.round(performance.now() - openedAt),
         color_change_count: colorChangeCount,
+        registration_mode: 'manual_color',
+      }, '00');
+      routeAfterRoseSetup();
+    }),
+    textButton(tr('자동으로 정하고 입장합니다', 'CHOOSE FOR ME AND ENTER'), () => {
+      const current = ensureSession();
+      const color = randomRoseColor();
+      applySessionColor(color);
+      updateSession({
+        color,
+        color_locked: true,
+        emotional_name: current.name_source === 'visitor'
+          ? current.emotional_name
+          : generatedRoseName(current),
+        name_source: current.name_source === 'visitor' ? 'visitor' : 'generated',
       });
+      logEvent('specimen_registered', { color, registration_mode: 'setup_random' }, '00');
+      routeAfterRoseSetup();
     }),
   ]);
 }
@@ -1446,15 +1466,32 @@ function screenHome() {
     globalHeader(),
     el('section', { class: 'screen home-screen' },
       personalHeader(),
-      el('section', { class: 'project-intro home-project-lead' },
-        el('span', { class: 'micro-label' }, 'TODAY I KILL MY SELF / 2026'),
-        el('h1', {}, tr('오늘 나는 죽인다, 나를', 'TODAY I KILL MY SELF')),
-        el('p', {}, tr(
-          '바니타스의 꽃과 스켈레톤은 삶이 사라진다는 사실을 말해왔습니다. 이 작품은 질문을 바꿉니다. 우리는 왜 살아 있는 동안에도 자기 안의 어떤 부분을 계속 죽일까요.',
-          'The flowers and skulls of vanitas speak of life passing. This work asks what we keep killing while we are still alive.',
+      el('section', { class: 'home-quick-start' },
+        el('span', { class: 'micro-label' }, 'YOUR ROSE / EXHIBITION'),
+        el('h1', { class: 'screen-title compact-title' }, tr('작품 번호를 선택하세요', 'CHOOSE A WORK NUMBER')),
+        el('p', { class: 'intro-copy' }, tr(
+          '안내판과 같은 장미 패턴을 한 번 누르면 연결됩니다.',
+          'Select the matching rose pattern once to connect.',
         )),
-        textButton(tr('전체 프로젝트 읽기', 'READ THE FULL PROJECT'), () => screenAboutProject('about-intro'), 'home-about-primary'),
       ),
+      el('div', { class: 'module-index-list home-primary-modules' },
+        ...modules.map((stationId) => el('button', { class: 'module-index-row module-index-key', type: 'button', onclick: () => screenModule(stationId, { via: 'home_list' }) },
+          el('span', { class: 'module-number' }, stationId),
+          el('strong', {}, workTitle(stationId)),
+          el('span', { class: 'visit-status' }, moduleStatus(session, stationId)),
+          el('span', { class: 'module-code' }, stationLabel(stationId)),
+        )),
+        el('button', { class: 'module-index-row module-index-key module-index-exit', type: 'button', onclick: () => { void screenExitJourney(); } },
+          el('span', { class: 'module-number' }, '05'),
+          el('strong', {}, tr('출구', 'EXIT')),
+          el('span', { class: 'visit-status' }, tr('마지막', 'FINAL')),
+          el('span', { class: 'module-code' }, 'DEPARTURE'),
+        ),
+      ),
+      el('p', { class: 'route-note route-note-primary home-short-route' }, tr(
+        '01부터 시작합니다. 02와 03은 원하는 순서로 보고, 04는 언제든 볼 수 있습니다. 마지막에는 05 출구를 선택하세요.',
+        'Begin with 01. Visit 02 and 03 in either order, watch 04 at any time, then choose 05 Exit.',
+      )),
       el('div', { class: 'section-heading-row' },
         el('div', {},
           el('span', { class: 'micro-label' }, 'EXHIBITION MAP / B1'),
@@ -1464,28 +1501,20 @@ function screenHome() {
       ),
       floorplanRouteOrder(session),
       floorplanViewer(session),
-      el('p', { class: 'route-note route-note-primary' }, tr(
-        '01 명명에서 장미 이름을 지은 뒤,\n02와 03은 원하는 순서로 지나가셔도 됩니다.\n04는 언제든 보실 수 있고, 마지막에는 05 출구로 이동합니다.',
-        'Name your rose in 01.\nVisit 02 and 03 in either order.\n04 is open at any time; finish at 05 Exit.',
-      )),
-      el('div', { class: 'module-index-list' },
-        ...modules.map((stationId) => el('button', { class: 'module-index-row module-index-key', type: 'button', onclick: () => screenModule(stationId, { via: 'floorplan_list' }) },
-          el('span', { class: 'module-number' }, stationId),
-          el('strong', {}, workTitle(stationId)),
-          el('span', { class: 'visit-status' }, moduleStatus(session, stationId)),
-          el('span', { class: 'module-code' }, stationLabel(stationId)),
+      el('section', { class: 'project-intro home-project-lead home-project-compact' },
+        el('span', { class: 'micro-label' }, 'META ROSE 2026: THE FUNERAL'),
+        el('h2', {}, tr('오늘 나는 죽인다, 나를', 'TODAY I KILL MY SELF')),
+        el('p', {}, tr(
+          '생화 장미와 스켈레톤, 빛과 소리가 관객의 몸에 반응하는 오디오비주얼 인터랙티브 전시입니다.',
+          'An audiovisual interactive exhibition where living roses, a skeleton, light, and sound respond to the audience body.',
         )),
-        el('button', { class: 'module-index-row module-index-key module-index-exit', type: 'button', onclick: screenExitJourney },
-          el('span', { class: 'module-number' }, '05'),
-          el('strong', {}, tr('출구', 'EXIT')),
-          el('span', { class: 'visit-status' }, tr('마지막', 'FINAL')),
-          el('span', { class: 'module-code' }, 'DEPARTURE'),
-        ),
+        textButton(tr('프로젝트 자세히 보기', 'READ THE FULL PROJECT'), () => screenAboutProject('about-intro'), 'home-about-primary'),
       ),
       isTestMode() ? testPreviewPanel({ home: true }) : null,
       el('div', { class: 'home-name-action' },
-        el('span', {}, session.emotional_name ? tr('나의 장미 이름', 'NAME OF MY ROSE') : tr('장미 이름 없음', 'ROSE NOT YET NAMED')),
-        textButton(session.emotional_name ? tr('장미 이름 보기', 'VIEW ROSE NAME') : tr('장미 이름 짓기', 'NAME MY ROSE'), () => screenFinalReflection({ exitFlow: false })),
+        el('span', {}, tr('장미 이름은 선택입니다', 'ROSE NAME / OPTIONAL')),
+        el('strong', {}, displayName(session)),
+        textButton(session.name_source === 'visitor' ? tr('장미 이름 보기', 'VIEW ROSE NAME') : tr('장미 이름 짓기', 'NAME MY ROSE'), () => screenFinalReflection({ exitFlow: false })),
       ),
     ),
   ]);
@@ -1517,11 +1546,6 @@ function aboutSection({ id, index, title, lead, body = [], deeper = [] }) {
 
 function screenAboutProject(initialSection = null) {
   const session = ensureSession();
-  if (!isRegistered(session)) {
-    screenPersonalSetup();
-    return;
-  }
-
   rememberView('about', { initialSection });
   clearStationQuery();
   applySessionColor(session.color);
@@ -1545,7 +1569,7 @@ function screenAboutProject(initialSection = null) {
   render([
     globalHeader(),
     el('article', { class: 'screen about-screen', id: 'about-top' },
-      textButton('HOME', screenHome, 'about-back'),
+      textButton('HOME', () => { void goHome(); }, 'about-back'),
       el('header', { class: 'about-hero' },
         el('span', { class: 'micro-label' }, 'META ROSE 2026 / THE FUNERAL'),
         el('h1', {}, tr('프로젝트에 대하여', 'ABOUT THE PROJECT')),
@@ -1745,6 +1769,7 @@ function screenAboutProject(initialSection = null) {
           '당신의 장미 번호는 실명 대신 오늘의 선택들을 다시 찾기 위한 표식입니다. 번호의 목적은 사람을 식별하는 것이 아니라, 떨어져 있는 장면들이 누구의 장미에 돌아가야 하는지 알려주는 것입니다.',
           'Phone Hub는 작품의 실시간 화면을 복제하지 않습니다. 각 작품이 실제로 필요로 하는 최소한의 정보만 제때 연결하고, 나머지 행동 기록은 작품의 흐름을 방해하지 않도록 묶어서 저장합니다.',
           '현재의 장미는 완성된 초상이 아닙니다. 색, 이름, 방문한 순서와 작품에서 남겨진 흔적이 그 순간 잠시 겹쳐 보이는 표본이며, 관객이 다음 행동을 하면 다시 달라질 수 있습니다.',
+          '계정을 만들거나 본명을 묻지 않습니다. 얼굴을 식별하기 위한 정보와 휴대폰의 위치 정보는 저장하지 않습니다. 수집한 기록은 작품 연구와 전시 경험 개선을 위해서만 사용하며 다른 관객에게 공개하지 않습니다.',
           '세션이 끝나면 휴대폰에서는 해당 관람의 연결을 종료합니다. 수집된 기록은 다른 관객에게 공개되지 않으며, 개인을 식별하지 않는 내부 연구와 작품 개선의 자료로만 다룹니다.',
         ],
       }),
@@ -1762,6 +1787,7 @@ function screenAboutProject(initialSection = null) {
           '모순은 없어지지 않아도, 어느 쪽에 물을 줄지는 고를 수 있습니다. 이 문장은 작품이 관객에게 주는 결론이 아니라, 전시장을 나간 뒤에도 다시 선택할 수 있도록 남겨두는 질문입니다.',
           '인터랙션은 무엇을 느껴야 하는지 명령하기 위한 장치가 아니라 자기 선택을 자기 눈앞에 돌려놓기 위한 구조입니다. 장미 이름은 작품이 부여하는 진단이 아니며, 관객이 원하지 않으면 기록 없이 입장할 수도 있습니다.',
           '선택권은 작품의 책임을 관객에게 떠넘기기 위한 말이 아닙니다. 죽음과 애도, 스스로 밀어낸 나의 면을 다루는 만큼 화면은 강요보다 예고를, 평가보다 복구 가능한 선택을 먼저 제공합니다.',
+          '불편하면 지나가도 되고, 잠시 쉬었다 돌아와도 됩니다. 무엇을 가까이 보고, 무엇을 만지고, 언제 멈출지는 관객이 정합니다. 관객의 속도와 선택도 이 작품의 일부입니다.',
           '기술이 실패하더라도 작품을 계속 볼 수 있는 경로를 남기고, 남겨진 데이터보다 관객의 경험을 우선합니다. 관객은 정답을 찾는 사람이 아니라 서로 모순되는 자기 모습을 같은 시간 안에 둘 수 있는지 시험하는 사람입니다.',
         ],
       }),
@@ -1769,8 +1795,8 @@ function screenAboutProject(initialSection = null) {
         el('span', { class: 'micro-label' }, 'ARTIST / MINNIE PARK'),
         el('p', {}, tr('Minnie Park은 인간, 자연, 기계 사이에서 감정이 어떻게 물질과 행동으로 번역되는지 탐구하는 인터랙티브 미디어 아티스트입니다.', 'Minnie Park is an interactive media artist.')),
         el('p', {}, tr('생화, 스켈레톤, 전선, 센서, 실시간 이미지와 관객의 몸을 연결해 한 사람이 혼자서는 완성할 수 없는 장면을 만듭니다.', 'Her work connects organic matter, machines, real-time images, and the audience body.')),
-        el('a', { class: 'text-button', href: ARTIST_INSTAGRAM_URL, target: '_blank', rel: 'noopener noreferrer' }, tr('작가에게 메시지 보내기', 'MESSAGE THE ARTIST'), el('span', { 'aria-hidden': 'true' }, '↗')),
-        textButton('HOME', screenHome),
+        el('a', { class: 'text-button', href: ARTIST_INSTAGRAM_URL, onclick: openArtistInstagram }, tr('작가에게 메시지 보내기', 'MESSAGE THE ARTIST'), el('span', { 'aria-hidden': 'true' }, '↗')),
+        textButton('HOME', () => { void goHome(); }),
         textButton(tr('장미 메뉴를 엽니다', 'OPEN ROSE MENU'), openRoseMenu),
       ),
     ),
@@ -1786,6 +1812,12 @@ function screenAboutProject(initialSection = null) {
 const MODULES = {
   '01': {
     en: 'NAMING', ko: '명명', phaseKo: '명명', visual: 'naming',
+    introKo: '생화 장미와 스켈레톤을 몸으로 연결해, 오늘 나와 가장 공명하는 빛과 소리를 찾습니다.',
+    introEn: 'Connect living roses and a skeleton through your body to find the light and sound that resonate with you today.',
+    quickStepsKo: ['한 손으로 스켈레톤의 왼손을 잡습니다.', '다른 손으로 장미를 만지며 빛과 소리를 탐색합니다.', '남기고 싶은 순간, 스켈레톤의 양손을 잡습니다.'],
+    quickStepsEn: ['Hold the skeleton\'s left hand.', 'Touch the roses with your other hand and explore the light and sound.', 'To record a moment, hold both hands of the skeleton.'],
+    quickNoteKo: '짧은 기계음이 나면 기록이 완료됩니다.',
+    quickNoteEn: 'A short mechanical sound confirms the capture.',
     essentialKo: '스켈레톤의 왼손을 잡고, 다른 손으로 생화 장미를 만져 회로를 완성합니다. 열다섯 장미의 서로 다른 소리와 빛을 충분히 탐색한 뒤, 오늘의 나와 가장 공명하는 균형을 찾았다면 스켈레톤의 양손을 잡아 그 순간을 기록합니다.',
     essentialEn: 'Hold the skeleton\'s left hand and touch the living roses with your other hand. Explore their sound and light, then hold both hands of the skeleton to record the balance that resonates with you.',
     helpKo: '스켈레톤과 장미 사이에 자신의 몸을 연결해 열다섯 개의 소리와 빛을 탐색합니다.',
@@ -1799,6 +1831,12 @@ const MODULES = {
   },
   '02': {
     en: 'INTERVENTION', ko: '개입', phaseKo: '개입', visual: 'reenactment',
+    introKo: '화면 속 존재를 돌보고 해치며, 한 몸 안에 함께 있는 삶과 죽음의 균형에 개입합니다.',
+    introEn: 'Care for and harm the figure on screen, intervening in the balance of life and death held in one body.',
+    quickStepsKo: ['컨트롤러로 화면 속 존재의 균형과 생기를 바꿉니다.', '카메라 앞에서 두 손가락과 다섯 손가락으로 마스크를 만듭니다.', '기록하고 싶은 순간, 두 눈을 약 2초간 감습니다.'],
+    quickStepsEn: ['Use the controller to alter balance and vitality.', 'Make two- and five-finger masks before the camera.', 'To record a moment, close both eyes for about two seconds.'],
+    quickNoteKo: '',
+    quickNoteEn: '',
     essentialKo: '컨트롤러로 화면 속 스켈레톤의 균형과 생기에 개입합니다. 돌보고 해치며 다시 일어나는 과정을 충분히 탐색하세요. 두 손가락과 다섯 손가락으로 마스크를 만들면, 행동하는 나와 그 행동을 바라보는 나의 얼굴이 스켈레톤 위에 겹쳐집니다. 마지막에는 두 눈을 감아 그 장면을 기록합니다.',
     essentialEn: 'Intervene in the skeleton\'s balance and vitality. Make masks with two or five fingers, then close both eyes to record the self who acts and the self who watches.',
     helpKo: '서로 다른 행동으로 균형과 생기의 변화를 만들고, 손가락 마스크 안에서 자신의 얼굴을 마주합니다.',
@@ -1812,6 +1850,12 @@ const MODULES = {
   },
   '03': {
     en: 'WITNESS', ko: '목격', phaseKo: '목격', visual: 'mourning',
+    introKo: '흐르는 시간에 세 번 개입해, 세계 속에 놓인 나의 장미를 목격합니다.',
+    introEn: 'Intervene in passing time three times and witness your rose within the world.',
+    quickStepsKo: ['헤드폰을 쓰고 화면 앞에 섭니다.', '손을 장미 가까이 가져갔다가 완전히 빼는 동작을 세 번 반복합니다.', '세 번째 목격 뒤, 기록하거나 다시 시간에 개입합니다.'],
+    quickStepsEn: ['Put on the headphones and stand before the screen.', 'Bring your hand near the rose and remove it completely three times.', 'After the third witness, record the moment or intervene in time again.'],
+    quickNoteKo: '',
+    quickNoteEn: '',
     essentialKo: '헤드폰을 쓰고, 손을 장미 가까이 가져가 세 번의 목격을 시작합니다. 각 목격은 흐르는 시간 안에서 당신의 자리를 정하고, 처음에는 왜곡되고 흐릿했던 장미는 찬찬히 바라볼수록 선명해집니다. 세 번째 목격 뒤에는 그 순간을 기록하거나 다시 시간에 개입해 서사를 마무리할 수 있습니다.',
     essentialEn: 'Put on the headphones and bring your hand close to the rose for three acts of witness. Your distorted rose becomes clearer as you stay, after which you may record or enter time again.',
     helpKo: '손을 장미 가까이 가져가 세 번 목격하고, 흐르는 시간을 늦추며 왜곡된 자신의 장미를 선명하게 만듭니다.',
@@ -1825,6 +1869,12 @@ const MODULES = {
   },
   '04': {
     en: 'RECORD', ko: '기록', phaseKo: '기록', visual: 'archive',
+    introKo: '완성된 작품 뒤에서 사라지는 손과 제작의 시간을 소리 없이 기록한 영상입니다.',
+    introEn: 'A silent film preserving the hands and making time that disappear behind the finished work.',
+    quickStepsKo: ['화면 앞의 편한 자리에서 봅니다.', '영상은 소리 없이 반복됩니다.', '정해진 시작과 끝이 없습니다. 언제든 이동해도 됩니다.'],
+    quickStepsEn: ['Watch from any comfortable place.', 'The film loops without sound.', 'There is no required beginning or ending. Leave at any time.'],
+    quickNoteKo: '',
+    quickNoteEn: '',
     essentialKo: '소리 없이 이어지는 제작의 시간을 원하는 만큼 바라봅니다. 영상에는 반드시 처음부터 보아야 하는 서사가 없습니다. 어느 장면에서 들어와도 되고, 한 장면만 본 뒤 나가도 됩니다.',
     essentialEn: 'Watch the silent record of making for as long as you wish. There is no required beginning or ending.',
     helpKo: '정해진 시작과 끝 없이 제작의 장면 사이에 머뭅니다.',
@@ -1959,7 +2009,7 @@ function patternAnimationStage(stationId, { compact = false } = {}) {
 }
 
 const patternAnimationRuns = new WeakMap();
-const PATTERN_ANIMATION_LIVE_DURATION_MS = 4200;
+const PATTERN_ANIMATION_LIVE_DURATION_MS = 1100;
 
 async function decodePatternAnimationImage(stage) {
   const image = stage.querySelector('.pattern-animation-specimen-image');
@@ -2095,14 +2145,14 @@ function patternEntryFeedback(stationId, entryStatus = null) {
   if (!entryStatus || entryStatus.stationId !== stationId) return '';
   if (entryStatus.code === 'busy') {
     return tr(
-      `지금 다른 장미가 ${module.ko}과 연결되어 있습니다. 잠시 후 다시 시도해주세요.`,
-      `ANOTHER ROSE IS CONNECTED TO ${module.en}. PLEASE TRY AGAIN SHORTLY.`,
+      `다른 장미가 ${module.ko}을 체험 중입니다. 작품이 비어 있다면 잠시 후 다시 선택하세요.`,
+      `ANOTHER ROSE IS EXPERIENCING ${module.en}. IF THE WORK IS EMPTY, TRY AGAIN SHORTLY.`,
     );
   }
   if (entryStatus.code === 'setup_required') {
     return tr(
-      '패턴 연결 준비가 아직 완료되지 않았습니다. 안내판의 QR을 이용해주세요.',
-      'PATTERN ENTRY IS NOT READY YET. PLEASE USE THE QR ON THE SIGN.',
+      '연결되지 않았습니다. 작품 옆의 바로 시작 버튼을 누르면 지금 바로 체험할 수 있습니다.',
+      'NOT CONNECTED. USE THE START NOW BUTTON BESIDE THE WORK TO BEGIN IMMEDIATELY.',
     );
   }
   if (entryStatus.code === 'lease_lost') {
@@ -2115,8 +2165,8 @@ function patternEntryFeedback(stationId, entryStatus = null) {
     'previous_close_failed', 'claim_rejected', 'invalid_session',
     'conflict'].includes(entryStatus.code)) {
     return tr(
-      '연결을 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 선택해주세요.',
-      'THE CONNECTION COULD NOT BE CONFIRMED. CHECK THE NETWORK AND TRY AGAIN.',
+      '연결되지 않았습니다. 다시 선택하거나 작품 옆의 바로 시작 버튼을 눌러주세요.',
+      'NOT CONNECTED. TRY AGAIN OR USE THE START NOW BUTTON BESIDE THE WORK.',
     );
   }
   return '';
@@ -2128,6 +2178,7 @@ async function playPatternSuccessTransition(panel, button, stationId) {
   button.classList.add('is-matched');
   const stage = patternAnimationStage(stationId);
   stage.classList.add('is-live-entry');
+  stage.style.setProperty('--pattern-animation-duration', `${PATTERN_ANIMATION_LIVE_DURATION_MS}ms`);
   const overlay = el('div', {
     class: 'pattern-entry-transition-overlay',
     role: 'status',
@@ -2167,8 +2218,8 @@ function patternEntryPanel(stationId, entryStatus = null) {
       `SELECT THE ROSE OF ${module.en}`,
     )),
     el('p', { class: 'pattern-entry-instruction' }, tr(
-      '작품 앞에서 마주한 장미와 같은 패턴을 선택해주세요.',
-      'SELECT THE PATTERN THAT MATCHES THE ROSE BEFORE YOU.',
+      '안내판과 같은 장미를 한 번 선택하세요.',
+      'SELECT THE ROSE THAT MATCHES THE SIGN ONCE.',
     )),
     el('div', { class: 'pattern-choice-grid' },
       ...stablePatternOrder(session.id, stationId).map((patternId, index) => {
@@ -2190,8 +2241,8 @@ function patternEntryPanel(stationId, entryStatus = null) {
               button.classList.add('is-mismatch');
               feedback.classList.remove('is-busy');
               feedback.textContent = tr(
-                `${module.ko}의 장미를 다시 확인해주세요.`,
-                `CHECK THE ROSE OF ${module.en} AGAIN.`,
+                '앞의 안내판을 다시 확인하세요.',
+                'CHECK THE SIGN BEFORE YOU AGAIN.',
               );
               setTimeout(() => button.classList.remove('is-mismatch'), 520);
               return;
@@ -2205,8 +2256,8 @@ function patternEntryPanel(stationId, entryStatus = null) {
             });
             feedback.classList.remove('is-busy');
             feedback.textContent = tr(
-              `당신의 장미를 ${module.ko}에 연결하고 있습니다.`,
-              `CONNECTING YOUR ROSE TO ${module.en}.`,
+              '연결 중',
+              'CONNECTING',
             );
             await screenModule(stationId, { enter: true, via: 'pattern' });
             if (ensureSession().connected_station === stationId) {
@@ -2222,8 +2273,8 @@ function patternEntryPanel(stationId, entryStatus = null) {
     ),
     feedback,
     el('p', { class: 'pattern-entry-fallback' }, tr(
-      '연결이 어려우면 안내판의 QR을 이용해주세요.',
-      'IF CONNECTION IS DIFFICULT, USE THE QR ON THE SIGN.',
+      '연결이 어려우면 작품 옆의 바로 시작 버튼을 누르세요.',
+      'IF CONNECTION IS DIFFICULT, USE THE START NOW BUTTON BESIDE THE WORK.',
     )),
   );
   return panel;
@@ -2433,22 +2484,7 @@ function startModuleCapturePolling(stationId) {
 }
 
 async function leaveStation(stationId) {
-  const session = ensureSession();
-  if (session.connected_station === stationId) {
-    const closed = await leaveDbStation(stationId);
-    if (!ownsActiveTab(session.id)) return false;
-    if (!closed) {
-      alert(tr(
-        '작품 연결 종료를 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
-        'The station could not be disconnected. Check the network and try again.',
-      ));
-      return false;
-    }
-    updateSession({ connected_station: null });
-    window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
-    logEvent('station_leave', { reason: 'manual' }, stationId);
-    flushAnalyticsEvents('station_leave');
-  }
+  if (!(await releaseCurrentStation('manual'))) return false;
   markStationComplete(stationId);
   screenHome();
   return true;
@@ -2474,16 +2510,10 @@ async function screenModule(stationId, options = {}) {
 
   const via = options.via || 'floorplan';
   const localOnly = Boolean(session.local_only);
-  const needsName = !localOnly
-    && ['02', '03'].includes(stationId)
-    && !session.emotional_name;
   if (options.enter && localOnly) {
     // A local-only visitor may read every page, but must explicitly opt in
     // before a Supabase presence can activate TD or return a capture.
     logEvent('station_local_only_view', { via }, stationId);
-  } else if (options.enter && needsName) {
-    updateSession({ pending_station: stationId, pending_station_via: via });
-    logEvent('station_name_required', { via }, stationId);
   } else if (options.enter) {
     const uiSessionId = ensureSession().id;
     const previousConnectedStation = ensureSession().connected_station || null;
@@ -2541,18 +2571,19 @@ async function screenModule(stationId, options = {}) {
       el('div', { class: 'module-title-block' },
         el('span', { class: 'micro-label' }, `MODULE ${stationId} / ${module.en}`),
         el('h1', { class: 'module-title-display' }, tr(module.ko, module.en)),
-        el('p', { class: 'module-korean-title' }, tr(module.phaseKo, module.en)),
       ),
-      moduleHero(stationId, module),
+      el('section', { class: 'module-info-block module-quick-intro' },
+        el('p', {}, tr(module.introKo, module.introEn)),
+      ),
       freshSession.local_only ? el('section', { class: 'tag-instruction local-only-station-notice' },
         el('span', { class: 'tag-symbol', 'aria-hidden': 'true' }, '⌑'),
         el('div', {},
-          el('h2', {}, tr('지금은 작품 안내만 보고 있습니다', 'YOU ARE VIEWING THE GUIDE ONLY')),
+          el('h2', {}, tr('휴대폰에 기록하려면 연결하세요', 'CONNECT TO SAVE ON YOUR PHONE')),
           el('p', {}, tr(
-            '전시 화면과 장미를 연결하려면 익명 장미 번호가 필요합니다. 연결하기 전에는 이 기기 밖으로 기록을 보내지 않습니다.',
-            'An anonymous rose number is required to connect to the installation and receive captures. Nothing leaves this device until you choose to connect.',
+            '연결 없이도 작품 옆의 바로 시작 버튼으로 체험할 수 있습니다.',
+            'You may still experience the work with the START NOW button beside it.',
           )),
-          textButton(tr('익명 장미 번호를 만들고 연결합니다', 'CREATE AN ANONYMOUS ROSE NUMBER AND CONNECT'), async () => {
+          textButton(tr('바로 연결합니다', 'CONNECT NOW'), async () => {
             const remote = await createRemoteSession(true);
             if (!remote) {
               alert(tr(
@@ -2562,45 +2593,22 @@ async function screenModule(stationId, options = {}) {
               return;
             }
             updateSession({ consent: true, local_only: false });
-            await screenModule(stationId, { enter: true, via });
+            await screenModule(stationId, { enter: false, via });
           }, 'local-only-connect'),
-        ),
-      ) : needsName ? el('section', { class: 'naming-prerequisite' },
-        el('span', { class: 'instruction-level' }, 'NAME OF THE ROSE / REQUIRED'),
-        el('h2', {}, tr('이 작품에는 장미 이름이 필요합니다', 'THIS WORK NEEDS YOUR ROSE NAME')),
-        el('p', {}, tr(
-          '01 명명을 지난 뒤 장미 이름을 짓는 것을 권합니다. 이 이름은 전시가 끝날 때까지 당신과 장미를 함께 부르는 이름이며, 이 작품의 화면 안에도 나타납니다.',
-          'We recommend naming your rose after 01. This name follows you and your rose through the exhibition and appears inside this work.',
-        )),
-        el('div', { class: 'naming-prerequisite-actions' },
-          textButton(tr('01 명명으로 갑니다', 'GO TO 01'), () => screenModule('01', { via: 'name_required' })),
-          textButton(tr('지금 장미 이름을 짓습니다', 'NAME MY ROSE NOW'), () => screenFinalReflection({ exitFlow: false, returnToStation: stationId })),
         ),
       ) : connected ? el('div', { class: 'connected-banner' },
         el('span', {}, '● CONNECTED'),
-        el('span', {}, `STATION / ${stationId}`),
+        el('span', {}, stationId === '04'
+          ? tr('방문이 기록되었습니다', 'VISIT RECORDED')
+          : tr('작품을 시작하세요', 'START THE WORK')),
       ) : patternEntryPanel(stationId, entryStatus),
-      el('section', { class: 'module-info-block' },
-        el('span', { class: 'micro-label' }, 'ABOUT THIS WORK'),
-        el('h2', {}, tr('이 작품에 대하여', 'ABOUT THIS WORK')),
-        el('p', {}, tr(module.aboutKo, module.aboutEn)),
-        disclosure(
-          tr('작품의 안쪽 읽기', 'READ DEEPER'),
-          el('div', { class: 'copy-stack' }, ...tr(module.aboutDetailKo, module.aboutDetailEn).map((paragraph) => el('p', {}, paragraph))),
-          `about_${stationId}`,
-        ),
+      el('section', { class: 'module-info-block module-quick-steps' },
+        el('span', { class: 'micro-label' }, 'HOW TO PLAY'),
+        el('h2', {}, tr('작동법', 'HOW TO PLAY')),
+        el('ol', { class: 'detailed-step-list quick-step-list' }, ...tr(module.quickStepsKo, module.quickStepsEn).map((step) => el('li', {}, step))),
+        module.quickNoteKo ? el('p', { class: 'module-quick-note' }, tr(module.quickNoteKo, module.quickNoteEn)) : null,
       ),
-      el('section', { class: 'module-info-block' },
-        el('span', { class: 'micro-label' }, 'YOUR TURN'),
-        el('h2', {}, tr('당신의 차례', 'YOUR TURN')),
-        el('p', {}, tr(module.essentialKo, module.essentialEn)),
-      ),
-      el('section', { class: 'module-info-block' },
-        el('span', { class: 'micro-label' }, 'SEQUENCE'),
-        el('h2', {}, tr('참여 순서', 'SEQUENCE')),
-        el('p', {}, tr(module.helpKo, module.helpEn)),
-        el('ol', { class: 'detailed-step-list' }, ...tr(module.helpDetailKo, module.helpDetailEn).map((step) => el('li', {}, step))),
-      ),
+      moduleHero(stationId, module),
       el('section', { class: 'module-info-block troubleshooting-block' },
         disclosure(
           tr('잘 되지 않을 때', 'TROUBLESHOOTING'),
@@ -2609,31 +2617,27 @@ async function screenModule(stationId, options = {}) {
         ),
       ),
       captureResultPanel(stationId),
-      textButton(tr('전체 프로젝트에서 이 작품 읽기', 'READ THIS WORK IN THE FULL PROJECT'), () => screenAboutProject(workAboutSection(stationId)), 'module-full-story'),
-      !connected ? textButton('HOME', screenHome, 'return-home') : null,
+      textButton(tr('이 작품에 대해 더 읽기', 'READ MORE ABOUT THIS WORK'), () => {
+        void navigateAfterStationRelease(
+          () => screenAboutProject(workAboutSection(stationId)),
+          'read_more',
+        );
+      }, 'module-full-story'),
+      stationId === '01' ? textButton(
+        tr('장미 이름 짓기 (선택)', 'NAME MY ROSE (OPTIONAL)'),
+        () => {
+          void navigateAfterStationRelease(
+            () => screenFinalReflection({ exitFlow: false }),
+            'optional_naming',
+          );
+        },
+        'module-name-optional',
+      ) : null,
+      !connected ? textButton('HOME', () => { void goHome(); }, 'return-home') : null,
     ),
-  ], connected && !needsName ? [
-    primaryButton(stationId === '01' ? tr('장미 이름을 짓습니다', 'NAME MY ROSE') : tr('이 작품을 마칩니다', 'FINISH THIS WORK'), async () => {
-      if (stationId === '01') {
-        const activeSession = ensureSession();
-        const closed = await leaveDbStation('01');
-        if (!ownsActiveTab(activeSession.id)) return;
-        if (!closed) {
-          alert(tr(
-            '작품 연결 종료를 확인하지 못했습니다. 네트워크를 확인한 뒤 다시 눌러주세요.',
-            'The station could not be disconnected. Check the network and try again.',
-          ));
-          return;
-        }
-        updateSession({ connected_station: null });
-        markStationComplete('01');
-        window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
-        logEvent('station_leave', { reason: 'manual' }, '01');
-        flushAnalyticsEvents('station_leave');
-        screenFinalReflection({ exitFlow: false });
-      } else {
-        await leaveStation(stationId);
-      }
+  ], connected ? [
+    primaryButton('HOME', async () => {
+      await leaveStation(stationId);
     }),
   ] : []);
   startModuleCapturePolling(stationId);
@@ -2686,7 +2690,7 @@ function screenMySpecimen({ returnTo = null } = {}) {
       ),
       el('div', { class: 'quiet-actions' },
         textButton(session.emotional_name ? tr('장미 이름 보기', 'VIEW ROSE NAME') : tr('장미 이름 짓기', 'NAME MY ROSE'), () => screenFinalReflection({ exitFlow: false })),
-        textButton('HOME', screenHome),
+        textButton('HOME', () => { void goHome(); }),
       ),
     ),
   ]);
@@ -2694,24 +2698,10 @@ function screenMySpecimen({ returnTo = null } = {}) {
 }
 
 async function screenExitJourney() {
+  if (!(await releaseCurrentStation('exit'))) return;
   const session = ensureSession();
   rememberView('exit');
   clearStationQuery();
-
-  if (session.connected_station) {
-    const closed = await leaveDbStation(session.connected_station);
-    if (!ownsActiveTab(session.id)) return;
-    if (!closed) {
-      alert(tr(
-        '현재 작품과의 연결을 먼저 종료해야 합니다. 네트워크를 확인한 뒤 출구 태그를 다시 읽어주세요.',
-        'Disconnect the current station first. Check the network and scan the exit tag again.',
-      ));
-      return;
-    }
-    window.dispatchEvent(new CustomEvent('fringe:station', { detail: { station: null } }));
-    logEvent('station_leave', { reason: 'exit' }, session.connected_station);
-    updateSession({ connected_station: null });
-  }
 
   const missing = ['01', '02', '03', '04'].filter((stationId) => !getCompletedStations(session).includes(stationId));
   logEvent('exit_entered', { missing_modules: missing }, '05');
@@ -2721,7 +2711,11 @@ async function screenExitJourney() {
     globalHeader(),
     el('section', { class: 'screen exit-screen' },
       el('span', { class: 'micro-label' }, '05 / DEPARTURE'),
-      el('h1', { class: 'screen-title' }, tr(missing.length ? '아직 지나지 않은 곳이 있습니다.' : '네 곳을 모두 지나왔습니다.', missing.length ? 'SOME PLACES REMAIN.' : 'YOU HAVE PASSED ALL FOUR WORKS.')),
+      el('h1', { class: 'screen-title' }, tr('05 출구', '05 EXIT')),
+      el('p', { class: 'intro-copy' }, tr(
+        '오늘의 장미를 확인합니다.',
+        'View the rose you made today.',
+      )),
       missing.length ? el('div', { class: 'missing-list' },
         ...missing.map((stationId) => el('button', { type: 'button', onclick: () => screenModule(stationId, { via: 'exit' }) },
           el('span', {}, stationId),
@@ -2729,16 +2723,20 @@ async function screenExitJourney() {
           el('span', {}, '↗'),
         )),
       ) : null,
-      el('p', { class: 'intro-copy' }, tr(
-        missing.length ? '모든 곳을 지나지 않아도 지금까지 남긴 것으로 유품을 만들 수 있습니다. 돌아가도 되고, 이대로 마쳐도 됩니다.' : '이제 오늘의 장미 이름과 남긴 장면을 확인하고, 이 장례식의 마지막 기록을 남깁니다.',
-        missing.length ? 'You may complete your rose with what you have left so far.' : 'Review the name and moments you left, then make the final record of this funeral.',
-      )),
-      missing.length ? textButton(tr('돌아가서 봅니다', 'RETURN TO EXHIBITION'), screenHome) : null,
+      missing.length ? el('p', { class: 'exit-missing-note' }, tr(
+        '아직 지나지 않은 작품이 있습니다. 돌아가거나, 지금까지의 기록으로 마칠 수 있습니다.',
+        'Some works remain. You may return or finish with the record you have made so far.',
+      )) : null,
+      missing.length ? textButton(tr('작품으로 돌아가기', 'RETURN TO THE WORKS'), () => { void goHome(); }) : null,
+      textButton(tr('장미 이름과 경험 남기기', 'LEAVE A ROSE NAME AND REFLECTION'), () => {
+        logEvent('exit_optional_reflection_open', { missing_modules: missing }, '05');
+        screenFinalReflection({ exitFlow: true });
+      }, 'exit-optional-reflection'),
     ),
   ], [
-    primaryButton(tr(missing.length ? '이대로 발인을 시작합니다' : '발인을 시작합니다', 'BEGIN DEPARTURE'), () => {
+    primaryButton(tr('나의 장미 보기', 'VIEW MY ROSE'), () => {
       logEvent(missing.length ? 'exit_continue_incomplete' : 'exit_continue_complete', { missing_modules: missing }, '05');
-      screenFinalReflection({ exitFlow: true });
+      screenFinalSpecimen();
     }),
   ]);
 }
@@ -2748,6 +2746,7 @@ function saveNaming(a, b, finalName, inputMeta = {}) {
     emotional_name_a: a,
     emotional_name_b: b,
     emotional_name: finalName,
+    name_source: 'visitor',
   });
   markStationComplete('01');
   saveDbArtifact('naming', finalName, {
@@ -2826,7 +2825,12 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
 
   const aInput = el('input', { type: 'text', value: session.emotional_name_a || '', placeholder: tr('오늘 마주한, 내가 죽여 온 나', 'The self I have been killing, met today'), maxlength: 60 });
   const bInput = el('input', { type: 'text', value: session.emotional_name_b || '', placeholder: tr('그와 동시에 존재했던 반대편의 나', 'The other side that existed at the same time'), maxlength: 60 });
-  const finalInput = el('input', { type: 'text', value: session.emotional_name || '', placeholder: tr('오늘 나를 부를 장미의 이름', 'The rose name that calls me today'), maxlength: 60 });
+  const finalInput = el('input', {
+    type: 'text',
+    value: session.name_source === 'visitor' ? (session.emotional_name || '') : '',
+    placeholder: tr('오늘 나를 부를 장미의 이름', 'The rose name that calls me today'),
+    maxlength: 60,
+  });
   const error = el('p', { class: 'field-error', 'aria-live': 'polite' });
   const reflectionOpenedAt = performance.now();
   const inputTracking = {
@@ -2900,7 +2904,7 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
     globalHeader(),
     el('section', { class: 'screen reflection-screen' },
       el('span', { class: 'micro-label' }, exitFlow ? 'FINAL RECORD' : 'NAME OF THE ROSE'),
-      el('h1', { class: 'screen-title' }, tr(exitFlow ? '놓아주기 전에' : '장미 이름을 짓습니다', exitFlow ? 'BEFORE LETTING GO' : 'NAME OF THE ROSE')),
+      el('h1', { class: 'screen-title' }, tr(exitFlow ? '장미 이름과 경험' : '장미 이름을 짓습니다', exitFlow ? 'ROSE NAME AND EXPERIENCE' : 'NAME OF THE ROSE')),
       el('p', { class: 'intro-copy' }, tr(
         exitFlow ? '마지막으로 오늘 만난 두 얼굴과 그 둘을 함께 부르는 장미 이름을 다시 읽습니다. 이 이름은 결론이 아니라, 전시 밖에서도 다시 돌아볼 수 있는 오늘의 표식입니다.' : '이 전시에서 장미는 오늘의 당신을 대신하는 표본입니다. 꽃잎과 가시처럼 동시에 존재하는 두 얼굴을 적고, 그 둘이 함께 남을 수 있는 장미 이름을 지어주세요. 장미에 붙이는 이름은 곧 오늘의 당신을 부르는 이름입니다.',
         exitFlow ? 'Read the two faces you met today and the rose name that can hold them together. It is not a conclusion, but a mark you may return to beyond the exhibition.' : 'In this exhibition, the rose stands in for who you are today. Name its two coexisting faces, then give the rose one name that can hold them together.',
@@ -2922,7 +2926,8 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
       ),
       exitFlow ? survey : null,
       error,
-      !exitFlow ? textButton('HOME', screenHome) : null,
+      exitFlow ? textButton(tr('입력 없이 나의 장미 보기', 'VIEW MY ROSE WITHOUT WRITING'), screenFinalSpecimen) : null,
+      !exitFlow ? textButton('HOME', () => { void goHome(); }) : null,
     ),
   ], [
     primaryButton(exitFlow ? tr('이 장미와 함께 돌아갑니다', 'RETURN WITH THIS ROSE') : tr('장미 이름을 저장합니다', 'SAVE ROSE NAME'), () => {
@@ -2977,7 +2982,7 @@ function screenFinalReflection({ exitFlow = false, returnToStation = null } = {}
         updateSession({ pending_station: null, pending_station_via: null });
         screenModule(returnToStation, { enter: true, via: pendingStationVia });
       } else {
-        screenHome();
+        void goHome();
       }
     }),
   ]);
@@ -3042,7 +3047,7 @@ function saveResultImage() {
   canvas.height = 1440;
   const context = canvas.getContext('2d');
   const session = ensureSession();
-  const title = session.emotional_name || '장미 이름 없음';
+  const title = displayName(session);
 
   context.fillStyle = '#070707';
   context.fillRect(0, 0, canvas.width, canvas.height);
@@ -3078,7 +3083,7 @@ function saveResultImage() {
 
 async function shareResult() {
   const session = ensureSession();
-  const text = `FINAL MEMENTO / META ROSE 2026\n${session.emotional_name || '장미 이름 없음'}\nROSE NO. ${session.display_record_no}`;
+  const text = `FINAL MEMENTO / META ROSE 2026\n${displayName(session)}\nROSE NO. ${session.display_record_no}`;
   try {
     if (navigator.share) {
       await navigator.share({ title: 'META ROSE SPECIMEN', text, url: location.href });
@@ -3113,7 +3118,8 @@ function screenFinalSpecimen({ refresh = false } = {}) {
       analytics_event_count: analyticsEventCount,
       finalization_completed: true,
     });
-    endDbSession('survey_done');
+    const surveyCompleted = SURVEY_QUESTIONS.every((question) => Number(session.survey?.[question.id]));
+    endDbSession(surveyCompleted ? 'survey_done' : 'journey_complete');
     logEvent('result_entered', {}, '05');
     void flushDbQueue(true);
   }
@@ -3130,7 +3136,7 @@ function screenFinalSpecimen({ refresh = false } = {}) {
         el('div', { class: 'specimen-stem stem-top', 'aria-hidden': 'true' }),
         el('div', { class: 'final-emotional-name' },
           el('span', {}, tr('오늘의 장미 이름', 'NAME OF MY ROSE')),
-          el('h1', {}, session.emotional_name || tr('장미 이름 없음', 'ROSE NOT YET NAMED')),
+          el('h1', {}, displayName(session)),
         ),
         el('div', { class: 'specimen-stem', 'aria-hidden': 'true' }),
         specimenReference('01', session),
@@ -3145,7 +3151,7 @@ function screenFinalSpecimen({ refresh = false } = {}) {
         el('p', {}, tr('모순은 없어지지 않아도, 어느 쪽에 물을 줄지는 다시 고를 수 있습니다.', 'THE CONTRADICTION MAY REMAIN, BUT YOU MAY CHOOSE AGAIN WHAT TO WATER.')),
       ),
       el('footer', { class: 'specimen-label' },
-        el('div', {}, el('span', {}, tr('오늘의 장미 이름', 'NAME OF MY ROSE')), el('strong', {}, session.emotional_name || tr('장미 이름 없음', 'ROSE NOT YET NAMED'))),
+        el('div', {}, el('span', {}, tr('오늘의 장미 이름', 'NAME OF MY ROSE')), el('strong', {}, displayName(session))),
         el('div', {}, el('span', {}, 'ROSE NO.'), el('strong', {}, session.display_record_no)),
         el('div', {}, el('span', {}, 'DATE'), el('strong', {}, new Date().toLocaleDateString('ko-KR'))),
         el('p', {}, 'META ROSE 2026 / MINNIE PARK'),
@@ -3243,7 +3249,7 @@ async function boot() {
       updateSession({ pending_station: station, pending_station_via: stationVia });
       session.intro_seen ? screenPersonalSetup() : screenArrival();
     } else {
-      screenModule(station, { enter: true, via: stationVia });
+      screenModule(station, { enter: false, via: stationVia });
     }
     return;
   }

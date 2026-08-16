@@ -4069,6 +4069,167 @@ body.has-dock .app {
   font: 10px/1.4 var(--mono);
 }
 
+/* Day 2: the operational path stays short; the long curatorial text remains
+   on the dedicated project page. These rules do not alter the project page. */
+.arrival-about-link {
+  width: 100%;
+  margin-top: 8px;
+  border-top: 1px dotted var(--line);
+  border-bottom: 1px dotted var(--line);
+}
+
+.arrival-auto-note {
+  margin: 12px auto 4px;
+  color: var(--ink-faint);
+  font: 10px/1.6 var(--mono);
+  letter-spacing: .04em;
+  text-align: center;
+}
+
+.primary-action:disabled,
+.text-button:disabled {
+  opacity: .45;
+  cursor: wait;
+}
+
+.compact-setup-note {
+  margin: 8px auto 0;
+  text-align: center;
+}
+
+.home-quick-start {
+  margin: 38px 0 24px;
+  text-align: center;
+}
+
+.home-quick-start .intro-copy {
+  max-width: 29em;
+  margin: 16px auto 0;
+}
+
+.home-primary-modules {
+  margin-top: 8px;
+  border-top-color: #ffffff;
+}
+
+.home-primary-modules .module-index-row {
+  min-height: 70px;
+}
+
+.home-primary-modules .module-index-row strong {
+  font-size: 16px;
+}
+
+.home-short-route {
+  margin-top: 20px;
+}
+
+.home-project-compact {
+  margin: 36px 0 28px;
+  padding: 28px 0;
+  border-top: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+}
+
+.home-project-compact h2 {
+  text-align: center;
+}
+
+.home-project-compact > p {
+  margin-right: auto;
+  margin-left: auto;
+  font-size: 15px;
+  text-align: center;
+}
+
+.home-name-action {
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+}
+
+.home-name-action > strong {
+  width: 100%;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.module-quick-intro {
+  margin-top: 28px;
+  padding: 22px 0;
+  border-top: 1px solid #ffffff;
+  border-bottom: 1px solid #ffffff;
+}
+
+.module-quick-intro > p {
+  margin: 0;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.module-quick-steps {
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+.quick-step-list {
+  gap: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: quick-step;
+}
+
+.quick-step-list li {
+  position: relative;
+  min-height: 64px;
+  padding: 18px 8px 18px 50px;
+  border-top: 1px dotted var(--line);
+  font-size: 16px;
+  line-height: 1.6;
+  counter-increment: quick-step;
+}
+
+.quick-step-list li:last-child {
+  border-bottom: 1px dotted var(--line);
+}
+
+.quick-step-list li::before {
+  position: absolute;
+  top: 20px;
+  left: 8px;
+  color: var(--session);
+  font: 11px/1 var(--mono);
+  content: counter(quick-step, decimal-leading-zero);
+}
+
+.module-quick-note {
+  margin: 16px auto 0 !important;
+  color: #ffffff !important;
+  font-family: var(--mono);
+  font-size: 11px !important;
+  text-align: center;
+}
+
+.module-full-story,
+.module-name-optional,
+.exit-optional-reflection {
+  width: 100%;
+  margin-top: 20px;
+  border-top: 1px dotted var(--line);
+  border-bottom: 1px dotted var(--line);
+}
+
+.exit-missing-note {
+  margin: 20px 0;
+  color: var(--ink-dim);
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+
 @media (max-width: 360px) {
   .global-actions {
     gap: 10px;
