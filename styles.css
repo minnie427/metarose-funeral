@@ -4213,6 +4213,28 @@ body.has-dock .app {
   text-align: center;
 }
 
+.module-anonymous-start {
+  margin-top: 22px;
+  padding: 18px 16px;
+  border: 1px solid #ffffff;
+  text-align: center;
+}
+
+.module-anonymous-start strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffffff;
+  font: 12px/1.4 var(--mono);
+  letter-spacing: .04em;
+}
+
+.module-anonymous-start p {
+  margin: 0;
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
 .module-full-story,
 .module-name-optional,
 .exit-optional-reflection {
