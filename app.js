@@ -1464,7 +1464,11 @@ function screenHome() {
       personalHeader(),
       el('section', { class: 'project-intro home-project-lead home-project-compact' },
         el('span', { class: 'micro-label' }, 'META ROSE 2026: THE FUNERAL'),
-        el('h1', { class: 'screen-title compact-title' }, tr('오늘 나는 죽인다, 나를', 'TODAY I KILL MY SELF')),
+        el('h1', { class: 'screen-title compact-title' },
+          tr('오늘 나는 죽인다,', 'TODAY I KILL'),
+          el('br'),
+          tr('나를', 'MY SELF'),
+        ),
         el('p', {}, tr(
           '생화 장미와 스켈레톤, 빛과 소리가 관객의 몸에 반응하는 오디오비주얼 인터랙티브 전시입니다. 삶과 죽음, 돌봄과 파괴처럼 서로 반대되어 보이는 상태가 한 몸 안에 동시에 존재한다는 사실을 마주하고, 그 안에서 오늘의 선택을 찾아갑니다.',
           'An audiovisual interactive exhibition where living roses, a skeleton, light, and sound respond to the audience. It asks how opposing states—life and death, care and destruction—can coexist in one body, and where choice remains within them.',
@@ -1852,6 +1856,8 @@ const MODULES = {
     introEn: 'Intervene in the video\'s time with your hand and witness your rose-skeleton within the world. Across three slow acts of witness, search for the blurred and distorted form of your rose.',
     quickStepsKo: ['손을 장미 가까이 대고 수직으로 움직여 영상의 시간을 천천히 또는 빠르게 제어합니다.', '영상 속 나의 장미 스켈레톤을 찾으며, 가장 천천히 하는 목격을 세 번 반복합니다.', '찾았다고 생각이 들 때 장미 버튼을 누릅니다.'],
     quickStepsEn: ['Move your hand vertically near the rose to control the video time, slowly or quickly.', 'Search for your rose-skeleton in the video and repeat your slowest witnessing three times.', 'Press the rose button when you believe you have found it.'],
+    anonymousStartKo: '휴대폰이 연결되지 않았다면 장미 버튼을 한 번 눌러 무기명 세션을 시작합니다.',
+    anonymousStartEn: 'If the phone is not connected, press the rose button once to begin an anonymous session.',
     quickNoteKo: '',
     quickNoteEn: '',
     essentialKo: '손을 장미 가까이 대고 수직으로 움직여 영상의 시간을 제어합니다. 영상 속 나의 장미 스켈레톤을 천천히 또는 빠르게 목격하며 찾고, 가장 천천히 하는 목격을 세 번 반복합니다. 찾았다고 생각이 들 때 장미 버튼을 눌러 서사를 마무리합니다.',
@@ -2270,10 +2276,6 @@ function patternEntryPanel(stationId, entryStatus = null) {
       }),
     ),
     feedback,
-    el('p', { class: 'pattern-entry-fallback' }, tr(
-      '연결이 어려우면 작품 옆의 바로 시작 버튼을 누르세요.',
-      'IF CONNECTION IS DIFFICULT, USE THE START NOW BUTTON BESIDE THE WORK.',
-    )),
   );
   return panel;
 }
@@ -2568,6 +2570,7 @@ async function screenModule(stationId, options = {}) {
         el('span', { class: 'micro-label' }, `MODULE ${stationId} / ${module.en}`),
         el('h1', { class: 'module-title-display' }, tr(module.ko, module.en)),
       ),
+      moduleHero(stationId, module),
       el('section', { class: 'module-info-block module-quick-intro' },
         el('p', {}, tr(module.introKo, module.introEn)),
       ),
@@ -2608,7 +2611,6 @@ async function screenModule(stationId, options = {}) {
           el('p', {}, tr(module.anonymousStartKo, module.anonymousStartEn)),
         ) : null,
       ),
-      moduleHero(stationId, module),
       el('section', { class: 'module-info-block troubleshooting-block' },
         disclosure(
           tr('잘 되지 않을 때', 'TROUBLESHOOTING'),
@@ -3201,11 +3203,16 @@ async function boot() {
   // Reset shared session state before any asynchronous Supabase/Auth work can
   // capture and later restore the previous audience session.
   const resetRequested = bootParams.get('reset') === '1';
-  initializeActiveTabGuard({ forceClaim: resetRequested });
   if (resetRequested) {
+    // Reset must happen before the multi-tab guard reads an old lease. Removing
+    // the shared lease first makes this explicit reset tab the only owner.
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(EVENTS_KEY);
     resetDbSession();
+    localStorage.removeItem(ACTIVE_TAB_KEY);
+  }
+  initializeActiveTabGuard({ forceClaim: resetRequested });
+  if (resetRequested) {
     const cleanUrl = new URL(location.href);
     cleanUrl.searchParams.delete('reset');
     history.replaceState({}, '', cleanUrl);
