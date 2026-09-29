@@ -8,24 +8,35 @@
 //   · Supabase가 없어도 앱은 죽지 않는다 (graceful degradation)
 // ============================================================
 
-import { CONFIG } from './config.js';
+import { CONFIG } from './config.js?v=melbourne-access-v10-20260930';
+
+const MELBOURNE_SCHEMA_VERSION = 'meta_rose_melbourne2026.1';
+const MELBOURNE_EXHIBITION_ID = CONFIG.EXHIBITION?.id || 'meta-rose-melbourne-2026';
 
 const LS = {
-  session:  'fringe26.session',
-  queue:    'fringe26.queue',
-  analytics:'fringe26.analytics',
-  seq:      'fringe26.seq',
-  state:    'fringe26.state',
-  generation:'fringe26.generation',
-  controlQuarantine:'fringe26.control_quarantine',
+  // Melbourne uses a new local namespace. The Seoul keys and pending records
+  // remain untouched on devices that previously opened the exhibition.
+  session:  'meta_rose_melbourne26.session',
+  queue:    'meta_rose_melbourne26.queue',
+  analytics:'meta_rose_melbourne26.analytics',
+  seq:      'meta_rose_melbourne26.seq',
+  state:    'meta_rose_melbourne26.state',
+  generation:'meta_rose_melbourne26.generation',
+  controlQuarantine:'meta_rose_melbourne26.control_quarantine',
 };
 
 // 한 번의 NFC/QR 태그가 Safari 탭을 중복으로 열 때만 같은 결합으로 본다.
 // 그 이후의 명시적 재태그는 새 presence를 만들어 전시 현장 상태를 갱신한다.
 const STATION_TAG_DEDUPE_MS = 15 * 1000;
+// This short lease belongs only to the Phone Hub presence. It is renewed while
+// the connected work screen remains active and may expire without ending the
+// separate physical TD run in melbourne_station_runs.
 const STATION_LEASE_SECONDS = 5 * 60;
 const STATION_LEASE_RENEW_MS = 60 * 1000;
-const STATION_PHONE_IDLE_MS = 5 * 60 * 1000;
+// A venue network can remain half-open without rejecting a fetch. One bounded
+// attempt keeps the Phone Hub usable and prevents a late claim from silently
+// activating a work after the visitor has moved on.
+const STATION_ENTRY_TIMEOUT_MS = 10 * 1000;
 
 let sb = null;               // Supabase client
 let ready = false;
@@ -33,7 +44,9 @@ let online = navigator.onLine;
 let initPromise = null;
 let stationLeaseTimer = null;
 let lastStationEntryStatus = { code: 'idle', stationId: null };
+let stationEntryAttempt = null;
 let lastPhoneActivityAt = Date.now();
+let lastArtifactFetchStatus = { state: 'idle', at: null, error: null };
 // iOS NFC/QR은 새 Safari 탭을 열 수 있다. Phone Hub의 최신 탭 하나만
 // DB 기록·전송을 수행하게 app.js의 cross-tab guard가 이 값을 제어한다.
 let runtimeActive = true;
@@ -54,9 +67,8 @@ export function getLastStationEntryStatus() {
   return { ...lastStationEntryStatus };
 }
 
-// A station has no total duration limit. Its five-minute lease is renewed only
-// while the visitor is still using the Phone Hub. Pointer, key, input and
-// scroll activity call this lightweight in-memory marker from app.js.
+// A station has no physical-work duration limit. Phone activity may be noted
+// for diagnostics, but it is never used as proof that a viewer has left.
 export function notePhoneActivity(at = Date.now()) {
   lastPhoneActivityAt = Number.isFinite(Number(at)) ? Number(at) : Date.now();
   return lastPhoneActivityAt;
@@ -166,6 +178,10 @@ export const isOnline  = () => online;
 
 window.addEventListener('online', async () => {
   online = true;
+  // Preview/test tabs deliberately keep the DB runtime inactive. A later
+  // offline→online event must not create a Supabase client, attach auth, or
+  // flush the live Melbourne queues behind the test harness.
+  if (!runtimeActive) return;
   try {
     if (!ready) await initDB();
     await attachAudienceAuthToCurrentSession();
@@ -202,6 +218,37 @@ export function activeSessionMatches(expectedSessionId) {
     && current?.id === expectedSessionId
     && current.status === 'active'
   );
+}
+
+// Entrance reconciliation must distinguish an explicitly ended server row
+// from a temporary network/auth failure. It is intentionally read-only: the
+// caller decides whether to retain the local Rose for offline use or reset it.
+export async function verifyRemoteSessionStatus(expectedSessionId) {
+  const invocationGeneration = sessionGeneration();
+  const local = loadSession();
+  if (!expectedSessionId || local?.id !== expectedSessionId || local.status !== 'active') {
+    return 'ended';
+  }
+  if (!online || !runtimeActive) return 'unavailable';
+  try {
+    await initDB();
+    if (!ready || !online || !sb || !runtimeActive
+        || sessionGeneration() !== invocationGeneration) return 'unavailable';
+    await attachAudienceAuthToCurrentSession();
+    const current = loadSession();
+    if (!current?.auth_uid || current.id !== expectedSessionId
+        || sessionGeneration() !== invocationGeneration) return 'unavailable';
+    const { data, error } = await sb.from('sessions')
+      .select('id,status,auth_uid')
+      .eq('id', expectedSessionId)
+      .eq('auth_uid', current.auth_uid)
+      .maybeSingle();
+    if (error) return 'unavailable';
+    if (!data || data.status !== 'active') return 'ended';
+    return 'active';
+  } catch {
+    return 'unavailable';
+  }
 }
 
 function saveSession(s) {
@@ -305,11 +352,11 @@ export async function startSession({ consent = false, roundNo = null, sessionId 
     consent,
     consent_at: consent ? new Date().toISOString() : null,
     round_no: roundNo,
-    lang: (navigator.language || 'ko').startsWith('ko') ? 'ko' : 'en',
+    lang: CONFIG.EXHIBITION?.defaultLanguage || 'en',
     // 세부 UA·화면해상도처럼 기기 지문이 될 수 있는 값은 수집하지 않는다.
     device: { form_factor: matchMedia('(max-width: 700px)').matches ? 'phone' : 'large_screen' },
     auth_uid: audienceUser?.id || null,
-    schema_version: 'fringe2026.1',
+    schema_version: MELBOURNE_SCHEMA_VERSION,
   };
   // Auth may resolve after a newer NFC tab claimed runtime ownership.
   if (!runtimeActive || sessionGeneration() !== generationAtStart) return loadSession();
@@ -328,9 +375,8 @@ export async function startSession({ consent = false, roundNo = null, sessionId 
     return null;
   }
 
-  // ★ 동의 화면에서 이미 쌓인 이벤트(읽기 행동·스크롤 깊이)를 이 세션에 붙인다.
-  //   세션 발급 전에 일어난 행동도 이 관객의 것이다 — 22 §1-1의
-  //   "맥락을 얼마나 받아들였나"가 바로 이 구간에서 나온다.
+  // Only records created after the visitor explicitly chose the Phone Hub are
+  // eligible for backfill. Pre-consent UI events are not recorded.
   //   ⚠️ seq는 리셋하지 않는다. 리셋하면 (session_id, seq)가 겹친다.
   backfillSession(s.id);
   backfillAnalyticsSession(s.id);
@@ -449,6 +495,7 @@ export function logEvent(type, {
 } = {}) {
   if (!runtimeActive) return null;
   const s = loadSession();
+  if (!s?.consent) return null;
   const row = {
     session_id: s ? s.id : null,
     team_id: s ? (s.team_id || null) : null,
@@ -458,8 +505,8 @@ export function logEvent(type, {
     occurred_at: occurredAt || new Date().toISOString(),  // ★ 행동한 순간
     seq: nextSeq(),
     source: 'phone',
-    payload,
-    schema_version: 'fringe2026.1',
+    payload: { exhibition_id: MELBOURNE_EXHIBITION_ID, ...payload },
+    schema_version: MELBOURNE_SCHEMA_VERSION,
   };
   enqueue({ table: 'events', op: 'insert', row });
   if (CONFIG.DEBUG) console.log('[event]', type, row);
@@ -478,6 +525,7 @@ export function logAnalyticsEvent(type, {
 } = {}) {
   if (!runtimeActive) return null;
   const s = loadSession();
+  if (!s?.consent) return null;
   const row = {
     session_id: s ? s.id : null,
     team_id: s ? (s.team_id || null) : null,
@@ -487,8 +535,8 @@ export function logAnalyticsEvent(type, {
     occurred_at: occurredAt || new Date().toISOString(),
     seq: nextSeq(),
     source: 'phone',
-    payload,
-    schema_version: 'fringe2026.1',
+    payload: { exhibition_id: MELBOURNE_EXHIBITION_ID, ...payload },
+    schema_version: MELBOURNE_SCHEMA_VERSION,
   };
   const q = readAnalyticsQueue();
   q.push(row);
@@ -503,7 +551,7 @@ export function logAnalyticsEvent(type, {
 export function flushAnalyticsEvents(reason = 'checkpoint') {
   const q = readAnalyticsQueue();
   const s = loadSession();
-  if (!q.length || !s) return 0;
+  if (!q.length || !s?.consent) return 0;
 
   for (const row of q) {
     if (row.session_id == null) row.session_id = s.id;
@@ -518,9 +566,9 @@ export function flushAnalyticsEvents(reason = 'checkpoint') {
 }
 
 // ------------------------------------------------------------
-// 작품 입장 — 패턴/NFC/QR 모두 같은 독점 잠금을 사용한다.
-// Migration 적용 전에는 기존 NFC/QR만 legacy direct insert로 유지한다.
-// 패턴 입장은 잠금 RPC가 없으면 반드시 실패한다.
+// 작품 입장 — 패턴/번호/NFC/QR 모두 Melbourne claim wrapper를 사용한다.
+// 이 wrapper는 짧은 Phone presence와 별도의 실제 TD run을 함께 확인한다.
+// Migration이 없으면 안전하지 않은 기존 claim으로 fallback하지 않는다.
 // ------------------------------------------------------------
 export async function enterStation(stationId, via = 'qr', expectedSessionId = null) {
   if (stationEntryInFlight) {
@@ -529,109 +577,179 @@ export async function enterStation(stationId, via = 'qr', expectedSessionId = nu
   }
   stationEntryInFlight = true;
   setStationEntryStatus('connecting', stationId, { via });
+  const attempt = {
+    id: uuid(),
+    stationId,
+    via,
+    expectedSessionId,
+    sessionId: null,
+    clientRef: uuid(),
+    claimStarted: false,
+    cancellationQueued: false,
+    cancelled: false,
+  };
+  stationEntryAttempt = attempt;
+  let timeoutId = null;
   try {
-    const control = await controlPlaneSession(expectedSessionId);
-    if (!control) {
-      setStationEntryStatus('session_unavailable', stationId, { via });
-      return null;
-    }
-    const { session: s, generation } = control;
-    if (expectedSessionId && s.id !== expectedSessionId) {
-      console.error('[db] station bind rejected: session mismatch', {
-        expected: expectedSessionId,
-        actual: s.id,
-        station: stationId,
+    const operation = performStationEntry(attempt);
+    const timeout = new Promise((resolve) => {
+      timeoutId = setTimeout(() => resolve({ timedOut: true }), STATION_ENTRY_TIMEOUT_MS);
+    });
+    const outcome = await Promise.race([
+      operation
+        .then((value) => ({ timedOut: false, value }))
+        .catch((error) => ({ timedOut: false, value: null, error })),
+      timeout,
+    ]);
+    if (outcome?.timedOut) {
+      attempt.cancelled = true;
+      queueCancelledStationAttempt(attempt);
+      setStationEntryStatus('connection_timeout', stationId, { via });
+      // The operation deliberately keeps running in the background. Every
+      // post-await boundary checks this token, and a late successful claim is
+      // closed by its immutable client_ref rather than becoming active.
+      void operation.catch((error) => {
+        console.warn('[db] late station entry cleanup failed', error);
       });
-      setStationEntryStatus('session_mismatch', stationId, { via });
       return null;
     }
-
-    const now = new Date().toISOString();
-    const st = getState();
-    const presenceEnteredAtMs = Date.parse(st.stationEnteredAt || '');
-    const presenceAgeMs = Date.now() - presenceEnteredAtMs;
-    const recentLegacySameStationTag = st.stationControl !== 'exclusive'
-      && st.presenceId
-      && st.station === stationId
-      && Number.isFinite(presenceEnteredAtMs)
-      && presenceAgeMs >= 0
-      && presenceAgeMs < STATION_TAG_DEDUPE_MS;
-
-    // A cached pre-lock build may leave one legacy presence. Close it before
-    // moving into the exclusive contract. Repeated legacy NFC reads retain the
-    // existing exact-row guard until the migration is available.
-    if (recentLegacySameStationTag) {
-      const confirmed = await serverHasOpenPresence(st.presenceId, s.id, stationId);
-      if (!controlPlaneStillCurrent(s.id, generation)) return null;
-      if (confirmed) {
-        logEvent('station_tag_repeat', {
-          station: stationId,
-          payload: { via, control: 'legacy' },
-          occurredAt: now,
-        });
-        setStationEntryStatus('connected', stationId, { via, control: 'legacy' });
-        return stationId;
-      }
-      if (getState().presenceId === st.presenceId) clearStationState();
-      queuePresenceClose(st.presenceId, new Date().toISOString());
-      setStationEntryStatus('readback_failed', stationId, { via });
+    if (outcome?.error) {
+      console.warn('[db] station entry failed', outcome.error);
+      setStationEntryStatus('connection_error', stationId, { via });
       return null;
     }
-
-    if (st.presenceId && st.station && st.stationControl !== 'exclusive') {
-      const closed = await directClosePresence(st.presenceId, now);
-      if (!closed || !controlPlaneStillCurrent(s.id, generation)) {
-        setStationEntryStatus('previous_close_failed', stationId, { via });
-        return null;
-      }
-      if (getState().presenceId === st.presenceId) clearStationState();
-    }
-
-    const presenceId = uuid();
-    const exclusive = await claimExclusiveStation({
-      stationId,
-      via,
-      session: s,
-      generation,
-      requestedClientRef: presenceId,
-    });
-    if (exclusive.handled) return exclusive.ok ? stationId : null;
-
-    // Rollout safety: before the dedicated migration is run, existing NFC/QR
-    // links keep working. Pattern entry never bypasses the exclusive lock.
-    if (via === 'pattern') {
-      setStationEntryStatus('setup_required', stationId, { via });
-      return null;
-    }
-    return await enterLegacyStation({
-      stationId,
-      via,
-      session: s,
-      generation,
-      presenceId,
-      now,
-    });
+    return outcome?.value || null;
   } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (stationEntryAttempt === attempt) stationEntryAttempt = null;
     stationEntryInFlight = false;
   }
 }
 let stationEntryInFlight = false;
+
+function stationAttemptIsCurrent(attempt) {
+  return Boolean(
+    attempt
+    && !attempt.cancelled
+    && stationEntryAttempt === attempt
+    && runtimeActive
+  );
+}
+
+function queueCancelledStationAttempt(attempt, clientRef = attempt?.clientRef) {
+  if (!attempt?.claimStarted || !clientRef || attempt.cancellationQueued) return false;
+  attempt.cancellationQueued = true;
+  queuePresenceClose(clientRef, new Date().toISOString(), {
+    releaseLock: true,
+    stationId: attempt.stationId,
+    sessionId: attempt.sessionId || attempt.expectedSessionId,
+  });
+  return true;
+}
+
+async function performStationEntry(attempt) {
+  const {
+    stationId, via, expectedSessionId,
+  } = attempt;
+  const control = await controlPlaneSession(expectedSessionId);
+  if (!stationAttemptIsCurrent(attempt)) return null;
+  if (!control) {
+    setStationEntryStatus('session_unavailable', stationId, { via });
+    return null;
+  }
+  const { session: s, generation } = control;
+  attempt.sessionId = s.id;
+  if (expectedSessionId && s.id !== expectedSessionId) {
+    console.error('[db] station bind rejected: session mismatch', {
+      expected: expectedSessionId,
+      actual: s.id,
+      station: stationId,
+    });
+    setStationEntryStatus('session_mismatch', stationId, { via });
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const st = getState();
+  const presenceEnteredAtMs = Date.parse(st.stationEnteredAt || '');
+  const presenceAgeMs = Date.now() - presenceEnteredAtMs;
+  const recentLegacySameStationTag = st.stationControl !== 'exclusive'
+    && st.presenceId
+    && st.station === stationId
+    && Number.isFinite(presenceEnteredAtMs)
+    && presenceAgeMs >= 0
+    && presenceAgeMs < STATION_TAG_DEDUPE_MS;
+
+    // A cached pre-lock build may leave one legacy presence. Close it before
+    // moving into the exclusive contract. Repeated legacy NFC reads retain the
+    // existing exact-row guard until the migration is available.
+  if (recentLegacySameStationTag) {
+    const confirmed = await serverHasOpenPresence(st.presenceId, s.id, stationId);
+    if (!stationAttemptIsCurrent(attempt)
+        || !controlPlaneStillCurrent(s.id, generation)) return null;
+    if (confirmed) {
+      logEvent('station_tag_repeat', {
+        station: stationId,
+        payload: { via, control: 'legacy' },
+        occurredAt: now,
+      });
+      setStationEntryStatus('connected', stationId, { via, control: 'legacy' });
+      return stationId;
+    }
+    if (getState().presenceId === st.presenceId) clearStationState();
+    queuePresenceClose(st.presenceId, new Date().toISOString());
+    setStationEntryStatus('readback_failed', stationId, { via });
+    return null;
+  }
+
+  if (st.presenceId && st.station && st.stationControl !== 'exclusive') {
+    const closed = await directClosePresence(st.presenceId, now);
+    if (!stationAttemptIsCurrent(attempt)
+        || !closed
+        || !controlPlaneStillCurrent(s.id, generation)) {
+      if (stationAttemptIsCurrent(attempt)) {
+        setStationEntryStatus('previous_close_failed', stationId, { via });
+      }
+      return null;
+    }
+    if (getState().presenceId === st.presenceId) clearStationState();
+  }
+
+  const presenceId = attempt.clientRef;
+  attempt.claimStarted = true;
+  const exclusive = await claimExclusiveStation({
+    stationId,
+    via,
+    session: s,
+    generation,
+    requestedClientRef: presenceId,
+    attempt,
+  });
+  if (exclusive.handled) return exclusive.ok ? stationId : null;
+
+  // Melbourne never falls back to a non-exclusive insert. Pattern entry and
+  // its number/name alternative must obey the same lock contract; otherwise
+  // two visitors could be attributed to one physical work when the RPC is
+  // missing or its schema cache is stale.
+  setStationEntryStatus('setup_required', stationId, { via });
+  return null;
+}
 
 function stationRpcMissing(error) {
   const code = String(error?.code || '');
   const message = String(error?.message || error || '');
   return code === 'PGRST202'
     || code === '42883'
-    || /claim_station.*(schema cache|does not exist|not found)/i.test(message);
+    || /claim_melbourne_station.*(schema cache|does not exist|not found)/i.test(message);
 }
 
 async function claimExclusiveStation({
-  stationId, via, session, generation, requestedClientRef,
+  stationId, via, session, generation, requestedClientRef, attempt,
 }) {
   let data = null;
   let error = null;
   try {
-    ({ data, error } = await sb.rpc('claim_station', {
+    ({ data, error } = await sb.rpc('claim_melbourne_station', {
       p_station_id: stationId,
       p_session_id: session.id,
       p_client_ref: requestedClientRef,
@@ -642,6 +760,11 @@ async function claimExclusiveStation({
     error = caught;
   }
 
+  if (!stationAttemptIsCurrent(attempt)) {
+    queueCancelledStationAttempt(attempt, requestedClientRef);
+    return { handled: true, ok: false };
+  }
+
   if (error) {
     if (stationRpcMissing(error)) return { handled: false, ok: false };
     const ambiguous = !error?.code || /fetch|network|timeout/i.test(String(error?.message || error));
@@ -650,6 +773,10 @@ async function claimExclusiveStation({
       const released = await directReleaseExclusiveStation(
         stationId, session.id, requestedClientRef,
       );
+      if (!stationAttemptIsCurrent(attempt)) {
+        queueCancelledStationAttempt(attempt, requestedClientRef);
+        return { handled: true, ok: false };
+      }
       if (!released) {
         queuePresenceClose(requestedClientRef, failedAt, {
           releaseLock: true,
@@ -682,19 +809,30 @@ async function claimExclusiveStation({
   const exactReadback = await serverHasOpenPresence(
     claimedClientRef, session.id, stationId,
   );
-  if (!exactReadback || !controlPlaneStillCurrent(session.id, generation)) {
+  const attemptStillCurrent = stationAttemptIsCurrent(attempt);
+  if (!attemptStillCurrent
+      || !exactReadback
+      || !controlPlaneStillCurrent(session.id, generation)) {
     const cancelledAt = new Date().toISOString();
-    const released = await directReleaseExclusiveStation(
-      stationId, session.id, claimedClientRef,
-    );
-    if (!released) {
-      queuePresenceClose(claimedClientRef, cancelledAt, {
-        releaseLock: true,
-        stationId,
-        sessionId: session.id,
-      });
+    if (!attemptStillCurrent) {
+      queueCancelledStationAttempt(attempt, claimedClientRef);
+    } else {
+      const released = await directReleaseExclusiveStation(
+        stationId, session.id, claimedClientRef,
+      );
+      if (!stationAttemptIsCurrent(attempt)) {
+        queueCancelledStationAttempt(attempt, claimedClientRef);
+      } else if (!released) {
+        queuePresenceClose(claimedClientRef, cancelledAt, {
+          releaseLock: true,
+          stationId,
+          sessionId: session.id,
+        });
+      }
+      if (stationAttemptIsCurrent(attempt)) {
+        setStationEntryStatus('readback_failed', stationId, { via });
+      }
     }
-    setStationEntryStatus('readback_failed', stationId, { via });
     return { handled: true, ok: false };
   }
 
@@ -780,10 +918,19 @@ async function enterLegacyStation({
 
 async function controlPlaneSession(expectedSessionId = null) {
   const generation = sessionGeneration();
-  await initDB();
+  if (!online || !runtimeActive) return null;
+  const initialized = await Promise.race([
+    initDB().then(() => true).catch(() => false),
+    new Promise((resolve) => setTimeout(() => resolve(false), 4000)),
+  ]);
+  if (!initialized) return null;
   if (!ready || !online || !sb || !runtimeActive
       || sessionGeneration() !== generation) return null;
-  await attachAudienceAuthToCurrentSession();
+  const authAttached = await Promise.race([
+    attachAudienceAuthToCurrentSession().then(() => true).catch(() => false),
+    new Promise((resolve) => setTimeout(() => resolve(false), 4000)),
+  ]);
+  if (!authAttached) return null;
   const session = loadSession();
   if (!session
       || session.status !== 'active'
@@ -851,7 +998,6 @@ async function renewActiveStationLease() {
   const leaseExpiryMs = Date.parse(state.stationLeaseExpiresAt || '');
   const hasExclusiveState = state.stationControl === 'exclusive'
     && state.station && state.presenceId;
-  const inactiveForMs = Date.now() - lastPhoneActivityAt;
 
   if (hasExclusiveState
       && Number.isFinite(leaseExpiryMs)
@@ -864,26 +1010,9 @@ async function renewActiveStationLease() {
     }
     return false;
   }
-  // Total journey time is unlimited, but an unattended station must become
-  // available. Release immediately after five minutes without phone input.
-  // If the network is unavailable, do not renew; the existing server lease
-  // expires fail-safe and local truth is reconciled on visibility/reconnect.
-  if (hasExclusiveState && inactiveForMs >= STATION_PHONE_IDLE_MS) {
-    const released = await directReleaseExclusiveStation(
-      state.station, session?.id, state.presenceId,
-    );
-    if (released && getState().presenceId === state.presenceId) {
-      clearStationState();
-      window.dispatchEvent(new CustomEvent('fringe:station-lease-lost', {
-        detail: {
-          station: state.station,
-          clientRef: state.presenceId,
-          reason: 'phone_idle',
-        },
-      }));
-    }
-    return false;
-  }
+  // Do not infer departure from a still phone. Visitors may be looking at the
+  // work, using assistive technology, or participating physically while the
+  // phone remains untouched.
   if (!runtimeActive || !ready || !online || !sb
       || !hasExclusiveState
       || !session?.id || session.status !== 'active') {
@@ -996,13 +1125,29 @@ export async function leaveStation(stationId = getState().station) {
   const state = getState();
   const s = loadSession();
   if (!s || !stationId || !state.presenceId || state.station !== stationId) return false;
-  const control = await controlPlaneSession(s.id);
-  if (!control) return false;
   const now = new Date().toISOString();
+  const control = await controlPlaneSession(s.id);
+  if (!control) {
+    queuePresenceClose(state.presenceId, now, {
+      releaseLock: state.stationControl === 'exclusive',
+      stationId,
+      sessionId: s.id,
+    });
+    clearStationState();
+    return true;
+  }
   const closed = state.stationControl === 'exclusive'
     ? await directReleaseExclusiveStation(stationId, s.id, state.presenceId)
     : await directClosePresence(state.presenceId, now);
-  if (!closed) return false;
+  if (!closed) {
+    queuePresenceClose(state.presenceId, now, {
+      releaseLock: state.stationControl === 'exclusive',
+      stationId,
+      sessionId: s.id,
+    });
+    if (getState().presenceId === state.presenceId) clearStationState();
+    return true;
+  }
   if (controlPlaneStillCurrent(s.id, control.generation)
       && getState().presenceId === state.presenceId) {
     clearStationState();
@@ -1022,7 +1167,11 @@ export function saveArtifact(type, value, meta = {}) {
     value: typeof value === 'string' ? value : null,
     image_path: meta.image_path || null,
     image_url: meta.image_url || null,
-    meta,
+    meta: {
+      exhibition_id: MELBOURNE_EXHIBITION_ID,
+      schema_version: MELBOURNE_SCHEMA_VERSION,
+      ...meta,
+    },
     occurred_at: new Date().toISOString(),
   };
   enqueue({ table: 'artifacts', op: 'insert', row });
@@ -1044,7 +1193,11 @@ export function saveSurvey(answers) {
         question_id: qid,
         answer: a.value != null ? String(a.value) : null,
         answer_num: typeof a.value === 'number' ? a.value : null,
-        meta: a.meta || {},          // 작성 소요·수정 횟수 (C7)
+        meta: {
+          exhibition_id: MELBOURNE_EXHIBITION_ID,
+          schema_version: MELBOURNE_SCHEMA_VERSION,
+          ...(a.meta || {}),
+        },
         occurred_at: a.occurredAt || now,
       },
     });
@@ -1063,7 +1216,11 @@ export function saveSessionSnapshot(snapshot) {
     station_id: '05',
     type: 'session_snapshot',
     value: null,
-    meta: snapshot,
+    meta: {
+      exhibition_id: MELBOURNE_EXHIBITION_ID,
+      schema_version: MELBOURNE_SCHEMA_VERSION,
+      ...snapshot,
+    },
     occurred_at: new Date().toISOString(),
   };
   enqueue({ table: 'artifacts', op: 'insert', row });
@@ -1098,13 +1255,20 @@ export async function fetchLiveCount() {
 
 export async function fetchMyArtifacts({ fresh = false } = {}) {
   const s = loadSession();
-  if (!s) return [];
+  if (!s) {
+    lastArtifactFetchStatus = { state: 'no-session', at: new Date().toISOString(), error: null };
+    return [];
+  }
   // 오프라인이거나 미설정이면 큐에 있는 것으로라도 보여준다
   const local = readQueue()
     .filter(j => j.table === 'artifacts' && j.row.session_id === s.id)
     .map(j => j.row);
-  if (!ready || !online) return local;
+  if (!ready || !online) {
+    lastArtifactFetchStatus = { state: 'offline', at: new Date().toISOString(), error: null };
+    return local;
+  }
   try {
+    lastArtifactFetchStatus = { state: 'loading', at: new Date().toISOString(), error: null };
     let query = sb
       .from('artifacts').select('*')
       .eq('session_id', s.id);
@@ -1116,11 +1280,21 @@ export async function fetchMyArtifacts({ fresh = false } = {}) {
     }
     const { data, error } = await query.order('occurred_at', { ascending: true });
     if (error) throw error;
+    lastArtifactFetchStatus = { state: 'ok', at: new Date().toISOString(), error: null };
     return data && data.length ? data : local;
   } catch (error) {
     console.warn('[db] artifact revalidation failed', error);
+    lastArtifactFetchStatus = {
+      state: 'error',
+      at: new Date().toISOString(),
+      error: String(error?.message || error || 'unknown'),
+    };
     return local;
   }
+}
+
+export function getArtifactFetchStatus() {
+  return { ...lastArtifactFetchStatus };
 }
 
 // TD가 비공개 Storage에 올린 캡처는 영구 공개 URL을 만들지 않는다.
@@ -1205,8 +1379,11 @@ function writeQueue(q) {
 // later and unexpectedly start a TD installation.
 function quarantineLegacyActivationJobs() {
   const queue = readQueue();
-  const unsafe = queue.filter(job => job?.op === 'insert'
-    && job.table === 'station_presence');
+  const unsafe = queue.filter((job) => (
+    job?.op === 'insert'
+    && (job.table === 'station_presence'
+      || (job.table === 'sessions' && job.row?.status === 'active'))
+  ));
   if (!unsafe.length) return 0;
 
   let archive = [];

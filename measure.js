@@ -12,9 +12,9 @@
 //                    🔴 몰입 지표(C6)에서 분리 집계 (21 §B5)
 // ============================================================
 
-import { CONFIG } from './config.js';
+import { CONFIG } from './config.js?v=melbourne-access-v10-20260930';
 // 읽기·스크롤·입력 과정은 전시 중 작동에 필요하지 않아 checkpoint batch로 보낸다.
-import { logAnalyticsEvent as logEvent } from './db.js';
+import { logAnalyticsEvent as logEvent } from './db.js?v=melbourne-access-v10-20260930';
 
 // ------------------------------------------------------------
 // C5. 읽기 행동

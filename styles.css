@@ -560,8 +560,8 @@ body.has-dock .app {
   /* 원본 PNG의 명암·질감을 그대로 두고 색상만 투영한다. */
   opacity: .64;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
   pointer-events: none;
 }
 
@@ -573,8 +573,8 @@ body.has-dock .app {
   background: var(--session);
   opacity: .64;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen.png') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
   pointer-events: none;
 }
 
@@ -1635,6 +1635,144 @@ body.has-dock .app {
   line-height: 1.5;
 }
 
+.melbourne-floorplan-section {
+  margin: 34px 0 38px;
+  padding: 28px 0 30px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.melbourne-floorplan-address {
+  margin: 10px 0 16px;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .04em;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.melbourne-floorplan-warning {
+  max-width: 34rem;
+  margin: 0 auto 20px;
+  text-align: left;
+}
+
+.melbourne-provisional-plan {
+  position: relative;
+  width: 100%;
+  min-height: 330px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px),
+    var(--bg);
+  background-size: 24px 24px;
+}
+
+.melbourne-plan-caption,
+.melbourne-entry-tbc {
+  position: absolute;
+  z-index: 1;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  line-height: 1.4;
+}
+
+.melbourne-plan-caption {
+  left: 16px;
+  top: 14px;
+}
+
+.melbourne-entry-tbc {
+  left: 50%;
+  bottom: -1px;
+  padding: 6px 10px;
+  border: 1px dashed var(--line-strong);
+  border-bottom: 0;
+  background: var(--bg);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.melbourne-map-marker {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  width: min(38%, 148px);
+  min-width: 106px;
+  min-height: 72px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  background: rgba(17,17,17,.94);
+  color: var(--ink);
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.melbourne-map-marker::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: var(--session);
+  box-shadow: 0 0 10px var(--session);
+}
+
+.melbourne-map-marker.position-01 { left: 7%; top: 18%; }
+.melbourne-map-marker.position-02 { right: 7%; top: 18%; }
+.melbourne-map-marker.position-03 { right: 7%; bottom: 17%; }
+.melbourne-map-marker.position-04 { left: 7%; bottom: 17%; }
+
+.melbourne-map-number {
+  font-family: var(--mono);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.melbourne-map-name {
+  max-width: calc(100% - 12px);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  line-height: 1.25;
+}
+
+.melbourne-map-status {
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .05em;
+  line-height: 1.2;
+}
+
+.melbourne-map-marker.is-visited,
+.melbourne-map-marker.is-connected {
+  border-color: var(--session);
+  box-shadow: inset 4px 0 0 var(--session), 0 0 20px var(--session);
+}
+
+.melbourne-map-marker.is-connected .melbourne-map-status {
+  color: var(--ink);
+}
+
+.melbourne-map-access-note {
+  margin: 14px 0 0;
+  text-align: left;
+}
+
 .floorplan-route-order {
   display: flex;
   align-items: center;
@@ -2424,8 +2562,8 @@ body.has-dock .app {
   background: var(--session);
   opacity: 0;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen_animation.png') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen_animation.png') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
   will-change: opacity;
 }
 
@@ -2682,8 +2820,8 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-compact .pattern-animation-tint {
-  -webkit-mask-image: url('./assets/images/rose_specimen_animation_compact.png');
-  mask-image: url('./assets/images/rose_specimen_animation_compact.png');
+  -webkit-mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-access-v10-20260930');
+  mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-access-v10-20260930');
 }
 
 .pattern-animation-card-replay {
@@ -2987,6 +3125,535 @@ body.has-dock .app {
   .pattern-animation-stage.is-playing .pattern-structure {
     animation: none !important;
   }
+}
+
+/* Melbourne review v8 — route locating, clean access controls and spacing
+   corrections. These visual changes do not alter station or capture logic. */
+.route-order-step.is-selected {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.route-order-entry,
+.route-order-exit {
+  grid-template-rows: auto auto;
+  row-gap: 2px;
+}
+
+.route-step-label {
+  display: block;
+  font: 600 6px/1 var(--mono);
+  letter-spacing: .06em;
+}
+
+.melbourne-confirmed-marker.is-route-highlighted {
+  z-index: 16;
+  border-color: #ffffff;
+  border-style: solid;
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--session) 55%, transparent),
+    0 0 28px var(--session);
+  transform: translate(-50%, -50%) translateZ(80px) scale(1.08);
+}
+
+.access-layer-status {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.result-capture-gallery > .micro-label + h2 {
+  margin: 14px auto 18px;
+}
+
+.module-screen > .connected-banner {
+  border-top: 1px dotted #ffffff;
+}
+
+/* ================================================================
+   MELBOURNE ACCESS EDITION
+   These overrides preserve the Seoul stylesheet while making the new flow
+   reflow-safe, keyboard-visible, touchable and usable with reduced motion.
+   ================================================================ */
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 20000;
+  padding: 12px 16px;
+  transform: translateY(-160%);
+  border: 2px solid #fff;
+  background: #111;
+  color: #fff;
+  font: 600 14px/1.3 var(--mono);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+body {
+  overflow-x: clip;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+body.has-dock .app {
+  padding-bottom: calc(var(--dock-height, 120px) + 32px + env(safe-area-inset-bottom));
+}
+
+button,
+a,
+input,
+textarea,
+select,
+summary {
+  min-height: 44px;
+}
+
+textarea,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.micro-label,
+.asset-type,
+.module-coordinate,
+.visit-status,
+.module-code,
+.input-note,
+.specimen-label span,
+.specimen-label p,
+.specimen-label strong {
+  font-size: max(12px, .75rem);
+  line-height: 1.45;
+}
+
+.site-footer {
+  gap: 12px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
+
+.access-fringe-credit {
+  line-height: 1.55;
+}
+
+.rose-menu-overlay,
+.inactive-tab-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.inactive-tab-takeover,
+.inactive-tab-reset {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  border: 1px solid #fff;
+  color: #fff;
+  font: 600 12px/1.4 var(--mono);
+}
+
+.phone-data-notice,
+.access-credit-card,
+.home-direct-actions,
+.result-summary,
+.result-next-actions,
+.access-guide-item,
+.access-route-card {
+  margin-top: 24px;
+  padding: 22px 0;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+}
+
+.phone-data-notice h2,
+.access-guide-item h2,
+.access-route-card h2,
+.home-direct-actions h2,
+.result-next-actions h2,
+.result-capture-gallery h2 {
+  margin: 0 0 12px;
+  font-size: clamp(20px, 6vw, 28px);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.pattern-entry-alternative {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.pattern-entry-alternative > span,
+.rose-pattern-number {
+  font: 600 12px/1.4 var(--mono);
+  letter-spacing: .08em;
+}
+
+.rose-pattern-number {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+}
+
+.capture-fetch-status,
+.result-capture-status {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  min-height: 44px;
+  margin: 12px 0;
+  color: #fff;
+  font: 600 12px/1.5 var(--mono);
+  text-align: center;
+}
+
+.capture-carousel-announcement,
+.capture-poll-announcement {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.capture-retry-button {
+  min-width: 150px;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid #fff;
+  color: #fff;
+  font: 600 12px/1.4 var(--mono);
+}
+
+.result-capture-gallery {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #fff;
+}
+
+.result-capture-items {
+  display: grid;
+  gap: 18px;
+}
+
+.result-capture-card {
+  margin: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px dotted #fff;
+}
+
+.result-capture-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 420px;
+  object-fit: contain;
+  background: #000;
+}
+
+.result-capture-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  font: 12px/1.5 var(--mono);
+}
+
+.result-capture-card-meta a {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.record-no-capture-note {
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px dotted #fff;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.result-summary dl {
+  margin: 0;
+}
+
+.result-summary dl > div {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 1fr) minmax(0, 1.35fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px dotted #fff;
+}
+
+.result-summary dt,
+.result-summary dd {
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.result-summary dt {
+  font-family: var(--mono);
+}
+
+.result-colour-chip {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 8px;
+  border: 1px solid #fff;
+  vertical-align: -.2em;
+}
+
+.survey-choice-question {
+  margin: 0;
+  padding: 28px 0;
+  border: 0;
+  border-bottom: 2px solid #fff;
+}
+
+.survey-choice-question legend {
+  width: 100%;
+  margin-bottom: 18px;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.survey-choice-endpoints {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+  font: 11px/1.4 var(--mono);
+}
+
+.survey-number-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
+  gap: 8px;
+}
+
+.survey-number-option {
+  position: relative;
+  display: grid;
+  min-width: 44px;
+  min-height: 48px;
+  place-items: center;
+  cursor: pointer;
+}
+
+.survey-number-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.survey-number-option span {
+  display: grid;
+  width: 100%;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid #fff;
+  font: 600 14px/1 var(--mono);
+}
+
+.survey-number-option input:checked + span {
+  background: var(--session);
+  color: var(--session-ink);
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.survey-number-option input:focus-visible + span {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.numbered-input input::placeholder,
+.survey-text-question textarea::placeholder {
+  color: rgba(255, 255, 255, .5);
+  opacity: 1;
+}
+
+.selected-colour-text {
+  display: block;
+  min-height: 44px;
+  padding: 10px 0;
+  color: #fff;
+  font-size: 15px;
+}
+
+.record-visit-banner {
+  flex-wrap: wrap;
+}
+
+.pattern-entry-transition-overlay.is-reduced-motion .pattern-animation-field,
+body.reduce-motion .pattern-animation-field {
+  animation: none !important;
+  transition: none !important;
+}
+
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  scroll-behavior: auto !important;
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+}
+
+@media (max-width: 420px) {
+  .app {
+    width: 100%;
+    padding-right: clamp(16px, 6vw, 25px);
+    padding-left: clamp(16px, 6vw, 25px);
+  }
+
+  .result-summary dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 280px) {
+  .survey-number-grid {
+    grid-template-columns: repeat(2, minmax(44px, 1fr));
+  }
+
+  .global-header,
+  .result-capture-card-meta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pattern-entry-transition-overlay .pattern-animation-field {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --line: #fff;
+    --line-strong: #fff;
+  }
+
+  .text-button,
+  .primary-action,
+  .secondary-action,
+  .module-index-row {
+    border-width: 2px;
+  }
+}
+
+/* Melbourne final accessibility corrections. Keep these last so older Seoul
+   component-specific sizes cannot override the visitor-facing baseline. */
+.wordmark,
+.language-button,
+.rose-menu-button,
+.dev-reset-button,
+.text-button,
+.capture-result-nav button,
+.capture-result-open,
+.capture-result-save,
+.menu-language,
+.menu-instagram,
+.about-to-top,
+.result-capture-card-actions a,
+.result-capture-card-actions button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.wordmark,
+.language-button,
+.text-button,
+.capture-result-open,
+.capture-result-save,
+.menu-language,
+.menu-instagram,
+.about-to-top,
+.result-capture-card-actions a,
+.result-capture-card-actions button {
+  font-size: max(12px, .75rem);
+  line-height: 1.35;
+}
+
+.capture-result-actions,
+.result-capture-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.capture-result-actions .capture-result-open,
+.capture-result-actions .capture-result-save {
+  width: 100%;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}
+
+.result-capture-card-actions a,
+.result-capture-card-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  text-align: center;
+}
+
+.access-venue-address {
+  margin: -12px auto 24px;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
 }
 
 .local-only-station-notice .text-button {
@@ -4291,6 +4958,21 @@ body.has-dock .app {
     min-width: 6px;
     font-size: 11px;
   }
+
+  .melbourne-provisional-plan {
+    min-height: 310px;
+  }
+
+  .melbourne-map-marker {
+    width: 40%;
+    min-width: 96px;
+    min-height: 68px;
+    padding: 10px;
+  }
+
+  .melbourne-map-name {
+    font-size: 11px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4301,5 +4983,1957 @@ body.has-dock .app {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+/* Melbourne release accessibility overrides.
+   This block must remain the final stylesheet block so legacy Seoul display
+   rules cannot shrink essential controls or clip 200% zoom content. */
+html,
+body {
+  max-width: 100%;
+}
+
+body {
+  overflow-x: visible;
+  font-size: 16px;
+}
+
+.app,
+.screen,
+.module-screen,
+.about-screen,
+.final-specimen-screen {
+  min-width: 0;
+  max-width: 100%;
+}
+
+p,
+li,
+dd,
+dt,
+label,
+summary,
+button,
+a {
+  overflow-wrap: anywhere;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.micro-label,
+.module-coordinate,
+.visual-note,
+.pattern-animation-index,
+.pattern-animation-coordinate,
+.access-venue-address {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+.module-quick-note,
+.input-note,
+.pattern-entry-feedback,
+.capture-fetch-status,
+.result-capture-status,
+.survey-scale-note,
+.module-anonymous-start strong,
+.capture-result-open,
+.capture-result-save,
+.result-capture-card-actions a,
+.result-capture-card-actions button,
+.capture-retry-button,
+.text-button,
+.language-button,
+.menu-language,
+.menu-instagram,
+.about-to-top,
+.input-group label,
+.numbered-input label {
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+.primary-action,
+.secondary-action {
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+}
+
+.pattern-entry-skip {
+  position: absolute;
+  top: max(18px, env(safe-area-inset-top));
+  right: 18px;
+  z-index: 2;
+  padding: 10px 12px;
+  border: 1px solid #fff;
+  color: #fff;
+  background: #09090a;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.pattern-entry-skip:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px #09090a, 0 0 0 8px #fff;
+}
+
+.inactive-tab-takeover,
+.inactive-tab-reset {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #fff;
+  color: #fff;
+  background: #111;
+  font: 14px/1.45 var(--mono);
+}
+
+.inactive-tab-takeover {
+  margin-top: 30px;
+}
+
+.capture-result-actions,
+.result-capture-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.capture-result-actions .capture-result-open,
+.capture-result-actions .capture-result-save,
+.result-capture-card-actions a,
+.result-capture-card-actions button {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  text-align: center;
+  text-decoration: none;
+}
+
+@media (max-width: 320px), (min-resolution: 2dppx) and (max-width: 640px) {
+  .app {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .capture-result-actions,
+  .result-capture-card-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pattern-entry-transition-overlay .pattern-animation-stage {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Melbourne visitor interface: final layout and accessibility overrides.
+   Keep this block last. It supports the compact global controls, explicit
+   connection step and provisional venue model added for the 2026 release. */
+
+/* Every visible interactive control keeps a WCAG-sized activation area. */
+:where(button, a[href], input, select, textarea, summary, [role="button"]) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+:where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+/* Compact, legible global actions. */
+.global-header {
+  gap: clamp(6px, 2.5vw, 14px);
+}
+
+.wordmark {
+  min-width: 58px;
+  flex: 1 1 auto;
+}
+
+.global-actions {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.language-button,
+.rose-menu-button {
+  display: inline-flex;
+  height: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.82);
+  background: #111111;
+  color: #ffffff;
+}
+
+.language-button {
+  width: 44px;
+  padding: 0;
+}
+
+.language-globe {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.language-globe::before,
+.language-globe::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.language-globe::before {
+  inset: 2px 6px;
+  border-right: 1px solid currentColor;
+  border-left: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.language-globe::after {
+  top: 50%;
+  right: 2px;
+  left: 2px;
+  border-top: 1px solid currentColor;
+  transform: translateY(-50%);
+}
+
+.rose-menu-button {
+  width: auto;
+  min-width: 70px;
+  gap: 7px;
+  padding: 0 10px;
+}
+
+.menu-trigger-symbol {
+  font: 400 16px/1 var(--mono);
+}
+
+.menu-trigger-label {
+  font: 600 10px/1.2 var(--mono);
+  letter-spacing: .12em;
+}
+
+/* The language control opens a real modal chooser rather than cycling an
+   unexplained abbreviation. The card remains scrollable at browser zoom. */
+.language-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  min-width: 0;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  place-items: center;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(10px);
+  overscroll-behavior: contain;
+}
+
+.language-dialog-card {
+  display: grid;
+  width: min(100%, 430px);
+  max-height: calc(100dvh - 36px);
+  gap: 12px;
+  padding: clamp(22px, 7vw, 34px);
+  overflow-y: auto;
+  border: 1px solid #ffffff;
+  background: #111111;
+}
+
+.language-dialog-card h2 {
+  max-width: 18ch;
+  margin: 4px auto 16px;
+  font-family: var(--display);
+  font-size: clamp(26px, 8vw, 36px);
+  font-weight: 400;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.language-choice,
+.language-dialog-close {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,.72);
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 16px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.language-choice[aria-pressed="true"] {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #111111;
+  box-shadow: inset 0 0 0 2px #111111;
+}
+
+.language-dialog-close {
+  margin-top: 8px;
+  border-color: transparent;
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+
+/* Menu labels create useful groups; whitespace replaces the former stack of
+   rules so the menu remains easy to scan and reflow. */
+.rose-menu-nav {
+  display: grid;
+  gap: 4px;
+  padding: 18px 0 8px;
+  border-bottom: 0;
+}
+
+.menu-group-label {
+  margin: 20px 0 4px;
+  padding: 8px 8px 4px;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.rose-menu-item {
+  grid-template-columns: minmax(32px, auto) minmax(0, 1fr) minmax(32px, auto);
+  min-width: 0;
+  min-height: 52px;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 0;
+}
+
+.rose-menu-item:hover,
+.rose-menu-item:focus-visible {
+  background: rgba(255,255,255,.08);
+}
+
+.menu-label {
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.rose-menu-foot {
+  margin-top: 22px;
+  padding-top: 0;
+}
+
+.menu-language,
+.menu-instagram {
+  padding: 10px 8px;
+}
+
+/* Viewing a work never implies connection. This panel makes the separate,
+   explicit station claim prominent without changing its event handling. */
+.station-connection-panel {
+  margin: 48px 0 52px;
+  padding: clamp(24px, 7vw, 34px);
+  border: 1px solid rgba(255,255,255,.84);
+  background: rgba(255,255,255,.025);
+  text-align: center;
+}
+
+.station-connection-panel h2 {
+  max-width: 18ch;
+  margin: 14px auto 16px;
+  font-family: var(--display);
+  font-size: clamp(25px, 7.5vw, 34px);
+  font-weight: 400;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+}
+
+.station-connection-instruction {
+  max-width: 32em;
+  margin: 0 auto;
+  color: var(--ink-dim);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.station-connection-panel .direct-station-entry {
+  margin-top: 24px;
+}
+
+.station-connection-feedback {
+  margin: 18px auto 0;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .035em;
+  line-height: 1.55;
+}
+
+.station-connection-feedback:empty {
+  display: none;
+}
+
+.station-connection-feedback.is-busy {
+  color: var(--session);
+}
+
+.station-connection-panel[data-state="connecting"] .direct-station-entry {
+  opacity: .62;
+  cursor: wait;
+}
+
+/* The venue dimensions and work positions are intentionally provisional.
+   This is a rectangular room model, not a claim about the final site plan. */
+.melbourne-floorplan-section {
+  margin: 58px 0 64px;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.melbourne-floorplan-warning {
+  margin-bottom: 28px;
+}
+
+.floorplan-route-order {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+  gap: 8px;
+  margin: 28px 0 24px;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.route-order-arrow {
+  display: none;
+}
+
+.route-order-step {
+  width: auto;
+  min-width: 44px;
+  min-height: 56px;
+  padding: 7px 4px;
+  flex: none;
+}
+
+.melbourne-floorplan-stage {
+  position: relative;
+  isolation: isolate;
+  height: clamp(340px, 105vw, 460px);
+  margin: 20px 0 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.8);
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255,255,255,.065), transparent 52%),
+    #0d0d0d;
+  perspective: 900px;
+  perspective-origin: 50% 42%;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  overscroll-behavior-x: contain;
+}
+
+.melbourne-floorplan-stage:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 4px;
+}
+
+.melbourne-rectangular-rotor {
+  --room-wall-height: 64px;
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  z-index: 2;
+  width: min(82%, 340px);
+  aspect-ratio: 3 / 2;
+  transform: translate(-50%, -50%) rotateX(var(--plan-tilt, 42deg)) rotateZ(var(--plan-angle, 0deg));
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  transition: transform 80ms linear;
+}
+
+.melbourne-floorplan-stage.is-dragging .melbourne-rectangular-rotor {
+  transition: none;
+}
+
+.melbourne-room-floor {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  background:
+    linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px),
+    #171717;
+  background-size: 24px 24px;
+  box-shadow: 0 22px 30px rgba(0,0,0,.72);
+  transform: translateZ(0);
+  backface-visibility: visible;
+}
+
+.melbourne-room-label {
+  max-width: 68%;
+  padding: 8px 10px;
+  background: rgba(17,17,17,.88);
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.melbourne-rectangular-walls {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.melbourne-room-wall {
+  position: absolute;
+  display: block;
+  border: 1px solid rgba(17,17,17,.9);
+  background: linear-gradient(180deg, #f4f4f4, #8e8e8e);
+  box-shadow: 0 5px 12px rgba(0,0,0,.38);
+  backface-visibility: visible;
+}
+
+.melbourne-room-wall.wall-north,
+.melbourne-room-wall.wall-south {
+  left: 0;
+  width: 100%;
+  height: var(--room-wall-height);
+}
+
+.melbourne-room-wall.wall-north {
+  top: 0;
+  transform: rotateX(90deg);
+  transform-origin: 50% 0;
+}
+
+.melbourne-room-wall.wall-south {
+  bottom: 0;
+  transform: rotateX(-90deg);
+  transform-origin: 50% 100%;
+}
+
+.melbourne-room-wall.wall-east,
+.melbourne-room-wall.wall-west {
+  top: 0;
+  width: var(--room-wall-height);
+  height: 100%;
+}
+
+.melbourne-room-wall.wall-east {
+  right: 0;
+  transform: rotateY(90deg);
+  transform-origin: 100% 50%;
+}
+
+.melbourne-room-wall.wall-west {
+  left: 0;
+  transform: rotateY(-90deg);
+  transform-origin: 0 50%;
+}
+
+.melbourne-confirmed-marker {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  width: min(112px, 34%);
+  min-width: 44px;
+  min-height: 48px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid #ffffff;
+  background: rgba(17,17,17,.94);
+  color: #ffffff;
+  text-align: center;
+  transform: translate(-50%, -50%) translateZ(68px);
+  backface-visibility: visible;
+}
+
+.melbourne-confirmed-marker.is-visited,
+.melbourne-confirmed-marker.is-connected {
+  border-color: var(--session);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.12), 0 0 18px var(--session);
+}
+
+.melbourne-confirmed-marker .melbourne-map-number {
+  font-size: 12px;
+}
+
+.melbourne-confirmed-marker .melbourne-map-name {
+  max-width: 100%;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.melbourne-floorplan-stage .turntable-ui {
+  gap: 8px;
+  align-items: flex-end;
+  padding-top: 0;
+  border-top: 0;
+  line-height: 1.45;
+}
+
+.melbourne-floorplan-stage .view-mode,
+.melbourne-floorplan-stage .frame-counter {
+  max-width: 68%;
+  overflow-wrap: anywhere;
+}
+
+.floorplan-view-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+  gap: 8px;
+  margin: 12px 0 30px;
+}
+
+.floorplan-view-controls button {
+  display: flex;
+  width: 100%;
+  min-width: 44px;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  border: 1px solid rgba(255,255,255,.7);
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .035em;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.venue-access-tbc {
+  display: grid;
+  gap: 0;
+  margin: 32px 0 0;
+}
+
+.venue-access-tbc > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(8rem, .7fr);
+  gap: 18px;
+  padding: 14px 0;
+}
+
+.venue-access-tbc > div + div {
+  border-top: 1px dotted rgba(255,255,255,.52);
+}
+
+.venue-access-tbc dt,
+.venue-access-tbc dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.venue-access-tbc dt {
+  font-family: var(--mono);
+}
+
+.venue-access-tbc dd {
+  color: var(--ink-dim);
+  text-align: right;
+}
+
+/* Spacious content grouping replaces repeated ornamental separators. */
+.screen {
+  padding-bottom: 56px;
+}
+
+.home-project-compact,
+.module-quick-intro,
+.home-direct-actions,
+.result-next-actions {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.home-project-compact {
+  margin-top: 48px;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.home-quick-start,
+.home-direct-actions,
+.result-next-actions {
+  margin-top: 52px;
+}
+
+.module-quick-intro,
+.module-quick-steps,
+.troubleshooting-block {
+  margin-top: 48px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.quick-step-list {
+  gap: 10px;
+}
+
+.quick-step-list li {
+  border-top: 0;
+}
+
+.quick-step-list li:last-child {
+  border-bottom: 0;
+}
+
+/* Visitor-selected larger text persists through body.large-text. */
+body.large-text {
+  font-size: 20px;
+  line-height: 1.65;
+}
+
+body.large-text .screen :is(p, li, dd, dt, label, summary),
+body.large-text .arrival-cover :is(p, li, dd, dt, label, summary),
+body.large-text .confirmation-card > p,
+body.large-text .language-dialog-card :is(p, label) {
+  font-size: 18px !important;
+  line-height: 1.7 !important;
+}
+
+body.large-text :is(.arrival-auto-note, .arrival-summary > p,
+  .arrival-access-summary p, .phone-data-notice p) {
+  font-size: 18px !important;
+  line-height: 1.7 !important;
+}
+
+body.large-text :is(button, a, input, select, textarea, summary) {
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+}
+
+body.large-text :is(.micro-label, .module-coordinate, .visual-note,
+  .menu-index, .menu-arrow, .module-number, .visit-status, .module-code,
+  .connection-state, .personal-copy small, .view-mode, .frame-counter,
+  .melbourne-room-label, .station-connection-feedback) {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+body.large-text :is(.screen-title, .module-title-display) {
+  max-width: 100%;
+  font-size: clamp(2.15rem, 10vw, 3.15rem);
+  line-height: 1.12;
+}
+
+body.large-text .menu-trigger-label {
+  font-size: 16px !important;
+}
+
+body.large-text .menu-label,
+body.large-text .language-choice,
+body.large-text .station-connection-instruction,
+body.large-text .floorplan-view-controls button {
+  font-size: 18px !important;
+  line-height: 1.5 !important;
+}
+
+body.large-text .menu-group-label {
+  font-size: 15px;
+}
+
+body.large-text .personal-copy strong {
+  font-size: 21px;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+body.large-text .global-header {
+  flex-wrap: wrap;
+}
+
+body.large-text .wordmark {
+  flex-basis: 100%;
+}
+
+body.large-text .global-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+body.large-text .rose-menu-button {
+  min-width: 94px;
+}
+
+body.large-text .venue-access-tbc > div {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
+body.large-text .venue-access-tbc dd {
+  text-align: left;
+}
+
+/* Reflow cleanly at narrow CSS viewports, including approximately 200% zoom
+   on a phone-sized display. No operational or capture controls are hidden. */
+@media (max-width: 360px) {
+  .app,
+  .rose-menu-panel {
+    width: 100%;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .global-header {
+    gap: 6px;
+  }
+
+  .global-actions {
+    gap: 5px;
+  }
+
+  .rose-menu-button {
+    min-width: 62px;
+    padding-right: 7px;
+    padding-left: 7px;
+  }
+
+  .menu-trigger-label {
+    letter-spacing: .06em;
+  }
+
+  .language-dialog-overlay {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .language-dialog-card {
+    padding: 20px 16px;
+  }
+
+  .rose-menu-item {
+    grid-template-columns: 28px minmax(0, 1fr) 28px;
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .personal-header {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .personal-rose {
+    width: 48px;
+    height: 48px;
+  }
+
+  .personal-header .connection-state,
+  .personal-header .header-arrow {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .station-connection-panel {
+    padding: 24px 16px;
+  }
+
+  .melbourne-floorplan-stage {
+    height: clamp(310px, 125vw, 390px);
+  }
+
+  .melbourne-rectangular-rotor {
+    --room-wall-height: 48px;
+    width: 86%;
+  }
+
+  .floorplan-view-controls {
+    grid-template-columns: repeat(2, minmax(44px, 1fr));
+  }
+
+  .venue-access-tbc > div,
+  .result-summary dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .venue-access-tbc dd {
+    text-align: left;
+  }
+
+  .capture-result-actions,
+  .result-capture-card-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 260px) {
+  .global-header {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .wordmark {
+    flex-basis: 100%;
+  }
+
+  .global-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .rose-menu-button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melbourne-rectangular-rotor {
+    transition: none;
+  }
+}
+
+/* Melbourne review v5 — restore the visual Seoul navigation language while
+   keeping the verified Melbourne connection and capture contracts intact. */
+.global-header {
+  border-bottom: 0;
+}
+
+.wordmark {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  text-align: left;
+}
+
+.wordmark-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.wordmark-rose {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  color: var(--session);
+}
+
+.arrival-festival {
+  max-width: 14em;
+  margin: 38px auto 18px;
+  color: #ffffff;
+  font-family: var(--display);
+  font-size: clamp(22px, 7vw, 32px);
+  font-weight: 400;
+  letter-spacing: -.025em;
+  line-height: 1.08;
+  text-align: center;
+}
+
+.stacked-action-label {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+}
+
+.stacked-action-label strong,
+.stacked-action-label small {
+  display: block;
+  font: inherit;
+}
+
+.stacked-action-label small {
+  font-size: .82em;
+  opacity: .8;
+}
+
+.arrival-summary,
+.arrival-access-summary,
+.phone-data-notice,
+.project-intro,
+.home-direct-actions,
+.module-info-block,
+.about-section {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.arrival-summary,
+.arrival-access-summary {
+  margin-top: 48px;
+  margin-bottom: 48px;
+  padding: 0;
+}
+
+.arrival-access-summary {
+  padding-left: 18px;
+  border-left: 4px solid var(--session);
+}
+
+.phone-data-notice {
+  margin: 44px 0 12px;
+  padding: 0;
+}
+
+.phone-data-notice > .disclosure {
+  margin: 0;
+}
+
+.phone-data-details h2 {
+  margin: 4px 0 20px;
+  font-size: 22px;
+}
+
+.rose-name-journey-note {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.home-project-compact {
+  margin-bottom: 74px;
+}
+
+.melbourne-floorplan-section {
+  margin-top: 0;
+}
+
+.floorplan-route-order {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  margin: 30px 0 28px;
+  padding: 0 0 6px;
+  overflow-x: auto;
+  border: 0;
+  scrollbar-width: thin;
+}
+
+.route-order-step {
+  width: 52px;
+  min-width: 52px;
+  min-height: 58px;
+  flex: 0 0 52px;
+  padding: 7px 4px;
+  border-color: rgba(255,255,255,.76);
+}
+
+.route-order-step.is-visited {
+  border-color: var(--session);
+  background: var(--session);
+  color: var(--session-ink);
+  box-shadow: 0 0 0 2px #0b0b0b, 0 0 18px var(--session);
+}
+
+.route-order-arrow {
+  display: block;
+  min-width: 14px;
+  flex: 0 0 14px;
+  font-size: 17px;
+}
+
+.floorplan-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.floorplan-tabs button {
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 8px;
+  border: 1px solid rgba(255,255,255,.72);
+  color: #ffffff;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.floorplan-tabs button[aria-selected="true"] {
+  border-color: var(--session);
+  background: var(--session);
+  color: var(--session-ink);
+  font-weight: 700;
+}
+
+.floorplan-tab-panel[hidden] {
+  display: none;
+}
+
+.work-list-tab-panel {
+  min-height: 310px;
+  padding-top: 12px;
+}
+
+.work-list-tab-panel .module-index-list {
+  margin-top: 0;
+}
+
+.melbourne-floorplan-stage {
+  background: #0d0d0d;
+}
+
+.melbourne-room-floor {
+  background: #171717;
+}
+
+.melbourne-room-wall {
+  background: #d8d8d8;
+}
+
+.melbourne-confirmed-marker {
+  width: min(92px, 29%);
+  min-height: 54px;
+  padding: 7px 5px;
+}
+
+.melbourne-confirmed-marker::before {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--session);
+  box-shadow: 0 0 12px var(--session);
+  content: '';
+}
+
+.melbourne-confirmed-marker.is-visited,
+.melbourne-confirmed-marker.is-connected {
+  border-color: var(--session);
+  background: var(--session);
+  color: var(--session-ink);
+}
+
+.melbourne-confirmed-marker.is-visited::before,
+.melbourne-confirmed-marker.is-connected::before {
+  background: var(--session-ink);
+  box-shadow: none;
+}
+
+.melbourne-confirmed-marker.is-visited .melbourne-map-status,
+.melbourne-confirmed-marker.is-connected .melbourne-map-status {
+  color: var(--session-ink);
+}
+
+.melbourne-map-status {
+  max-width: 100%;
+  overflow: visible;
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.melbourne-map-name {
+  max-width: 100%;
+  overflow: visible;
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.route-step-status {
+  display: block;
+  font-size: 10px !important;
+  font-weight: 700;
+  letter-spacing: .045em !important;
+  line-height: 1.2;
+  white-space: normal !important;
+}
+
+.floorplan-tab-panel > .disclosure {
+  margin-top: 34px;
+}
+
+.venue-access-tbc {
+  margin-top: 0;
+}
+
+.module-title-block {
+  margin-bottom: 34px;
+}
+
+.module-hero {
+  margin-bottom: 46px;
+}
+
+.module-asset .asset-image:not([hidden]) {
+  display: block;
+  object-fit: contain;
+}
+
+.module-image-translation {
+  position: absolute;
+  z-index: 4;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.72);
+  background: rgba(0,0,0,.92);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.module-quick-intro {
+  margin-top: 0;
+  margin-bottom: 22px;
+}
+
+.module-full-story {
+  margin-top: 0;
+  margin-bottom: 54px;
+  color: #ffffff;
+}
+
+.station-connection-panel {
+  margin: 54px 0 60px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.station-connection-panel .direct-station-entry {
+  width: 100%;
+  min-height: 66px;
+  margin: 0;
+  border-color: var(--session);
+  background: var(--session);
+  color: var(--session-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.station-connection-feedback {
+  margin-top: 14px;
+}
+
+.station-connection-feedback:empty {
+  display: none;
+}
+
+.module-quick-steps,
+.troubleshooting-block,
+.module-capture-panel {
+  margin-top: 64px;
+}
+
+.troubleshooting-no-phone strong {
+  color: var(--session);
+}
+
+.home-direct-actions,
+.about-section,
+.about-page-end {
+  margin-top: 76px;
+}
+
+.about-section + .about-section {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.about-deeper-copy {
+  gap: 22px;
+}
+
+.about-deeper-copy p {
+  line-height: 1.82;
+}
+
+.rose-menu-foot > span,
+.rose-menu-foot .menu-copyright {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+body.large-text :is(.route-step-status, .melbourne-map-name, .melbourne-map-status,
+  .module-image-translation, .rose-menu-foot > span, .rose-menu-foot .menu-copyright) {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+@media (max-width: 520px) {
+  .floorplan-route-order {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-right: 0;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .route-order-arrow {
+    display: none;
+  }
+
+  .route-order-step {
+    width: 100%;
+    min-width: 0;
+    min-height: 70px;
+    padding: 9px 6px;
+  }
+
+  .route-order-step > span:not(.route-step-status) {
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .route-order-exit {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 360px) {
+  .wordmark {
+    min-width: 0;
+  }
+
+  .wordmark-rose {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+
+  .wordmark-copy {
+    font-size: 10px;
+  }
+
+  .melbourne-confirmed-marker {
+    width: min(86px, 30%);
+    min-height: 50px;
+  }
+
+  .melbourne-confirmed-marker .melbourne-map-name {
+    font-size: 12px;
+  }
+
+  .floorplan-route-order {
+    margin-right: 0;
+    padding-right: 0;
+  }
+}
+
+/* Melbourne review v6 — restore the approved hierarchy and Seoul floor-plan
+   grammar without changing station, capture or Supabase contracts. */
+.wordmark-fringe {
+  font-size: .72em;
+  letter-spacing: .16em;
+}
+
+.primary-action,
+.text-button {
+  position: relative;
+  justify-content: center;
+  text-align: center;
+}
+
+.primary-action {
+  padding-right: 46px;
+  padding-left: 46px;
+}
+
+.primary-action > span[aria-hidden="true"] {
+  position: absolute;
+  right: 18px;
+}
+
+.text-button {
+  min-width: min(100%, 220px);
+  padding-right: 34px;
+  padding-left: 34px;
+}
+
+.text-button > span[aria-hidden="true"] {
+  position: absolute;
+  right: 8px;
+}
+
+.stacked-action-label {
+  align-items: center;
+  text-align: center;
+}
+
+.arrival-phone-primary {
+  border-color: var(--session);
+  background: var(--session);
+  color: var(--session-ink);
+}
+
+.arrival-about-link {
+  margin-top: 10px;
+  margin-bottom: 54px;
+}
+
+.arrival-access-summary {
+  margin-top: 0;
+}
+
+.rose-setup-guidance {
+  display: grid;
+  min-height: clamp(160px, 24vh, 240px);
+  place-content: center;
+  gap: 14px;
+  padding: 28px 0 34px;
+  text-align: center;
+}
+
+.rose-setup-guidance p {
+  max-width: 32em;
+  margin: 0 auto;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.rose-setup-guidance p > span {
+  display: block;
+}
+
+.floorplan-route-order {
+    display: flex;
+    grid-template-columns: none;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+    margin: 30px 0 28px;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    scrollbar-width: none;
+}
+
+.floorplan-route-order::-webkit-scrollbar {
+    display: none;
+}
+
+.route-order-step {
+    position: relative;
+    display: grid;
+    width: 40px;
+    min-width: 36px;
+    min-height: 44px;
+    flex: 1 1 40px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #ffffff;
+    font: 500 13px/1 var(--mono);
+}
+
+.route-order-step.is-visited {
+    background: var(--session);
+    color: var(--session-ink);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--session) 70%, transparent);
+}
+
+.route-step-check {
+    position: absolute;
+    top: -3px;
+    right: -1px;
+    display: grid;
+    width: 17px;
+    height: 17px;
+    place-items: center;
+    border: 1px solid #ffffff;
+    border-radius: 50%;
+    background: #0b0b0b;
+    color: #ffffff;
+    font-size: 10px;
+}
+
+.route-order-arrow {
+    display: block;
+    min-width: 8px;
+    flex: 0 1 10px;
+    color: rgba(255,255,255,.72);
+    font-size: 15px;
+    text-align: center;
+}
+
+.route-order-exit {
+    grid-column: auto;
+}
+
+.melbourne-floorplan-stage.is-idle:not(.has-interacted) .melbourne-rectangular-rotor {
+  animation: floorplan-idle-drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes floorplan-idle-drift {
+  from {
+    transform: translate(-50%, -50%) rotateX(var(--plan-tilt, 42deg)) rotateZ(calc(var(--plan-angle, 0deg) - 2deg));
+  }
+  to {
+    transform: translate(-50%, -50%) rotateX(var(--plan-tilt, 42deg)) rotateZ(calc(var(--plan-angle, 0deg) + 2deg));
+  }
+}
+
+.melbourne-floorplan-stage.has-interacted .melbourne-rectangular-rotor,
+.melbourne-floorplan-stage.is-dragging .melbourne-rectangular-rotor,
+body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
+  animation: none;
+}
+
+.floorplan-drag-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.72);
+  background: rgba(8,8,8,.9);
+  color: #ffffff;
+  font: 10px/1.2 var(--mono);
+  letter-spacing: .08em;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.floorplan-drag-hint[hidden] {
+  display: none;
+}
+
+.floorplan-hand-icon {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.floorplan-angle-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.floorplan-reset-icon {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 21px;
+}
+
+.floorplan-reset-corner {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 12;
+  background: rgba(8,8,8,.9);
+  pointer-events: auto;
+}
+
+.melbourne-confirmed-marker {
+  width: min(76px, 25%);
+  min-height: 48px;
+  padding: 6px 5px;
+  border-style: dashed;
+  background: rgba(12,12,12,.96);
+  transform: translate(-50%, -50%) translateZ(76px);
+}
+
+.melbourne-confirmed-marker.is-visited,
+.melbourne-confirmed-marker.is-connected {
+  border-style: solid;
+  background: var(--session);
+}
+
+.melbourne-map-name {
+  font-size: 10px;
+}
+
+.melbourne-map-check {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  background: #0b0b0b;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.melbourne-marker-footprint,
+.melbourne-marker-stem {
+  position: absolute;
+  z-index: 2;
+  display: block;
+  pointer-events: none;
+}
+
+.melbourne-marker-footprint {
+  width: 22px;
+  height: 22px;
+  border: 1px dashed rgba(255,255,255,.76);
+  border-radius: 50%;
+  background: #0d0d0d;
+  transform: translate(-50%, -50%) translateZ(3px);
+}
+
+.melbourne-marker-footprint::after {
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.76);
+  content: '';
+}
+
+.melbourne-marker-footprint.is-visited,
+.melbourne-marker-footprint.is-connected {
+  border-color: var(--session);
+  box-shadow: 0 0 12px var(--session);
+}
+
+.melbourne-marker-footprint.is-visited::after,
+.melbourne-marker-footprint.is-connected::after {
+  background: var(--session);
+}
+
+.melbourne-marker-stem {
+  width: 1px;
+  height: 76px;
+  border-left: 1px dashed rgba(255,255,255,.72);
+  transform: translate(-50%, -100%) rotateX(-90deg);
+  transform-origin: 50% 100%;
+}
+
+.melbourne-marker-stem.is-visited,
+.melbourne-marker-stem.is-connected {
+  border-left-style: solid;
+  border-left-color: var(--session);
+  box-shadow: 0 0 8px var(--session);
+}
+
+.floorplan-access-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform: translateZ(5px);
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.access-preview-route-segment,
+.access-preview-route-node,
+.access-preview-point,
+.access-preview-label {
+  position: absolute;
+  transition: opacity 180ms ease;
+}
+
+.access-preview-route-segment {
+  height: 0;
+  border-top: 2px dashed var(--session);
+  opacity: 0;
+  transform-origin: 0 50%;
+}
+
+.access-preview-route-node {
+  width: 8px;
+  height: 8px;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  background: var(--session);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+.access-preview-point {
+  max-width: 98px;
+  padding: 4px 6px;
+  border: 1px dashed rgba(255,255,255,.84);
+  background: rgba(9,9,9,.94);
+  color: #ffffff;
+  font: 8px/1.35 var(--mono);
+  letter-spacing: .04em;
+  opacity: 0;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.access-entry,
+.access-exit {
+  transform: translate(0, -50%);
+}
+
+.access-toilet {
+  transform: translate(-100%, -50%);
+}
+
+.access-other-room {
+  transform: translate(0, -50%);
+}
+
+.access-toilet,
+.access-other-room,
+.access-preview-label {
+  opacity: 0;
+}
+
+.access-preview-label {
+  left: 50%;
+  top: 52%;
+  padding: 5px 7px;
+  background: rgba(9,9,9,.9);
+  color: var(--session);
+  font: 8px/1.3 var(--mono);
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.melbourne-floorplan-stage.show-access-entry-exit :is(.access-entry, .access-exit),
+.melbourne-floorplan-stage.show-access-route :is(.access-preview-route-segment, .access-preview-route-node, .access-preview-label),
+.melbourne-floorplan-stage.show-access-toilet .access-toilet,
+.melbourne-floorplan-stage.show-access-other-room .access-other-room {
+  opacity: 1;
+}
+
+.access-preview-warning {
+  margin: 4px 0 24px !important;
+  color: #ffffff !important;
+}
+
+.access-layer-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.access-layer-button {
+  min-height: 52px;
+  padding: 10px 8px;
+  border: 1px solid rgba(255,255,255,.72);
+  background: transparent;
+  color: #ffffff;
+  font: 600 10px/1.35 var(--mono);
+  letter-spacing: .04em;
+  text-align: center;
+}
+
+.access-layer-button[aria-pressed="true"] {
+  border-color: var(--session);
+  background: var(--session);
+  color: var(--session-ink);
+}
+
+.access-layer-button:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.access-layer-status {
+  min-height: 1.5em;
+  margin: 0 0 12px;
+  color: var(--ink-dim);
+  font: 11px/1.5 var(--mono);
+  text-align: center;
+}
+
+.about-section-media {
+  margin: 34px 0 30px;
+}
+
+.about-section-media .asset-frame {
+  min-height: clamp(220px, 70vw, 420px);
+}
+
+.about-section-media .asset-image {
+  display: block;
+  object-fit: contain;
+}
+
+.about-section-media figcaption {
+  margin-top: 10px;
+  color: var(--ink-faint);
+  font: 11px/1.5 var(--mono);
+  letter-spacing: .04em;
+  text-align: center;
+}
+
+.troubleshooting-block + .module-capture-panel {
+  border-top: 0;
+}
+
+.survey-question-list {
+  margin-top: 48px;
+}
+
+.survey-question-section {
+  margin: 0 0 52px;
+  padding: 0 0 48px;
+  border-bottom: 1px solid rgba(255,255,255,.82);
+}
+
+.survey-screen .survey-choice-question {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.survey-screen .survey-choice-question legend,
+.survey-screen .survey-text-question label {
+  margin: 0 0 24px;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.survey-screen .survey-choice-endpoints {
+  margin-bottom: 14px;
+}
+
+.survey-screen .survey-number-option input:checked + span {
+  border: 1px solid #ffffff;
+  box-shadow: none;
+}
+
+.survey-screen .survey-text-question {
+  margin: 4px 0 0;
+  padding: 0 0 48px;
+  border-top: 0;
+  border-bottom: 1px solid rgba(255,255,255,.82);
+}
+
+.result-name-inline {
+  margin: 16px auto 30px;
+}
+
+@media (max-width: 520px) {
+  .access-layer-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .melbourne-floorplan-stage .melbourne-rectangular-rotor {
+    animation: none !important;
+  }
+
+  .access-preview-route-segment,
+  .access-preview-route-node,
+  .access-preview-point,
+  .access-preview-label {
+    transition: none;
+  }
+}
+
+/* Melbourne review v10. Keep these final so older responsive rules cannot
+   restore circular route controls or shrink the single Work List title. */
+.floorplan-route-order .route-order-step {
+  min-height: 48px;
+  padding: 7px 3px;
+  border: 1px solid rgba(255,255,255,.76);
+  border-radius: 0;
+  background: transparent;
+}
+
+.floorplan-route-order .route-order-step.is-visited {
+  border-color: var(--session);
+  background: var(--session);
+}
+
+.work-list-tab-panel .work-list-row {
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  min-height: 82px;
+  padding: 14px 0;
+}
+
+.work-list-tab-panel .work-list-row .work-list-title {
+  font-size: clamp(1.35rem, 5.6vw, 1.7rem);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: .025em;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .floorplan-route-order .route-order-step {
+    width: 40px;
+    min-width: 36px;
+    min-height: 48px;
+    flex: 1 1 40px;
+    padding: 6px 2px;
+  }
+
+  .floorplan-route-order .route-order-arrow {
+    min-width: 8px;
+    flex: 0 0 8px;
   }
 }
