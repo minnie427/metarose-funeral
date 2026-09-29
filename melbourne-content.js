@@ -135,12 +135,12 @@ export const ABOUT_SECTIONS = [
   {
     id: 'about-work-01', index: '07',
     titleKo: '01 명명 / NAMING', titleEn: '01 NAMING',
-    leadKo: '가까운 그라운드 로즈로 혼자 참여하거나, 여러 사람이 꽃과 서로를 연결해 빛과 소리를 만듭니다.',
-    leadEn: 'Participate alone with a nearby ground rose, or connect flowers and people to make light and sound together.',
-    bodyKo: ['각 장미는 서로 다른 빛과 소리를 가지고 있습니다. 오래 머물거나 장미와 사람의 조합을 바꾸며 오늘 가장 공명하는 순간을 찾습니다.'],
-    bodyEn: ['Each rose carries a different light and sound. Stay, change the combination of flowers and people, and look for the moment that resonates most strongly today.'],
-    deeperKo: ['꽃을 만지는 행동은 돌봄이면서 동시에 꽃의 시간을 앞당기는 접촉입니다. 가능한 조합 전체를 소유하는 대신, 몸이 실제로 반응하는 한순간의 균형을 찾습니다.'],
-    deeperEn: ['Touching a flower is an act of care that also advances the flower’s time. Rather than possessing every possible combination, the visitor finds one temporary balance to which the body responds.'],
+    leadKo: '검은 리본을 잡고 매달린 생화 장미를 만지면 접촉이 빛과 소리로 바뀝니다.',
+    leadEn: 'Hold the black ribbon and touch a hanging living rose to turn contact into light and sound.',
+    bodyKo: ['검은 리본을 잡은 채 서로 다른 장미를 만지며 오늘 가장 공명하는 순간을 찾습니다. 그 순간의 캡처를 요청하려면 흰 리본과 검은 리본을 동시에 잡습니다.'],
+    bodyEn: ['Keep holding the black ribbon while touching different roses and look for the moment that resonates most strongly today. To request a capture of that moment, hold the white and black ribbons at the same time.'],
+    deeperKo: ['꽃을 만지는 행동은 돌봄이면서 동시에 꽃의 시간을 앞당기는 접촉입니다. 가능한 조합 전체를 소유하는 대신, 몸이 실제로 반응하는 한순간의 균형을 찾고 두 리본을 함께 잡아 그 장면의 캡처를 요청합니다.'],
+    deeperEn: ['Touching a flower is an act of care that also advances the flower’s time. Rather than possessing every possible combination, the visitor finds one temporary balance to which the body responds and holds both ribbons together to request its capture.'],
   },
   {
     id: 'about-work-02', index: '08',
@@ -288,11 +288,13 @@ const APPROVED_DEEPER_EXPANSIONS = {
   'about-work-01': {
     ko: [
       '각 장미는 서로 다른 빛과 소리의 층을 가집니다. 오래 머물면 반응이 깊어지고, 다른 장미를 만지면 여러 층이 결합해 계속 달라지는 오디오비주얼 구성을 만듭니다.',
-      '살아 있는 꽃을 만지는 행동은 돌봄이면서 동시에 꽃의 시간을 앞당기는 접촉입니다. 가능한 조합 전체를 소유하기보다, 혼자 또는 함께 만든 임시적인 회로 안에서 몸이 실제로 반응하는 한순간의 균형을 찾습니다.',
+      '검은 리본과 매달린 생화 장미는 관객의 몸을 통해 임시적인 회로가 됩니다. 살아 있는 꽃을 만지는 행동은 돌봄이면서 동시에 꽃의 시간을 앞당기는 접촉입니다.',
+      '원하는 균형을 찾았다면 흰 리본과 검은 리본을 동시에 잡아 그 순간의 캡처를 요청합니다.',
     ],
     en: [
       'Each rose carries a distinct layer of light and sound. Sustained contact deepens a response, while touching different roses combines layers into a changing audio-visual composition.',
-      'Touching a living flower is an act of care that also advances the flower’s time. Rather than possessing every possible combination, the visitor finds one temporary balance to which the body responds, alone or within a shared circuit.',
+      'The black ribbon and hanging living roses form a temporary circuit through the audience body. Touching a living flower is an act of care that also advances the flower’s time.',
+      'When the desired balance appears, the visitor holds the white and black ribbons at the same time to request a capture of that moment.',
     ],
   },
   'about-work-02': {
