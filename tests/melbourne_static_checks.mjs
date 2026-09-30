@@ -204,7 +204,8 @@ check('Static page metadata uses the current Melbourne title', () => (
 ), 'Social previews do not execute app.js; keep static title metadata current too.');
 check('Measurement layer shares the versioned DB module instance', () => (
   /\.\/config\.js\?v=melbourne-access-v10-20260930/.test(source.measure)
-  && /\.\/db\.js\?v=melbourne-access-v10-20260930/.test(source.measure)
+  && /\.\/db\.js\?v=melbourne-phone-rose-v12-20260930/.test(source.measure)
+  && /\.\/db\.js\?v=melbourne-phone-rose-v12-20260930/.test(source.app)
 ), 'Unversioned imports can create a second DB instance that bypasses active-tab state.');
 check('Server rows carry a Melbourne edition marker', () => (
   /MELBOURNE_SCHEMA_VERSION\s*=\s*['"]meta_rose_melbourne2026\.1['"]/.test(source.db)
@@ -760,13 +761,19 @@ check('My Rose places the naming action directly below the current name', () => 
   /result-summary[\s\S]*?el\(['"]h1['"][\s\S]*?result-name-inline[\s\S]*?el\(['"]dl['"]/.test(finalSpecimen)
   && (finalSpecimen.match(/result-name-inline/g) || []).length === 1
   && /el\(['"]h1['"],\s*\{\},\s*displayName\(session\)\)/.test(finalSpecimen)
-), 'ANONYMOUS should be followed immediately by NAME MY ROSE, without a duplicate action at the bottom.');
-check('Unnamed visitors stay anonymous without seeded example names', () => (
+), 'The current Phone Rose identity should be followed immediately by NAME MY ROSE, without a duplicate action at the bottom.');
+check('Unnamed Phone Hub visitors use their Rose number instead of a TD-only anonymous label', () => (
   /name_source\s*!==\s*['"]visitor['"]/.test(visitorRoseNameSource)
-  && /ANONYMOUS/.test(displayNameSource)
-  && /무기명/.test(displayNameSource)
+  && /phoneRoseLabel/.test(displayNameSource)
+  && /PHONE ROSE/.test(source.app)
+  && /session\?\.consent\s*&&\s*!session\?\.local_only/.test(displayNameSource)
   && !/(겁이 많지만 계속 가는 나|겁이 많은 나|그래도 계속 가는 나)/.test(seedTestSession)
-), 'Preview seeding must never turn an unnamed visitor into the old Korean sample name.');
+), 'Phone sessions must be distinguishable from TD-only anonymous runs without reviving the old sample name.');
+check('Station control fields synchronously send a stable Phone Rose pseudonym', () => (
+  /pseudonym:\s*phoneRoseLabel\(ensureSession\(\)\)/.test(screenModule)
+  && /['"]pseudonym['"]/.test(source.db)
+  && /dbPatch\.pseudonym\s*=\s*patch\.nickname/.test(source.app)
+), 'SUB1 and SUB2 must not reject an unnamed Phone Hub visitor before the chosen final name exists.');
 check('Naming stays skippable without repeating OPTIONAL in its title', () => (
   !/NAME MY ROSE \(OPTIONAL\)/.test(source.app)
   && !/NAME OF THE ROSE \/ OPTIONAL/.test(source.app)
