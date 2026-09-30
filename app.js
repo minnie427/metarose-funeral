@@ -24,14 +24,14 @@ import {
   getLastStationEntryStatus,
   getArtifactFetchStatus,
   notePhoneActivity,
-} from './db.js?v=melbourne-access-v10-20260930';
+} from './db.js?v=melbourne-phone-rose-v12-20260930';
 import { MELBOURNE, ABOUT_SECTIONS } from './melbourne-content.js?v=melbourne-main1-ribbons-v11-20260930';
 import {
   beginRead,
   endRead,
   startIdleTracking,
   trackInput,
-} from './measure.js?v=melbourne-access-v10-20260930';
+} from './measure.js?v=melbourne-phone-rose-v12-20260930';
 
 const $app = document.getElementById('app');
 const $dock = document.getElementById('dock');
@@ -515,6 +515,7 @@ function syncSessionToDb(patch) {
   const dbPatch = {};
   if ('color' in patch) dbPatch.color = patch.color;
   if ('lang' in patch) dbPatch.lang = patch.lang;
+  if ('nickname' in patch) dbPatch.pseudonym = patch.nickname;
   if ('consent' in patch) {
     dbPatch.consent = patch.consent;
     dbPatch.consent_at = patch.consent ? new Date().toISOString() : null;
@@ -834,9 +835,21 @@ function visitorRoseName(session = getSession()) {
   return String(session.emotional_name || '').trim();
 }
 
+function phoneRoseLabel(session = getSession()) {
+  const recordNo = String(
+    session?.display_record_no
+    || session?.id?.slice?.(0, 8)
+    || '',
+  ).trim().toUpperCase();
+  return recordNo ? `PHONE ROSE · ${recordNo}` : 'PHONE ROSE';
+}
+
 function displayName(session = getSession()) {
   const visitorName = visitorRoseName(session);
   if (visitorName) return visitorName;
+  // A Phone Hub visitor without a chosen name is still a specific phone-owned
+  // Rose. Keep that visibly distinct from a TD-only anonymous run.
+  if (session?.consent && !session?.local_only) return phoneRoseLabel(session);
   return session?.lang === 'ko' ? '무기명' : 'ANONYMOUS';
 }
 
@@ -922,6 +935,10 @@ async function beginPhoneHub({ chooseColor = false, button = null } = {}) {
     emotional_name_a: current.name_source === 'visitor' ? current.emotional_name_a : '',
     emotional_name_b: current.name_source === 'visitor' ? current.emotional_name_b : '',
     name_source: current.name_source === 'visitor' ? 'visitor' : 'none',
+    // TD receives this stable fallback through sessions.pseudonym whenever the
+    // visitor chooses not to name their Rose. A later chosen final_name still
+    // takes precedence in v_active_at_station.
+    nickname: phoneRoseLabel(current),
   };
   updateSession(basePatch);
   logEvent('arrival_enter_clicked', {
@@ -3917,6 +3934,7 @@ async function screenModule(stationId, options = {}) {
     const controlFields = {
       color: ensureSession().color,
       lang: ensureSession().lang,
+      pseudonym: phoneRoseLabel(ensureSession()),
       final_name: currentName || null,
       final_name_a: currentHasVisitorName ? (ensureSession().emotional_name_a || null) : null,
       final_name_b: currentHasVisitorName ? (ensureSession().emotional_name_b || null) : null,

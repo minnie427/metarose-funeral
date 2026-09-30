@@ -438,7 +438,7 @@ export async function updateSession(patch) {
 export async function confirmSessionControlFields(expectedSessionId, fields = {}) {
   const control = await controlPlaneSession(expectedSessionId);
   if (!control) return null;
-  const allowed = ['color', 'lang', 'final_name', 'final_name_a', 'final_name_b'];
+  const allowed = ['color', 'lang', 'pseudonym', 'final_name', 'final_name_a', 'final_name_b'];
   const patch = Object.fromEntries(Object.entries(fields)
     .filter(([key, value]) => allowed.includes(key) && value !== undefined));
   if (Object.keys(patch).length) {
