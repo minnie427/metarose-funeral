@@ -8,7 +8,7 @@
 //   · Supabase가 없어도 앱은 죽지 않는다 (graceful degradation)
 // ============================================================
 
-import { CONFIG } from './config.js?v=melbourne-access-v10-20260930';
+import { CONFIG } from './config.js?v=melbourne-onsite-v14-20261002';
 
 const MELBOURNE_SCHEMA_VERSION = 'meta_rose_melbourne2026.1';
 const MELBOURNE_EXHIBITION_ID = CONFIG.EXHIBITION?.id || 'meta-rose-melbourne-2026';

@@ -19,53 +19,59 @@ export const CONFIG = {
     instagram: '',
   },
 
-  // Venue facts stay null until they are checked on site. Once confirmed,
-  // add percentage coordinates such as { x: 32, y: 46 } for a work. Verified
-  // venue facts may be plain strings or bilingual objects such as
-  // { ko: '북쪽 문', en: 'North door' }. The UI keeps null values labelled
-  // TBC and renders confirmed values without changing the component.
+  // Melbourne installation positions and access directions confirmed on site.
+  // Percent coordinates remain editable here if the physical layout changes.
   VENUE_LAYOUT: {
     footprint: 'rectangle',
-    positionsConfirmed: false,
-    // Temporary editorial layout requested for the preview. These are not
-    // verified physical positions. Replace `works` with measured x/y values
-    // and set positionsConfirmed=true only after the on-site check.
+    positionsConfirmed: true,
     provisionalWorks: {
-      '01': { x: 88, y: 50, wall: 'east' },
-      '02': { x: 62, y: 15, wall: 'north' },
-      '03': { x: 42, y: 85, wall: 'south' },
-      '04': { x: 10, y: 78, wall: 'south-west' },
+      '01': { x: 12, y: 50, wall: 'west' },
+      '02': { x: 77, y: 40, wall: 'east' },
+      '03': { x: 42, y: 19, wall: 'north' },
+      '04': { x: 90, y: 87, wall: 'south-east' },
     },
-    // Preview-only map graphics. These coordinates are deliberately separate
-    // from the verified access fields below, so tomorrow's site check can
-    // replace them without turning an unconfirmed route into a public claim.
+    // One doorway serves as both entrance and exit. The ramp is at this door.
+    // Outside the door, the courtyard is immediately left; toilets are reached
+    // by turning right and asking venue staff after entering the internal area.
     provisionalAccessPreview: {
-      entry: { x: 5, y: 53, labelKo: '입구', labelEn: 'ENTRY' },
-      exit: { x: 5, y: 68, labelKo: '출구', labelEn: 'EXIT' },
+      entryExit: { x: 65, y: 101, labelKo: '입구 / 출구 · 피드백', labelEn: 'ENTRY / EXIT · FEEDBACK' },
+      roseInstallation: { x: 29, y: 50, labelKo: '장미 설치', labelEn: 'ROSE INSTALLATION' },
       routePoints: [
-        { x: 5, y: 53 },
-        { x: 24, y: 53 },
-        { x: 24, y: 34 },
-        { x: 78, y: 34 },
-        { x: 88, y: 50 },
+        { x: 12, y: 50 },
+        { x: 77, y: 40 },
+        { x: 42, y: 19 },
+        { x: 90, y: 87 },
       ],
-      // Keep the two off-room directions inside the view frame so their labels
-      // remain readable; their edge placement and wording indicate that the
-      // destination continues beyond the provisional room footprint.
-      toilet: { x: 96, y: 18, labelKo: '화장실 방향 →', labelEn: 'TOILET DIRECTION →' },
-      otherRoom: { x: 4, y: 88, labelKo: '← 다른 방', labelEn: '← OTHER ROOM' },
+      toiletRoutePoints: [
+        { x: 50, y: 52 },
+        { x: 50, y: 88 },
+        { x: 65, y: 88 },
+        { x: 65, y: 104 },
+        { x: 65, y: 117 },
+        { x: 96, y: 117 },
+      ],
+      courtyardRoutePoints: [
+        { x: 50, y: 52 },
+        { x: 50, y: 88 },
+        { x: 65, y: 88 },
+        { x: 65, y: 104 },
+        { x: 65, y: 117 },
+        { x: 7, y: 117 },
+      ],
+      toilet: { x: 96, y: 117, labelKo: '홀 안으로 들어가 스태프에게 문의', labelEn: 'GO INSIDE HALL · ASK STAFF' },
+      courtyard: { x: 7, y: 117, labelKo: '코트야드 · 테이블 / 의자', labelEn: 'COURTYARD · TABLES / CHAIRS' },
     },
     works: {
-      '01': null,
-      '02': null,
-      '03': null,
-      '04': null,
+      '01': { x: 12, y: 50, wall: 'west' },
+      '02': { x: 77, y: 40, wall: 'east' },
+      '03': { x: 42, y: 19, wall: 'north' },
+      '04': { x: 90, y: 87, wall: 'south-east' },
     },
-    entryExit: null,
-    stepFreeEntrance: null,
-    accessibleRoute: null,
-    accessibleToilet: null,
-    quietSpace: null,
+    entryExit: { ko: '하나의 문을 입구와 출구로 함께 사용합니다.', en: 'The same doorway is used for entry and exit.' },
+    stepFreeEntrance: { ko: '입구와 출구에 휠체어용 램프가 있습니다.', en: 'A wheelchair ramp is located at the entrance and exit.' },
+    accessibleRoute: { ko: '램프를 통해 전시실로 이동할 수 있습니다.', en: 'The ramp provides the route into the exhibition room.' },
+    accessibleToilet: { ko: '출입구로 나가 오른쪽으로 간 뒤, 내부에서 스태프에게 물어보는 것이 가장 빠릅니다.', en: 'Exit, turn right and enter the internal area. Ask venue staff for the quickest toilet direction.' },
+    quietSpace: { ko: '출입구로 나가 왼쪽의 코트야드에 테이블과 의자가 있어 잠시 쉬어갈 수 있습니다.', en: 'The courtyard immediately left of the exit has tables and chairs where you may pause.' },
   },
 
   RESULT_OBSERVATION_MINUTES: 10,

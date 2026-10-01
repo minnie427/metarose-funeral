@@ -2,7 +2,7 @@
 // The review-stage public title is imported from config.js so a later title
 // decision changes in one place. Other Melbourne copy lives here.
 
-import { PUBLIC_TITLE } from './config.js?v=melbourne-access-v10-20260930';
+import { PUBLIC_TITLE } from './config.js?v=melbourne-onsite-v14-20261002';
 
 export const MELBOURNE = {
   edition: 'melbourne-2026',
@@ -149,8 +149,8 @@ export const ABOUT_SECTIONS = [
     leadEn: 'Intervene in a body where care and damage, death and return remain together.',
     bodyKo: ['엄지와 검지로 사각형을 만들면 카메라 마스크가 나타나고, 다섯 손가락을 펼치면 색과 이름을 가진 다른 마스크가 나타납니다.'],
     bodyEn: ['A rectangle formed with thumb and index finger reveals one camera mask. An open five-finger gesture reveals another mask carrying the visitor’s colour and optional name.'],
-    deeperKo: ['기록하고 싶은 순간에는 로즈 휴먼 컨트롤러의 버튼 아무거나 두 개를 2초 동안 누릅니다. 눈을 감는 동작은 캡처 입력이 아닙니다.'],
-    deeperEn: ['To request a capture, hold any two buttons on the Rose Human Controller for two seconds. Closing the eyes is not the capture input.'],
+    deeperKo: ['기록하고 싶은 순간에는 로즈 휴먼 인터페이스의 버튼 아무거나 두 개를 5초 동안 누릅니다.'],
+    deeperEn: ['To request a capture, hold any two buttons on the Rose Human Interface for five seconds.'],
   },
   {
     id: 'about-work-03', index: '09',

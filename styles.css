@@ -560,8 +560,8 @@ body.has-dock .app {
   /* 원본 PNG의 명암·질감을 그대로 두고 색상만 투영한다. */
   opacity: .64;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
   pointer-events: none;
 }
 
@@ -573,8 +573,8 @@ body.has-dock .app {
   background: var(--session);
   opacity: .64;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
   pointer-events: none;
 }
 
@@ -2562,8 +2562,8 @@ body.has-dock .app {
   background: var(--session);
   opacity: 0;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-access-v10-20260930') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
   will-change: opacity;
 }
 
@@ -2820,8 +2820,8 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-compact .pattern-animation-tint {
-  -webkit-mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-access-v10-20260930');
-  mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-access-v10-20260930');
+  -webkit-mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-onsite-v14-20261002');
+  mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-onsite-v14-20261002');
 }
 
 .pattern-animation-card-replay {
@@ -6681,17 +6681,121 @@ body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
   box-shadow: 0 0 8px var(--session);
 }
 
+.floorplan-permanent-fixtures {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.floorplan-permanent-fixture {
+  position: absolute;
+  display: grid;
+  min-width: 58px;
+  place-items: center;
+  gap: 3px;
+  color: #ffffff;
+  text-align: center;
+  transform: translate(-50%, -50%) translateZ(42px);
+}
+
+.floorplan-fixture-label {
+  max-width: 92px;
+  padding: 3px 5px;
+  border: 1px solid rgba(255,255,255,.78);
+  background: rgba(9,9,9,.94);
+  font: 7px/1.25 var(--mono);
+  letter-spacing: .04em;
+}
+
+.floorplan-rose-installation {
+  min-width: 0;
+  transform: translate(-50%, -100%) translateZ(3px) rotateX(-90deg);
+  transform-origin: 50% 100%;
+}
+
+.floorplan-standing-rose {
+  position: relative;
+  display: block;
+  width: 66px;
+  height: 88px;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--session) 82%, transparent));
+}
+
+.floorplan-standing-rose::before {
+  position: absolute;
+  z-index: 0;
+  bottom: 5px;
+  left: 50%;
+  width: 2px;
+  height: 62px;
+  background: color-mix(in srgb, var(--session) 82%, #ffffff 18%);
+  box-shadow: 0 0 6px var(--session);
+  content: '';
+  transform: translateX(-50%);
+}
+
+.floorplan-standing-rose-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(1) contrast(1.12) brightness(1.24);
+}
+
+.floorplan-standing-rose-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  background: var(--session);
+  opacity: .76;
+  mix-blend-mode: color;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+}
+
+.floorplan-entry-fixture {
+  min-width: 112px;
+  transform: translate(-50%, -8%) translateZ(64px);
+}
+
+.floorplan-entry-symbol {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #ffffff;
+  background: #0b0b0b;
+  color: var(--session);
+  font: 700 18px/1 var(--mono);
+}
+
+.melbourne-floorplan-stage.show-access-entry-exit .floorplan-entry-fixture {
+  filter: drop-shadow(0 0 10px var(--session));
+}
+
+.melbourne-floorplan-stage.show-access-entry-exit .floorplan-entry-fixture .floorplan-fixture-label {
+  border-color: var(--session);
+  background: var(--session);
+  color: var(--session-ink);
+}
+
 .floorplan-access-overlay {
   position: absolute;
   inset: 0;
-  z-index: 3;
-  transform: translateZ(5px);
+  z-index: 12;
+  transform: translateZ(86px);
   transform-style: preserve-3d;
   pointer-events: none;
 }
 
 .access-preview-route-segment,
 .access-preview-route-node,
+.access-preview-route-arrow,
 .access-preview-point,
 .access-preview-label {
   position: absolute;
@@ -6700,23 +6804,40 @@ body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
 
 .access-preview-route-segment {
   height: 0;
-  border-top: 2px dashed var(--session);
+  border-top: 3px dashed var(--session);
+  filter: drop-shadow(0 0 3px var(--session));
   opacity: 0;
   transform-origin: 0 50%;
 }
 
 .access-preview-route-node {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border: 1px solid #ffffff;
   border-radius: 50%;
   background: var(--session);
+  box-shadow: 0 0 7px var(--session);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+.access-preview-route-arrow {
+  z-index: 3;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  background: var(--session);
+  color: var(--session-ink);
+  font: 700 15px/1 var(--mono);
   opacity: 0;
   transform: translate(-50%, -50%);
 }
 
 .access-preview-point {
-  max-width: 98px;
+  max-width: 142px;
   padding: 4px 6px;
   border: 1px dashed rgba(255,255,255,.84);
   background: rgba(9,9,9,.94);
@@ -6734,15 +6855,16 @@ body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
 }
 
 .access-toilet {
-  transform: translate(-100%, -50%);
+  max-width: 112px;
+  transform: translate(-100%, 0);
 }
 
-.access-other-room {
-  transform: translate(0, -50%);
+.access-courtyard {
+  transform: translate(0, 0);
 }
 
 .access-toilet,
-.access-other-room,
+.access-courtyard,
 .access-preview-label {
   opacity: 0;
 }
@@ -6758,10 +6880,10 @@ body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
   transform: translate(-50%, -50%);
 }
 
-.melbourne-floorplan-stage.show-access-entry-exit :is(.access-entry, .access-exit),
-.melbourne-floorplan-stage.show-access-route :is(.access-preview-route-segment, .access-preview-route-node, .access-preview-label),
-.melbourne-floorplan-stage.show-access-toilet .access-toilet,
-.melbourne-floorplan-stage.show-access-other-room .access-other-room {
+.melbourne-floorplan-stage.show-access-entry-exit .access-entry-exit,
+.melbourne-floorplan-stage.show-access-route .access-layer-route,
+.melbourne-floorplan-stage.show-access-toilet .access-layer-toilet,
+.melbourne-floorplan-stage.show-access-courtyard .access-layer-courtyard {
   opacity: 1;
 }
 
@@ -6910,7 +7032,7 @@ body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
 }
 
 .work-list-tab-panel .work-list-row {
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
   min-height: 82px;
   padding: 14px 0;
 }
@@ -6921,6 +7043,39 @@ body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
   line-height: 1.1;
   letter-spacing: .025em;
   text-align: center;
+}
+
+.work-list-tab-panel .work-list-row .visit-status {
+  width: 64px;
+  justify-self: end;
+  text-align: right;
+}
+
+/* Melbourne on-site revision, 02 Oct 2026. Landing disclosures stay closed
+   until requested; the full data notice remains nested inside the notice. */
+.arrival-access-summary {
+  margin: 12px 0 18px;
+  padding: 0;
+  border-left: 0;
+}
+
+.arrival-access-summary > .disclosure {
+  margin: 0;
+}
+
+.arrival-notice-details {
+  gap: 14px;
+}
+
+.arrival-notice-details > .disclosure {
+  margin-top: 18px;
+}
+
+/* Work markers read as wall-mounted screens while remaining legible through
+   the rotating floor-plan view. */
+.melbourne-confirmed-marker[data-wall] {
+  border-width: 2px;
+  box-shadow: 0 5px 0 rgba(255,255,255,.16);
 }
 
 @media (max-width: 520px) {
