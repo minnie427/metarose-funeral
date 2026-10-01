@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js?v=melbourne-access-v10-20260930';
+import { CONFIG } from './config.js?v=melbourne-onsite-v14-20261002';
 import {
   initDB,
   startSession as startDbSession,
@@ -24,14 +24,14 @@ import {
   getLastStationEntryStatus,
   getArtifactFetchStatus,
   notePhoneActivity,
-} from './db.js?v=melbourne-phone-rose-v12-20260930';
-import { MELBOURNE, ABOUT_SECTIONS } from './melbourne-content.js?v=melbourne-main1-ribbons-v11-20260930';
+} from './db.js?v=melbourne-onsite-v14-20261002';
+import { MELBOURNE, ABOUT_SECTIONS } from './melbourne-content.js?v=melbourne-onsite-v14-20261002';
 import {
   beginRead,
   endRead,
   startIdleTracking,
   trackInput,
-} from './measure.js?v=melbourne-phone-rose-v12-20260930';
+} from './measure.js?v=melbourne-onsite-v14-20261002';
 
 const $app = document.getElementById('app');
 const $dock = document.getElementById('dock');
@@ -65,7 +65,7 @@ const TAB_INSTANCE_ID = String(window.name || '').startsWith(TAB_WINDOW_PREFIX)
 window.name = `${TAB_WINDOW_PREFIX}${TAB_INSTANCE_ID}`;
 const ACTIVE_TAB_LEASE_MS = 20000;
 const PHONE_CONNECT_TIMEOUT_MS = 10000;
-const ASSET_CACHE_KEY = 'melbourne-access-v10-20260930';
+const ASSET_CACHE_KEY = 'melbourne-onsite-v14-20261002';
 const versionedAssetUrl = (path) => {
   const value = String(path || '');
   if (!value || /^(?:data:|blob:|https?:)/i.test(value)) return value;
@@ -1733,26 +1733,25 @@ function screenArrival() {
         )),
       ),
       textButton(tr('프로젝트 자세히 보기', 'ABOUT THE PROJECT'), () => screenAboutProject('about-intro'), 'arrival-about-link'),
-      el('aside', { class: 'arrival-access-summary', role: 'note' },
-        el('strong', {}, tr('참여 전 안내', 'BEFORE YOU TAKE PART')),
-        el('p', {}, tr(
-          'Phone Hub는 선택 사항입니다. 휴대폰 없이도 참여할 수 있고, 도움이 필요하면 현장의 작가에게 말해주세요.',
-          'The Phone Hub is optional. You can take part without it, and ask the artist on site for help.',
-        )),
-        el('p', {}, tr(
-          '실제 장미의 향과 꽃가루에 민감하다면 편한 거리를 유지해주세요.',
-          'Real roses are used. Keep a comfortable distance if you are sensitive to fragrance or pollen.',
-        )),
-        el('p', {}, tr(
-          '관객의 인터랙션에 따라 가벼운 번쩍임, 밝기와 소리의 변화가 있을 수 있습니다.',
-          'Interaction may cause mild flashes and changes in brightness or sound.',
-        )),
-      ),
-      el('section', { class: 'phone-data-notice' },
+      el('section', { class: 'arrival-access-summary' },
         disclosure(
-          tr('자세히 보기', 'READ DETAILS'),
+          tr('참여 전 안내', 'BEFORE YOU TAKE PART'),
+          el('div', { class: 'copy-stack arrival-notice-details' },
+            el('p', {}, tr(
+              'Phone Hub는 선택 사항입니다. 휴대폰 없이도 참여할 수 있고, 도움이 필요하면 현장의 작가에게 말해주세요.',
+              'The Phone Hub is optional. You can take part without it, and ask the artist on site for help.',
+            )),
+            el('p', {}, tr(
+              '실제 장미의 향과 꽃가루에 민감하다면 편한 거리를 유지해주세요.',
+              'Real roses are used. Keep a comfortable distance if you are sensitive to fragrance or pollen.',
+            )),
+            el('p', {}, tr(
+              '관객의 인터랙션에 따라 가벼운 번쩍임, 밝기와 소리의 변화가 있을 수 있습니다.',
+              'Interaction may cause mild flashes and changes in brightness or sound.',
+            )),
+            disclosure(
+              tr('Phone Hub 기록 안내', 'PHONE HUB & DATA'),
           el('div', { class: 'copy-stack phone-data-details' },
-            el('h2', {}, tr('Phone Hub 기록 안내', 'PHONE HUB & DATA')),
             el('p', {}, tr(
               'Phone Hub를 사용하면 무작위 장미 번호, 색, 선택적 장미 이름과 설문·자유 글, 작품 연결, 관객이 요청한 캡처가 저장됩니다.',
               'If you use the Phone Hub, it stores a random Rose number, colour, optional rose name, optional survey and free-text responses, work connections, and captures you request.',
@@ -1775,6 +1774,9 @@ function screenArrival() {
             )),
           ),
           'arrival_data_notice',
+            ),
+          ),
+          'arrival_before_participation',
         ),
       ),
     ),
@@ -2027,7 +2029,7 @@ function floorplanRouteOrder(session, onSelectTarget) {
     routeStep('01'),
     el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
     routeStep('02'),
-    el('span', { class: 'route-order-arrow route-order-choice', 'aria-hidden': 'true' }, '↔'),
+    el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
     routeStep('03'),
     el('span', { class: 'route-order-arrow', 'aria-hidden': 'true' }, '→'),
     routeStep('04'),
@@ -2066,6 +2068,12 @@ function melbourneProvisionalFloorplan(session) {
   const previewRoutePoints = Array.isArray(accessPreview.routePoints)
     ? accessPreview.routePoints.filter((point) => Number.isFinite(point?.x) && Number.isFinite(point?.y))
     : [];
+  const toiletRoutePoints = Array.isArray(accessPreview.toiletRoutePoints)
+    ? accessPreview.toiletRoutePoints.filter((point) => Number.isFinite(point?.x) && Number.isFinite(point?.y))
+    : [];
+  const courtyardRoutePoints = Array.isArray(accessPreview.courtyardRoutePoints)
+    ? accessPreview.courtyardRoutePoints.filter((point) => Number.isFinite(point?.x) && Number.isFinite(point?.y))
+    : [];
 
   const marker = ([stationId, position]) => {
     const visited = getCompletedStations(session).includes(stationId) || Boolean(traceSummaryForStation(stationId));
@@ -2074,6 +2082,7 @@ function melbourneProvisionalFloorplan(session) {
       class: `melbourne-confirmed-marker${positionsAreConfirmed ? ' is-confirmed' : ' is-provisional'}${visited ? ' is-visited' : ''}${connected ? ' is-connected' : ''}`,
       type: 'button',
       'data-floorplan-station': stationId,
+      'data-wall': position.wall || '',
       style: { left: `${position.x}%`, top: `${position.y}%` },
       onclick: (event) => {
         event.stopPropagation();
@@ -2120,38 +2129,81 @@ function melbourneProvisionalFloorplan(session) {
     }, label || '');
   };
 
-  const accessRouteSegments = previewRoutePoints.slice(0, -1).map((point, index) => {
-    const next = previewRoutePoints[index + 1];
-    const dx = next.x - point.x;
-    const scaledDy = (next.y - point.y) * (2 / 3);
-    const length = Math.hypot(dx, scaledDy);
-    const angle = Math.atan2(scaledDy, dx) * (180 / Math.PI);
-    return el('span', {
-      class: 'access-preview-route-segment access-layer-route',
-      style: {
-        left: `${point.x}%`,
-        top: `${point.y}%`,
-        width: `${length}%`,
-        transform: `rotate(${angle}deg)`,
-      },
-      'aria-hidden': 'true',
+  const routeGraphics = (points, layer, arrow = '') => {
+    const segments = points.slice(0, -1).map((point, index) => {
+      const next = points[index + 1];
+      const dx = next.x - point.x;
+      const scaledDy = (next.y - point.y) * (2 / 3);
+      const length = Math.hypot(dx, scaledDy);
+      const angle = Math.atan2(scaledDy, dx) * (180 / Math.PI);
+      return el('span', {
+        class: `access-preview-route-segment access-layer-${layer}`,
+        style: {
+          left: `${point.x}%`,
+          top: `${point.y}%`,
+          width: `${length}%`,
+          transform: `rotate(${angle}deg)`,
+        },
+        'aria-hidden': 'true',
+      });
     });
-  });
+    const nodes = points.map((point) => el('span', {
+      class: `access-preview-route-node access-layer-${layer}`,
+      style: { left: `${point.x}%`, top: `${point.y}%` },
+      'aria-hidden': 'true',
+    }));
+    const last = points.at(-1);
+    const routeArrow = arrow && last ? el('span', {
+      class: `access-preview-route-arrow access-layer-${layer}`,
+      style: { left: `${last.x}%`, top: `${last.y}%` },
+      'aria-hidden': 'true',
+    }, arrow) : null;
+    return [...segments, ...nodes, routeArrow].filter(Boolean);
+  };
+
+  const workRouteGraphics = routeGraphics(previewRoutePoints, 'route');
+  const toiletRouteGraphics = routeGraphics(toiletRoutePoints, 'toilet');
+  const courtyardRouteGraphics = routeGraphics(courtyardRoutePoints, 'courtyard');
+
+  const permanentFixture = (point, className, visual, accessibleLabel, visibleLabel = accessibleLabel) => {
+    if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return null;
+    return el('span', {
+      class: `floorplan-permanent-fixture ${className}`,
+      style: { left: `${point.x}%`, top: `${point.y}%` },
+      role: 'img',
+      'aria-label': accessibleLabel,
+    }, visual, visibleLabel ? el('span', { class: 'floorplan-fixture-label' }, visibleLabel) : null);
+  };
+
+  const permanentFixtures = el('div', { class: 'floorplan-permanent-fixtures' },
+    permanentFixture(
+      accessPreview.roseInstallation,
+      'floorplan-rose-installation',
+      el('span', { class: 'floorplan-standing-rose', 'aria-hidden': 'true' },
+        roseSpecimenImage('', 'floorplan-standing-rose-image'),
+        el('i', { class: 'floorplan-standing-rose-tint' }),
+      ),
+      tr('01 앞 장미 설치물', 'ROSE INSTALLATION AT 01'),
+      '',
+    ),
+    permanentFixture(
+      accessPreview.entryExit,
+      'floorplan-entry-fixture access-entry-exit',
+      el('span', { class: 'floorplan-entry-symbol', 'aria-hidden': 'true' }, '⇅'),
+      tr('입구 / 출구 · 피드백', 'ENTRY / EXIT · FEEDBACK'),
+    ),
+  );
 
   const accessOverlay = el('div', {
     class: 'floorplan-access-overlay',
     id: 'floorplan-access-overlay',
     'aria-hidden': 'true',
   },
-    ...accessRouteSegments,
-    ...previewRoutePoints.map((point) => el('span', {
-      class: 'access-preview-route-node access-layer-route',
-      style: { left: `${point.x}%`, top: `${point.y}%` },
-    })),
-    accessPoint(accessPreview.entry, 'access-entry access-layer-entry-exit'),
-    accessPoint(accessPreview.exit, 'access-exit access-layer-entry-exit'),
+    ...workRouteGraphics,
+    ...toiletRouteGraphics,
+    ...courtyardRouteGraphics,
     accessPoint(accessPreview.toilet, 'access-toilet access-layer-toilet'),
-    accessPoint(accessPreview.otherRoom, 'access-other-room access-layer-other-room'),
+    accessPoint(accessPreview.courtyard, 'access-courtyard access-layer-courtyard'),
     el('span', { class: 'access-preview-label access-layer-route' }, tr('이동 경로', 'ROUTE')),
   );
 
@@ -2163,6 +2215,7 @@ function melbourneProvisionalFloorplan(session) {
       el('span', { class: 'melbourne-room-wall wall-south' }),
       el('span', { class: 'melbourne-room-wall wall-west' }),
     ),
+    permanentFixtures,
     accessOverlay,
     ...positionEntries.flatMap(markerDepth),
     ...positionEntries.map(marker),
@@ -2271,7 +2324,7 @@ function melbourneProvisionalFloorplan(session) {
     'show-access-entry-exit',
     'show-access-route',
     'show-access-toilet',
-    'show-access-other-room',
+    'show-access-courtyard',
   ];
   const accessLayerButtons = [];
   const accessLayerStatus = el('p', { class: 'access-layer-status', role: 'status', 'aria-live': 'polite' });
@@ -2344,8 +2397,8 @@ function melbourneProvisionalFloorplan(session) {
       el('div', { class: 'access-layer-controls', role: 'group', 'aria-label': tr('지도에서 볼 접근 정보', 'Access information to show on the floor plan') },
         accessLayerButton('entry-exit', '입구 / 출구', 'ENTRY / EXIT'),
         accessLayerButton('route', '이동 경로', 'ROUTE'),
-        accessLayerButton('toilet', '화장실 방향', 'TOILET DIRECTION'),
-        accessLayerButton('other-room', '다른 방', 'OTHER ROOM'),
+        accessLayerButton('toilet', '화장실 · 나가서 오른쪽', 'TOILET · EXIT RIGHT'),
+        accessLayerButton('courtyard', '코트야드 · 나가서 왼쪽', 'COURTYARD · EXIT LEFT'),
       ),
       accessLayerStatus,
     ),
@@ -2571,8 +2624,8 @@ function screenHome() {
         el('span', { class: 'micro-label' }, `${MELBOURNE.city.toUpperCase()} / ${MELBOURNE.year}`),
         el('h1', { class: 'screen-title compact-title' }, MELBOURNE.title),
         el('p', {}, tr(
-          '바니타스는 꽃과 해골, 꺼지는 빛을 한 화면에 두어 삶의 아름다움과 유한함을 함께 보여온 예술의 전통입니다. 이 전시는 그 이미지를 네 번의 만남으로 움직입니다. 생화 장미에서 공명을 찾고, 장미 스켈레톤에 개입하고, 흐르는 시간 속에서 그것을 목격하며, 작품 뒤에 남은 노동과 실패와 반복을 바라봅니다. 무엇이 선하고 악한지를 가르는 대신, 살아 있는 동안 내가 무엇을 계속 죽이고 있는지, 그리고 남은 것과 어떤 관계를 다시 선택할 수 있는지를 묻습니다.',
-          'Vanitas is an artistic tradition that places flowers, skulls and fading light together, holding life’s beauty and mortality within the same image. This exhibition sets that image in motion across four encounters: finding resonance through living roses, intervening in a rose-skeleton, witnessing it within moving time, and seeing the labour, failure and repetition behind the works. Rather than deciding which side is good or bad, it asks what we keep killing within ourselves, and what relationship we might choose with what remains.',
+          '바니타스는 아름다움과 죽음을 한 이미지 안에 함께 둡니다. 생화 장미, 움직이는 이미지, 빛과 소리로 이어진 네 작품은 내가 밀어내는 것과, 그 남은 것과 다시 맺을 관계를 묻습니다.',
+          'Vanitas holds beauty and mortality within the same image. Through living roses, moving images, light and sound, four works ask what we push away within ourselves, and what relationship we might choose with what remains.',
         )),
       ),
       melbourneProvisionalFloorplan(session),
@@ -2804,7 +2857,7 @@ function screenAboutProjectSeoulArchive(initialSection = null) {
           '다섯 손가락으로 마스크를 그리면 처음 정한 장미 색과 장미 이름이 스켈레톤 위에 나타납니다. 삶이 나이고 내가 죽음이며, 장미와 스켈레톤이 서로 다른 상징이 아니라 같은 존재의 두 얼굴임을 보여줍니다.',
           '물과 햇빛, 독과 괴물은 선과 악의 버튼이 아닙니다. 중요한 것은 어떤 행동을 반복하고 언제 바꾸며 서로 다른 힘을 어떻게 섞어 오늘의 균형을 만드는가입니다.',
           '죽음은 끝이 되지 않습니다. 존재는 다시 일어나지만 이전 상태로 완전히 복구되지는 않습니다. 돌봄과 손상, 죽음과 재생이 서로를 취소하지 않고 같은 몸에 남습니다.',
-          '기록하고 싶은 순간에는 로즈 휴먼 컨트롤러의 버튼 아무거나 두 개를 2초 동안 누릅니다. 방금 그 존재에게 한 일과 그것을 바라보던 나의 얼굴이 같은 장면으로 남습니다.',
+          '기록하고 싶은 순간에는 로즈 휴먼 인터페이스의 버튼 아무거나 두 개를 5초 동안 누릅니다. 방금 그 존재에게 한 일과 그것을 바라보던 나의 얼굴이 같은 장면으로 남습니다.',
         ],
       }),
       aboutSection({
@@ -2982,29 +3035,29 @@ const MODULES = {
   },
   '02': {
     en: 'INTERVENTION', ko: '개입', phaseKo: '개입', visual: 'reenactment',
-    introKo: '화면 속 존재는 장미이자 스켈레톤이며, 삶이자 죽음입니다. 관객이 그것을 돌보고 해칠수록 완전한 평형이 아니라 불균형 안에서 계속 움직이는 균형이 드러납니다. 손가락으로 만든 마스크는 행동하는 나와 그 행동을 바라보는 나를 같은 몸 위에 놓습니다.',
-    introEn: 'The figure on screen is both rose and skeleton, life and death. As you care for it and damage it, no perfect balance appears; instead, the work reveals the shifting balance within imbalance. Hand-shaped masks place the self who acts and the self who watches that action on the same body.',
-    quickStepsKo: ['엄지와 검지로 사각형을 만들어 카메라 화면이 나타나는 마스크를 만들고, 다섯 손가락으로 또 다른 마스크를 만듭니다.', '화면 속 존재의 균형과 생기를 바꾸며 충분히 탐색합니다.', '기록하고 싶은 순간, 로즈 휴먼 컨트롤러의 버튼 아무거나 두 개를 2초 동안 누릅니다.'],
-    quickStepsEn: ['Form a rectangle with your thumb and index finger for one camera mask, then use five fingers for another.', 'Explore by changing the figure\'s balance and vitality.', 'To capture the moment, hold any two buttons on the Rose Human Controller for two seconds.'],
+    introKo: '화면 속 존재는 장미이자 스켈레톤, 삶이자 죽음입니다. 돌봄과 손상이 함께 만드는 불균형 안에서, 행동하는 나와 그 행동을 바라보는 나를 마주합니다.',
+    introEn: 'The figure is both rose and skeleton, life and death. Within the imbalance made by care and damage, the work places the self who acts beside the self who watches.',
+    quickStepsKo: ['엄지와 검지로 사각형을 만들어 카메라 화면이 나타나는 마스크를 만들고, 다섯 손가락으로 또 다른 마스크를 만듭니다.', '화면 속 존재의 균형과 생기를 바꾸며 충분히 탐색합니다.', '기록하고 싶은 순간, 로즈 휴먼 인터페이스의 버튼 아무거나 두 개를 5초 동안 누릅니다.'],
+    quickStepsEn: ['Form a rectangle with your thumb and index finger for one camera mask, then use five fingers for another.', 'Explore by changing the figure\'s balance and vitality.', 'To capture the moment, hold any two buttons on the Rose Human Interface for five seconds.'],
     anonymousStartKo: '휴대폰 없이 참여하려면 로즈 휴먼 컨트롤러의 버튼 아무거나 하나를 누릅니다.',
     anonymousStartEn: 'To take part without the phone, press any one button on the Rose Human Controller.',
     quickNoteKo: '',
     quickNoteEn: '',
-    essentialKo: '컨트롤러로 화면 속 스켈레톤의 균형과 생기에 개입합니다. 엄지와 검지로 사각형을 만들거나 다섯 손가락을 펼쳐 서로 다른 마스크를 만들면, 행동하는 나와 그 행동을 바라보는 나의 얼굴이 스켈레톤 위에 겹쳐집니다. 장면을 남기려면 로즈 휴먼 컨트롤러의 버튼 두 개를 2초 동안 누릅니다.',
-    essentialEn: 'Intervene in the skeleton\'s balance and vitality. Form a rectangle with your thumb and index finger or open five fingers to create two masks. Hold any two Rose Human Controller buttons for two seconds to capture the scene.',
+    essentialKo: '컨트롤러로 화면 속 스켈레톤의 균형과 생기에 개입합니다. 엄지와 검지로 사각형을 만들거나 다섯 손가락을 펼쳐 서로 다른 마스크를 만들면, 행동하는 나와 그 행동을 바라보는 나의 얼굴이 스켈레톤 위에 겹쳐집니다. 장면을 남기려면 로즈 휴먼 인터페이스의 버튼 두 개를 5초 동안 누릅니다.',
+    essentialEn: 'Intervene in the skeleton\'s balance and vitality. Form a rectangle with your thumb and index finger or open five fingers to create two masks. Hold any two Rose Human Interface buttons for five seconds to capture the scene.',
     helpKo: '서로 다른 행동으로 균형과 생기의 변화를 만들고, 손가락 마스크 안에서 자신의 얼굴을 마주합니다.',
     helpEn: 'Use the controller to alter balance and vitality. Form two distinct hand masks, then hold two controller buttons to record the scene.',
-    helpDetailKo: ['컨트롤러의 서로 다른 행동을 시도합니다. 각 행동은 화면 속 스켈레톤의 균형과 생기를 다르게 바꿉니다.', '한 방향만 반복할 필요는 없습니다. 돌봄과 손상, 죽음과 다시 일어남이 한 몸에 함께 남는 과정을 지켜봅니다.', '카메라 앞에서 엄지와 검지로 사각형을 만들면 그 안에 카메라 화면이 나타나는 마스크가 생깁니다.', '다섯 손가락을 펼치면 내가 고른 장미 색과 장미 이름이 나타나는 또 다른 마스크가 생깁니다.', '행동하는 나와 그 행동을 바라보는 나를 충분히 마주합니다.', '장면을 기록하려면 로즈 휴먼 컨트롤러의 버튼 아무거나 두 개를 2초 동안 누릅니다.'],
-    helpDetailEn: ['Try different controller actions to change the skeleton\'s balance and vitality.', 'Care and damage, death and return may remain in the same body.', 'Form a rectangle with your thumb and index finger to reveal the camera mask.', 'Open five fingers to create the second mask with your rose colour and name.', 'Hold any two Rose Human Controller buttons for two seconds to capture the scene.'],
-    troubleshootKo: ['손과 마스크가 보이지 않으면 손 전체와 얼굴이 화면 안에 들어오도록 한 걸음 물러섭니다.', '스크린샷이 남지 않으면 컨트롤러의 서로 다른 버튼 두 개를 동시에 누른 채 2초 동안 유지해주세요.', '계속 작동하지 않으면 스태프에게 말씀해주세요.'],
+    helpDetailKo: ['컨트롤러의 서로 다른 행동을 시도합니다. 각 행동은 화면 속 스켈레톤의 균형과 생기를 다르게 바꿉니다.', '한 방향만 반복할 필요는 없습니다. 돌봄과 손상, 죽음과 다시 일어남이 한 몸에 함께 남는 과정을 지켜봅니다.', '카메라 앞에서 엄지와 검지로 사각형을 만들면 그 안에 카메라 화면이 나타나는 마스크가 생깁니다.', '다섯 손가락을 펼치면 내가 고른 장미 색과 장미 이름이 나타나는 또 다른 마스크가 생깁니다.', '행동하는 나와 그 행동을 바라보는 나를 충분히 마주합니다.', '장면을 기록하려면 로즈 휴먼 인터페이스의 버튼 아무거나 두 개를 5초 동안 누릅니다.'],
+    helpDetailEn: ['Try different controller actions to change the skeleton\'s balance and vitality.', 'Care and damage, death and return may remain in the same body.', 'Form a rectangle with your thumb and index finger to reveal the camera mask.', 'Open five fingers to create the second mask with your rose colour and name.', 'Hold any two Rose Human Interface buttons for five seconds to capture the scene.'],
+    troubleshootKo: ['손과 마스크가 보이지 않으면 손 전체와 얼굴이 화면 안에 들어오도록 한 걸음 물러섭니다.', '스크린샷이 남지 않으면 인터페이스의 서로 다른 버튼 두 개를 동시에 누른 채 5초 동안 유지해주세요.', '계속 작동하지 않으면 스태프에게 말씀해주세요.'],
     aboutKo: '모든 것이 공평하게 존재할 수 없듯 불공평만 존재할 수도 없습니다. 화면 속 나는 장미이자 스켈레톤이며, 삶이자 죽음입니다. 관객은 이 존재를 돌보고 해치며 균형을 바로잡으려 하지만, 완전한 평형에 도달하는 것이 아니라 계속 흔들리는 불균형의 균형을 마주하게 됩니다.',
     aboutEn: 'The self on screen is rose and skeleton, life and death. Intervention does not produce perfect balance; it reveals the shifting balance inside imbalance.',
-    aboutDetailKo: ['이 작품에서 관객은 관찰자가 아니라 적극적으로 개입하는 사람입니다. 화면 속 존재는 관객의 장미 색과 이름을 받아 나타나고, 관객의 선택은 그 존재를 살리거나 죽이는 실제 사건이 됩니다.', '돌봄과 손상은 서로 깨끗하게 분리되지 않습니다. 살리기 위한 개입이 다른 균형을 무너뜨릴 수 있고, 파괴적인 행동 뒤에도 생명은 다시 일어납니다. 공평과 불공평 역시 서로를 배제하지 않은 채 함께 나타납니다.', '나를 죽이는 나와 내가 죽이는 나는 다른 인물이 아닙니다. 장미와 스켈레톤, 삶과 죽음도 같은 화면 안에서 하나의 몸을 공유합니다. 작품은 이 모순을 해결하기보다 그대로 마주 보게 합니다.', '엄지와 검지로 만든 사각형 안에는 카메라 화면이 나타납니다. 관객은 자신이 해치고 돌보는 스켈레톤 위에서, 바로 그 행동을 선택하고 지켜보는 자신의 얼굴을 만나게 됩니다.', '다섯 손가락 마스크에는 관객이 고른 색과 장미 이름이 더해집니다. 그 순간 화면 속 존재는 타자가 아니라 장미 이름을 가진 나의 장미이자 나의 스켈레톤으로 구체화됩니다.', '로즈 휴먼 컨트롤러의 버튼 두 개를 2초 동안 눌러 남기는 장면은 성공이나 실패의 증명이 아닙니다. 무엇을 했는지와 그 행동을 바라본 나는 누구였는지를 같은 기록 안에 두는 일입니다.'],
+    aboutDetailKo: ['이 작품에서 관객은 관찰자가 아니라 적극적으로 개입하는 사람입니다. 화면 속 존재는 관객의 장미 색과 이름을 받아 나타나고, 관객의 선택은 그 존재를 살리거나 죽이는 실제 사건이 됩니다.', '돌봄과 손상은 서로 깨끗하게 분리되지 않습니다. 살리기 위한 개입이 다른 균형을 무너뜨릴 수 있고, 파괴적인 행동 뒤에도 생명은 다시 일어납니다. 공평과 불공평 역시 서로를 배제하지 않은 채 함께 나타납니다.', '나를 죽이는 나와 내가 죽이는 나는 다른 인물이 아닙니다. 장미와 스켈레톤, 삶과 죽음도 같은 화면 안에서 하나의 몸을 공유합니다. 작품은 이 모순을 해결하기보다 그대로 마주 보게 합니다.', '엄지와 검지로 만든 사각형 안에는 카메라 화면이 나타납니다. 관객은 자신이 해치고 돌보는 스켈레톤 위에서, 바로 그 행동을 선택하고 지켜보는 자신의 얼굴을 만나게 됩니다.', '다섯 손가락 마스크에는 관객이 고른 색과 장미 이름이 더해집니다. 그 순간 화면 속 존재는 타자가 아니라 장미 이름을 가진 나의 장미이자 나의 스켈레톤으로 구체화됩니다.', '로즈 휴먼 인터페이스의 버튼 두 개를 5초 동안 눌러 남기는 장면은 성공이나 실패의 증명이 아닙니다. 무엇을 했는지와 그 행동을 바라본 나는 누구였는지를 같은 기록 안에 두는 일입니다.'],
   },
   '03': {
     en: 'WITNESS', ko: '목격', phaseKo: '목격', visual: 'mourning',
-    introKo: '바니타스의 왜상 속에 숨은 해골처럼, 나의 장미는 계속 흐르는 세계 안에서 처음에는 흐릿하고 왜곡된 모습으로 나타납니다. 세 번의 느린 목격으로 시간에 개입하며 그 반대편의 얼굴을 찾을 시간을 자신에게 수여합니다. 선명해진다는 것은 죽음이 사라진다는 뜻이 아니라, 같은 장미의 두 얼굴을 하나의 서사 안에서 보게 된다는 뜻입니다.',
-    introEn: 'Like the skull hidden in an anamorphic vanitas image, your rose first appears blurred and distorted within a world that keeps moving. Through three slow acts of witness, you intervene in time and give yourself time to find its other face. Clarity does not erase death; it allows two faces of the same rose to be seen within one story.',
+    introKo: '왜상 속에 숨은 해골처럼 나의 장미는 흐르는 세계 안에서 왜곡되어 나타납니다. 세 번의 느린 목격으로 시간에 개입하며, 같은 장미의 다른 얼굴을 찾습니다.',
+    introEn: 'Like a skull hidden in anamorphic vanitas, your rose appears distorted within a moving world. Three slow acts of witness let you intervene in time and find its other face.',
     quickStepsKo: ['손을 장미 가까이 대고 수직으로 움직여 영상의 시간을 천천히 또는 빠르게 제어합니다.', '영상 속 나의 장미 스켈레톤을 찾으며, 가장 천천히 하는 목격을 세 번 반복합니다.', '찾았다고 생각이 들 때 장미 버튼을 누릅니다.'],
     quickStepsEn: ['Move your hand vertically near the rose to control the video time, slowly or quickly.', 'Search for your rose-skeleton in the video and repeat your slowest witnessing three times.', 'Press the rose button when you believe you have found it.'],
     anonymousStartKo: '휴대폰 없이 참여하려면 장미 버튼을 한 번 누릅니다.',
@@ -3024,8 +3077,8 @@ const MODULES = {
   },
   '04': {
     en: 'RECORD', ko: '기록', phaseKo: '기록', visual: 'archive',
-    introKo: '완성된 작품 뒤에서 사라지는 손과 제작의 시간을 소리 없이 기록한 영상입니다. 전선과 센서, 장미와 스켈레톤이 하나의 몸이 되기까지의 실패와 반복도 이 장례의 일부로 남깁니다.',
-    introEn: 'A silent film preserving the hands and making time that disappear behind the finished work. The failures and repetitions through which wires, sensors, roses, and skeleton become one body remain part of this funeral.',
+    introKo: '완성된 작품 뒤에서 사라지는 손, 실패와 반복을 남긴 무음의 영상입니다. 제작의 시간도 이 장례의 일부로 돌아옵니다.',
+    introEn: 'A silent film of the hands, failures and repetitions that disappear behind the finished work. The time of making returns as part of this funeral.',
     quickStepsKo: ['화면 앞의 편한 자리에서 봅니다.', '영상은 소리 없이 반복됩니다.', '정해진 시작과 끝이 없습니다. 언제든 이동해도 됩니다.'],
     quickStepsEn: ['Watch from any comfortable place.', 'The film loops without sound.', 'There is no required beginning or ending. Leave at any time.'],
     quickNoteKo: '',
@@ -3046,8 +3099,8 @@ const MODULES = {
 // Melbourne physical configuration. Keep these visitor instructions together
 // so the still-changing title and verified on-site inputs can be changed once.
 Object.assign(MODULES['01'], {
-  introKo: '검은 리본을 잡고 생화 장미를 만지면 접촉이 빛과 소리로 바뀝니다. 오늘 내 몸이 공명하는 균형을 찾고, 장면을 남기려면 흰 리본과 검은 리본을 동시에 잡습니다.',
-  introEn: 'Hold the black ribbon and touch a living rose to turn contact into light and sound. Find the balance that resonates with your body today, then hold the white and black ribbons at the same time to request a capture.',
+  introKo: '살아 있는 장미를 만지는 일은 돌봄이면서 동시에 꽃의 시간을 앞당깁니다. 몸을 회로로 삼아, 오늘 나와 공명하는 빛과 소리의 잠시적인 균형을 찾습니다.',
+  introEn: 'Touching a living rose is an act of care that also advances its time. Using the body as a circuit, the work asks you to find one temporary balance of light and sound that resonates today.',
   quickStepsKo: ['한 손으로 검은 리본을 잡습니다.', '검은 리본을 잡은 채 다른 손으로 장미를 만지며 빛과 소리를 탐색합니다.', '장면을 남기려면 흰 리본과 검은 리본을 동시에 잡습니다.'],
   quickStepsEn: ['Hold the black ribbon with one hand.', 'Keep holding the black ribbon and touch a rose with your other hand to explore its light and sound.', 'To request a capture, hold the white and black ribbons at the same time.'],
   quickNoteKo: '짧은 기계음이 들리면 캡처가 요청된 것입니다.',
@@ -3069,9 +3122,9 @@ Object.assign(MODULES['01'], {
 });
 
 Object.assign(MODULES['02'], {
-  quickNoteKo: '눈을 감는 동작은 캡처 입력이 아닙니다.',
-  quickNoteEn: 'Closing your eyes is not the capture input.',
-  troubleshootEn: ['If the hand masks do not appear, step back until your whole hand and face are in frame.', 'For a capture, hold two different controller buttons together for two seconds.', 'If it still does not respond, ask a staff member.'],
+  quickNoteKo: '',
+  quickNoteEn: '',
+  troubleshootEn: ['If the hand masks do not appear, step back until your whole hand and face are in frame.', 'For a capture, hold any two Rose Human Interface buttons together for five seconds.', 'If it still does not respond, ask a staff member.'],
 });
 
 Object.assign(MODULES['03'], {
@@ -3081,8 +3134,8 @@ Object.assign(MODULES['03'], {
 });
 
 Object.assign(MODULES['04'], {
-  introKo: '기록은 완성된 작품 뒤에서 사라지는 노동을 다시 화면 앞으로 돌려놓습니다. 절단과 연결, 실패한 테스트와 반복된 시도는 설치를 만든 물질적 시간으로 남습니다. 정해진 시작과 끝이 없는 무음의 루프는 한 사람이 잠시 보거나 여러 사람이 함께 머무는 동안 계속 이어집니다.',
-  introEn: 'RECORD returns the labour that disappears behind a finished work to the screen. Cuts and connections, failed tests and repeated attempts remain visible as the material time from which the installation was made. With no fixed beginning or end, the silent loop continues whether one person watches briefly or several stay together.',
+  introKo: '완성된 작품 뒤에서 사라지는 손, 실패와 반복을 남긴 무음의 영상입니다. 제작의 시간도 이 장례의 일부로 돌아옵니다.',
+  introEn: 'A silent film of the hands, failures and repetitions that disappear behind the finished work. The time of making returns as part of this funeral.',
   quickStepsKo: ['편한 위치에서 바라봅니다.', '영상은 소리 없이 반복됩니다.', '정해진 시작과 끝이 없으며 캡처를 만들지 않습니다.'],
   quickStepsEn: ['Watch from any comfortable position.', 'The film loops without sound.', 'There is no required beginning or ending, and this work does not create captures.'],
   essentialKo: '휴대폰 연결이나 독점 점유 없이, 여러 사람이 편한 위치에서 원하는 만큼 바라봅니다.',
@@ -4257,24 +4310,24 @@ function myRoseNameEditor({ returnTo = null } = {}) {
 // 1은 전혀 그렇지 않다, 10은 매우 그렇다. 자유소감은 빈칸으로도 제출할 수 있다.
 const SURVEY_QUESTIONS = [
   {
-    id: 'emotional_presence',
-    ko: '이 전시는 감정을 빠르게 설명하거나 판단하기보다, 충분히 느끼고 머물게 했습니다.',
-    en: 'This exhibition gave me time to feel and stay with emotion rather than explain or judge it quickly.',
+    id: 'overall_meaning',
+    ko: '이 전시는 나에게 의미 있는 경험으로 남았습니다.',
+    en: 'Overall, this exhibition felt meaningful to me.',
   },
   {
-    id: 'rose_self_connection',
-    ko: '전시를 지나는 동안 장미가 오늘의 나를 대신하는 존재로 느껴졌습니다.',
-    en: 'As I moved through the exhibition, the rose felt like a figure for who I was today.',
+    id: 'experiential_concept',
+    ko: '작품의 핵심 생각은 글을 읽는 것뿐 아니라 실제 체험을 통해서도 전달되었습니다.',
+    en: 'The central ideas of the works came through the experience itself, not only through written explanation.',
   },
   {
-    id: 'simultaneity',
-    ko: '삶과 죽음, 돌봄과 파괴처럼 반대되어 보이는 상태가 동시에 존재할 수 있다는 점이 전해졌습니다.',
-    en: 'The exhibition conveyed that apparent opposites, including life and death and care and destruction, can exist at the same time.',
+    id: 'technology_supports_meaning',
+    ko: '기술은 그 자체를 드러내기보다 작품의 의미를 뒷받침했습니다.',
+    en: 'The technology supported the meaning of the works rather than drawing attention to itself.',
   },
   {
-    id: 'ambivalent_self',
-    ko: '서로 모순되어 보이는 나의 여러 면을 한쪽만 지우지 않고 함께 바라볼 수 있었습니다.',
-    en: 'I could look at seemingly contradictory sides of myself without erasing either one.',
+    id: 'emotional_complexity',
+    ko: '이 전시는 복잡하거나 서로 모순되는 감정을 서둘러 정리하지 않고 바라볼 시간을 주었습니다.',
+    en: 'The exhibition gave me time to stay with complex or contradictory emotions without needing to resolve them.',
   },
   {
     id: 'agency',
@@ -4283,18 +4336,18 @@ const SURVEY_QUESTIONS = [
   },
   {
     id: 'embodied_interaction',
-    ko: '손과 몸으로 직접 개입하는 방식이 작품의 의미를 이해하는 데 필요했습니다.',
-    en: 'Intervening directly with my hands and body was necessary to understand the work.',
+    ko: '손과 몸으로 직접 참여한 것이 작품의 의미를 이해하는 데 도움이 되었습니다.',
+    en: 'Using my hands and body helped me understand the meaning of the works.',
   },
   {
-    id: 'ritual_continuity',
-    ko: '명명, 개입, 목격, 기록과 출구가 하나의 장례 의식처럼 이어졌습니다.',
-    en: 'Naming, intervention, witness, record, and departure formed one continuous funeral ritual.',
+    id: 'work_continuity',
+    ko: '네 작품은 서로 분리된 체험이 아니라 하나의 전시 경험으로 연결되어 느껴졌습니다.',
+    en: 'The four works felt connected as parts of one exhibition rather than as separate experiences.',
   },
   {
-    id: 'lingering',
-    ko: '전시를 떠난 뒤에도 오늘의 장미 또는 이름을 다시 생각할 것 같습니다.',
-    en: 'I think I will return to today\'s rose or name after leaving.',
+    id: 'screenshot_value',
+    ko: '스크린샷 기능은 다시 돌아보고 싶은 순간을 남기는 데 도움이 되었습니다.',
+    en: 'The screenshot function helped me keep a moment I wanted to return to.',
   },
   {
     id: 'phone_hub_clarity',
@@ -4617,7 +4670,7 @@ function screenSurvey() {
     }
     const submissionId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
     const meta = {
-      survey_version: 'melbourne-2026-v1',
+      survey_version: 'melbourne-2026-v2',
       submission_id: submissionId,
       optional_questions: true,
     };
@@ -4859,10 +4912,6 @@ function resultCaptureGallery() {
       }),
     ),
     el('div', { class: 'result-capture-items' }),
-    el('p', { class: 'record-no-capture-note' }, tr(
-      '04 기록은 여러 사람이 함께 보는 작품이며 개인 캡처를 만들지 않습니다.',
-      '04 RECORD is a shared viewing work and does not create a personal capture.',
-    )),
   );
 }
 
