@@ -8,7 +8,7 @@
 //   · Supabase가 없어도 앱은 죽지 않는다 (graceful degradation)
 // ============================================================
 
-import { CONFIG } from './config.js?v=melbourne-onsite-v14-20261002';
+import { CONFIG } from './config.js?v=melbourne-onsite-v15-20261003';
 
 const MELBOURNE_SCHEMA_VERSION = 'meta_rose_melbourne2026.1';
 const MELBOURNE_EXHIBITION_ID = CONFIG.EXHIBITION?.id || 'meta-rose-melbourne-2026';
@@ -45,6 +45,7 @@ let initPromise = null;
 let stationLeaseTimer = null;
 let lastStationEntryStatus = { code: 'idle', stationId: null };
 let stationEntryAttempt = null;
+let stationRevalidationGeneration = 0;
 let lastPhoneActivityAt = Date.now();
 let lastArtifactFetchStatus = { state: 'idle', at: null, error: null };
 // iOS NFC/QR은 새 Safari 탭을 열 수 있다. Phone Hub의 최신 탭 하나만
@@ -65,6 +66,134 @@ export const isRuntimeActive = () => runtimeActive;
 
 export function getLastStationEntryStatus() {
   return { ...lastStationEntryStatus };
+}
+
+// Foreground/BFCache recovery is deliberately read-only. It verifies the
+// phone's exact open presence but never claims a station, creates a TD run, or
+// releases another visitor. This lets the UI discard a stale BUSY/CONNECTED
+// message without weakening the server-side lock contract.
+export async function revalidateStationConnection(
+  stationId,
+  expectedSessionId = null,
+) {
+  const normalizedStationId = String(stationId || '').padStart(2, '0');
+  const requestGeneration = ++stationRevalidationGeneration;
+  const invocationGeneration = sessionGeneration();
+  const localSession = loadSession();
+  const unavailable = (code = 'status_unavailable') => ({
+    code,
+    stationId: normalizedStationId,
+    connected: null,
+  });
+
+  if (!['01', '02', '03'].includes(normalizedStationId)
+      || !localSession?.id
+      || localSession.status !== 'active'
+      || (expectedSessionId && localSession.id !== expectedSessionId)) {
+    return unavailable('invalid_session');
+  }
+  if (!runtimeActive || !online) return unavailable(online ? 'inactive_tab' : 'offline');
+
+  const localState = getState();
+  const localLeaseExpiry = Date.parse(localState.stationLeaseExpiresAt || '');
+  const hasExactLocalClaim = localState.station === normalizedStationId
+    && Boolean(localState.presenceId)
+    && localState.stationControl === 'exclusive';
+  const localLeaseExpired = Number.isFinite(localLeaseExpiry)
+    && Date.now() >= localLeaseExpiry;
+  if (!hasExactLocalClaim || localLeaseExpired) {
+    if (localState.station === normalizedStationId) clearStationState();
+    setStationEntryStatus('available', normalizedStationId, {
+      source: 'read_only_revalidation',
+    });
+    return {
+      code: 'available',
+      stationId: normalizedStationId,
+      connected: false,
+    };
+  }
+
+  try {
+    await initDB();
+    if (!ready || !sb || !runtimeActive || !online
+        || requestGeneration !== stationRevalidationGeneration
+        || sessionGeneration() !== invocationGeneration) {
+      return unavailable();
+    }
+    await attachAudienceAuthToCurrentSession();
+    const current = loadSession();
+    if (!current?.auth_uid
+        || current.id !== localSession.id
+        || requestGeneration !== stationRevalidationGeneration
+        || sessionGeneration() !== invocationGeneration) {
+      return unavailable();
+    }
+
+    const { data, error } = await sb.from('station_presence')
+      .select('client_ref,session_id,station_id,entered_at,left_at')
+      .eq('client_ref', localState.presenceId)
+      .eq('session_id', current.id)
+      .eq('station_id', normalizedStationId)
+      .is('left_at', null)
+      .maybeSingle();
+
+    if (requestGeneration !== stationRevalidationGeneration
+        || sessionGeneration() !== invocationGeneration
+        || !runtimeActive) {
+      return unavailable('stale_response');
+    }
+    if (error) {
+      console.warn('[db] station status revalidation failed', error);
+      setStationEntryStatus('status_unavailable', normalizedStationId, {
+        reason: 'read_error',
+      });
+      return unavailable();
+    }
+
+    if (data?.client_ref
+        && data.session_id === current.id
+        && data.station_id === normalizedStationId
+        && data.left_at == null) {
+      setState({
+        station: normalizedStationId,
+        presenceId: data.client_ref,
+        stationEnteredAt: data.entered_at || localState.stationEnteredAt || null,
+        stationControl: 'exclusive',
+        stationLeaseExpiresAt: localState.stationLeaseExpiresAt || null,
+      });
+      setStationEntryStatus('connected', normalizedStationId, {
+        control: 'exclusive',
+        source: 'read_only_revalidation',
+      });
+      return {
+        code: 'connected',
+        stationId: normalizedStationId,
+        connected: true,
+        clientRef: data.client_ref,
+        enteredAt: data.entered_at || null,
+      };
+    }
+
+    const state = getState();
+    if (state.station === normalizedStationId) clearStationState();
+    setStationEntryStatus('available', normalizedStationId, {
+      source: 'read_only_revalidation',
+    });
+    return {
+      code: 'available',
+      stationId: normalizedStationId,
+      connected: false,
+    };
+  } catch (error) {
+    if (requestGeneration !== stationRevalidationGeneration) {
+      return unavailable('stale_response');
+    }
+    console.warn('[db] station status revalidation unavailable', error);
+    setStationEntryStatus('status_unavailable', normalizedStationId, {
+      reason: 'network_or_auth',
+    });
+    return unavailable();
+  }
 }
 
 // A station has no physical-work duration limit. Phone activity may be noted
@@ -575,6 +704,10 @@ export async function enterStation(stationId, via = 'qr', expectedSessionId = nu
     setStationEntryStatus('in_flight', stationId);
     return null;
   }
+  // A manual claim is authoritative. Cancel any slower read-only foreground
+  // check so its older AVAILABLE/BUSY-derived UI state cannot overwrite this
+  // request's actual server response.
+  stationRevalidationGeneration += 1;
   stationEntryInFlight = true;
   setStationEntryStatus('connecting', stationId, { via });
   const attempt = {

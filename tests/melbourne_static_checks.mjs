@@ -92,6 +92,8 @@ const updateDocumentContext = functionSource(source.app, 'updateDocumentContext'
 const largeTextEnabled = functionSource(source.app, 'largeTextEnabled');
 const toggleLargeText = functionSource(source.app, 'toggleLargeText');
 const stationConnectionPanel = functionSource(source.app, 'stationConnectionPanel');
+const requestStationConnection = functionSource(source.app, 'requestStationConnection');
+const visibleStationRevalidation = functionSource(source.app, 'revalidateVisibleModuleConnection');
 const provisionalFloorplan = functionSource(source.app, 'melbourneProvisionalFloorplan');
 const floorplanRouteOrder = functionSource(source.app, 'floorplanRouteOrder');
 const assetFrameSource = functionSource(source.app, 'assetFrame');
@@ -124,6 +126,7 @@ const remoteSessionStatus = functionSource(source.db, 'verifyRemoteSessionStatus
 const stationEntry = functionSource(source.db, 'enterStation');
 const performStationEntry = functionSource(source.db, 'performStationEntry');
 const stationClaim = functionSource(source.db, 'claimExclusiveStation');
+const stationRevalidation = functionSource(source.db, 'revalidateStationConnection');
 const cancelledStationEntry = functionSource(source.db, 'queueCancelledStationAttempt');
 const venueLayoutConfig = sliceBetween(source.config, /VENUE_LAYOUT\s*:\s*\{/, /RESULT_OBSERVATION_MINUTES\s*:/);
 const moduleDefinitions = sliceBetween(source.app, /const MODULES\s*=\s*\{/, /const ROSE_PATTERN_IDS/);
@@ -203,9 +206,9 @@ check('Static page metadata uses the current Melbourne title', () => (
   && /og:title["'][^>]+The Meta Rose: Shared Resonance · Melbourne 2026/.test(source.html)
 ), 'Social previews do not execute app.js; keep static title metadata current too.');
 check('Measurement layer shares the versioned DB module instance', () => (
-  /\.\/config\.js\?v=melbourne-access-v10-20260930/.test(source.measure)
-  && /\.\/db\.js\?v=melbourne-phone-rose-v12-20260930/.test(source.measure)
-  && /\.\/db\.js\?v=melbourne-phone-rose-v12-20260930/.test(source.app)
+  /\.\/config\.js\?v=melbourne-onsite-v15-20261003/.test(source.measure)
+  && /\.\/db\.js\?v=melbourne-onsite-v15-20261003/.test(source.measure)
+  && /\.\/db\.js\?v=melbourne-onsite-v15-20261003/.test(source.app)
 ), 'Unversioned imports can create a second DB instance that bypasses active-tab state.');
 check('Server rows carry a Melbourne edition marker', () => (
   /MELBOURNE_SCHEMA_VERSION\s*=\s*['"]meta_rose_melbourne2026\.1['"]/.test(source.db)
@@ -264,10 +267,10 @@ check('Inactive DB runtime cannot reconnect itself on an online event', () => {
   return /if\s*\(!runtimeActive\)\s*return/.test(onlineHandler);
 }, 'Test and inactive duplicate tabs must not initialise Supabase after reconnect.');
 check('All visitor image assets use the Melbourne cache marker', () => (
-  /ASSET_CACHE_KEY\s*=\s*['"]melbourne-access-v10-20260930['"]/.test(source.app)
+  /ASSET_CACHE_KEY\s*=\s*['"]melbourne-onsite-v15-20261003['"]/.test(source.app)
   && /const requestPath = versionedAssetUrl\(path\)/.test(source.app)
   && /ROSE_SPECIMEN_IMAGE = versionedAssetUrl/.test(source.app)
-  && !/melbourne-access-v[23456789]-202609(?:27|29|30)/.test(source.app + source.css + source.html + source.measure)
+  && !/melbourne-onsite-v14-20261002/.test(source.app + source.css + source.html + source.measure)
 ), 'Keep scripts, styles and runtime image assets on the same Melbourne cache marker.');
 
 check('Header rose and META ROSE wordmark share one HOME control', () => (
@@ -395,7 +398,7 @@ check('Work pages put hero and short description before Read More and connection
   return heroAt >= 0 && heroAt < introAt && introAt < storyAt && storyAt < connectionAt;
 }, 'Use title → hero → short description → READ MORE → connection.');
 check('Connected work banners keep a complete four-sided frame', () => (
-  /\.module-screen\s*>\s*\.connected-banner\s*\{[^}]*border-top:\s*1px\s+dotted\s+#ffffff/s.test(source.css)
+  /\.station-connection-panel\s*>\s*\.connected-banner\s*\{[^}]*border-top:\s*1px\s+dotted\s+#ffffff/s.test(source.css)
 ), 'The CONNECTED / START THE WORK banner must not lose its top edge.');
 check('No-phone guidance is consolidated inside Troubleshooting', () => (
   /troubleshooting-no-phone/.test(screenModule)
@@ -454,6 +457,32 @@ check('Station entry has one deadline and exact late-claim cleanup', () => (
   && /clientRef\s*=\s*attempt\?\.clientRef/.test(cancelledStationEntry)
   && /queueCancelledStationAttempt\(attempt,\s*requestedClientRef\)/.test(stationClaim)
 ), 'A half-open venue network must return usable retry guidance and close any late exact claim.');
+check('Foreground station revalidation is read-only', () => (
+  /\.from\(['"]station_presence['"]\)/.test(stationRevalidation)
+  && /\.select\(/.test(stationRevalidation)
+  && /\.is\(['"]left_at['"],\s*null\)/.test(stationRevalidation)
+  && !/\.rpc\(/.test(stationRevalidation)
+  && !/\.(?:insert|update|delete)\(/.test(stationRevalidation)
+), 'Screen return may verify the exact presence, but must not claim, end or create a run.');
+check('BUSY and CONNECTED expose a real CONNECT AGAIN claim', () => (
+  /\['busy',\s*'connected'\]/.test(stationConnectionPanel)
+  && /CONNECT AGAIN/.test(stationConnectionPanel)
+  && /screenModule\(stationId,\s*\{\s*enter:\s*true,\s*via\s*\}\)/.test(requestStationConnection)
+  && /CONNECTING/.test(requestStationConnection)
+), 'CONNECT AGAIN must issue a fresh claim instead of only clearing local copy.');
+check('Station status refresh handles foreground and stale response order', () => (
+  /pageshow/.test(source.app)
+  && /visibilitychange/.test(source.app)
+  && /requestGeneration\s*!==\s*stationStatusRevalidationGeneration/.test(visibleStationRevalidation)
+  && /viewGeneration\s*!==\s*viewGenerationAtStart/.test(visibleStationRevalidation)
+  && /stationStatusRevalidationGeneration\s*\+=\s*1/.test(requestStationConnection)
+  && /stationRevalidationGeneration\s*\+=\s*1/.test(stationEntry)
+), 'A late BUSY/readback must never overwrite a newer manual retry or another screen.');
+check('Network status is distinct from a real BUSY response', () => (
+  /status_unavailable/.test(stationRevalidation)
+  && /THE CONNECTION COULD NOT BE CHECKED/.test(source.app)
+  && /ANOTHER ROSE IS EXPERIENCING/.test(source.app)
+), 'Offline, timeout and read errors must not be presented as another visitor holding the work.');
 check('Local-only opt-in rotates to a fresh unconsented UUID', () => (
   beginPhoneHub.indexOf('rotateLocalOnlySessionForRemoteOptIn()') >= 0
   && beginPhoneHub.indexOf('rotateLocalOnlySessionForRemoteOptIn()') < beginPhoneHub.indexOf('createRemoteSessionWithDeadline()')
@@ -690,7 +719,7 @@ check('Live station entry no longer contains the rose-pattern gate', () => (
 ), 'Work pages should present the direct connection control without asking visitors to match a pattern.');
 check('One explicit work-number control starts the existing station entry flow', () => {
   const panelRenders = screenModule.match(/stationConnectionPanel\(stationId,\s*entryStatus\)/g) || [];
-  const entryCalls = stationConnectionPanel.match(/screenModule\(stationId,\s*\{\s*enter:\s*true,\s*via:\s*['"]work_number['"]\s*\}\)/g) || [];
+  const entryCalls = requestStationConnection.match(/screenModule\(stationId,\s*\{\s*enter:\s*true,\s*via\s*\}\)/g) || [];
   return panelRenders.length === 1
     && entryCalls.length === 1
     && /class:\s*['"]primary-action direct-station-entry['"]/.test(stationConnectionPanel)

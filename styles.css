@@ -560,8 +560,8 @@ body.has-dock .app {
   /* 원본 PNG의 명암·질감을 그대로 두고 색상만 투영한다. */
   opacity: .64;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
   pointer-events: none;
 }
 
@@ -573,8 +573,8 @@ body.has-dock .app {
   background: var(--session);
   opacity: .64;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
   pointer-events: none;
 }
 
@@ -2562,8 +2562,8 @@ body.has-dock .app {
   background: var(--session);
   opacity: 0;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen_animation.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
   will-change: opacity;
 }
 
@@ -2820,8 +2820,8 @@ body.has-dock .app {
 }
 
 .pattern-animation-stage.is-compact .pattern-animation-tint {
-  -webkit-mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-onsite-v14-20261002');
-  mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-onsite-v14-20261002');
+  -webkit-mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-onsite-v15-20261003');
+  mask-image: url('./assets/images/rose_specimen_animation_compact.png?v=melbourne-onsite-v15-20261003');
 }
 
 .pattern-animation-card-replay {
@@ -6266,6 +6266,12 @@ body.large-text .venue-access-tbc dd {
   font-weight: 700;
 }
 
+.station-connection-panel > .connected-banner {
+  min-height: 58px;
+  margin-bottom: 14px;
+  border-top: 1px dotted #ffffff;
+}
+
 .station-connection-feedback {
   margin-top: 14px;
 }
@@ -6754,8 +6760,8 @@ body.reduce-motion .melbourne-floorplan-stage .melbourne-rectangular-rotor {
   background: var(--session);
   opacity: .76;
   mix-blend-mode: color;
-  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
-  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v14-20261002') center / contain no-repeat;
+  -webkit-mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
+  mask: url('./assets/images/rose_specimen.png?v=melbourne-onsite-v15-20261003') center / contain no-repeat;
 }
 
 .floorplan-entry-fixture {

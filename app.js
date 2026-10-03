@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js?v=melbourne-onsite-v14-20261002';
+import { CONFIG } from './config.js?v=melbourne-onsite-v15-20261003';
 import {
   initDB,
   startSession as startDbSession,
@@ -22,16 +22,17 @@ import {
   confirmSessionControlFields,
   getState as getDbState,
   getLastStationEntryStatus,
+  revalidateStationConnection,
   getArtifactFetchStatus,
   notePhoneActivity,
-} from './db.js?v=melbourne-onsite-v14-20261002';
-import { MELBOURNE, ABOUT_SECTIONS } from './melbourne-content.js?v=melbourne-onsite-v14-20261002';
+} from './db.js?v=melbourne-onsite-v15-20261003';
+import { MELBOURNE, ABOUT_SECTIONS } from './melbourne-content.js?v=melbourne-onsite-v15-20261003';
 import {
   beginRead,
   endRead,
   startIdleTracking,
   trackInput,
-} from './measure.js?v=melbourne-onsite-v14-20261002';
+} from './measure.js?v=melbourne-onsite-v15-20261003';
 
 const $app = document.getElementById('app');
 const $dock = document.getElementById('dock');
@@ -65,7 +66,7 @@ const TAB_INSTANCE_ID = String(window.name || '').startsWith(TAB_WINDOW_PREFIX)
 window.name = `${TAB_WINDOW_PREFIX}${TAB_INSTANCE_ID}`;
 const ACTIVE_TAB_LEASE_MS = 20000;
 const PHONE_CONNECT_TIMEOUT_MS = 10000;
-const ASSET_CACHE_KEY = 'melbourne-onsite-v14-20261002';
+const ASSET_CACHE_KEY = 'melbourne-onsite-v15-20261003';
 const versionedAssetUrl = (path) => {
   const value = String(path || '');
   if (!value || /^(?:data:|blob:|https?:)/i.test(value)) return value;
@@ -83,6 +84,9 @@ let uiTrackingStarted = false;
 let tabRuntimeActive = true;
 let tabChannel = null;
 let phoneHubEntryInFlight = false;
+let stationConnectionUiInFlight = false;
+let stationConnectionUiAttempt = 0;
+let stationStatusRevalidationGeneration = 0;
 let roseMenuOpener = null;
 let languageChooserOpener = null;
 let inactiveTabPreviousFocus = null;
@@ -280,6 +284,97 @@ window.addEventListener('fringe:station-lease-lost', (event) => {
       via: 'lease_lost',
       entryStatus: { code: 'lease_lost', stationId },
     });
+  }
+});
+
+async function revalidateVisibleModuleConnection(trigger = 'screen_entry') {
+  if (TEST_MODE
+      || stationConnectionUiInFlight
+      || document.visibilityState === 'hidden'
+      || !tabRuntimeActive
+      || currentView.name !== 'module') return;
+
+  const stationId = String(currentView.data.stationId || '').padStart(2, '0');
+  if (!['01', '02', '03'].includes(stationId)) return;
+  const sessionAtStart = ensureSession();
+  if (!isRegistered(sessionAtStart) || sessionAtStart.local_only) return;
+
+  const requestGeneration = ++stationStatusRevalidationGeneration;
+  const viewGenerationAtStart = viewGeneration;
+  const priorOptions = currentView.data.options || {};
+  const priorStatusCode = priorOptions.entryStatus?.code || null;
+  const wasConnected = sessionAtStart.connected_station === stationId;
+  const result = await revalidateStationConnection(stationId, sessionAtStart.id);
+
+  if (requestGeneration !== stationStatusRevalidationGeneration
+      || viewGeneration !== viewGenerationAtStart
+      || currentView.name !== 'module'
+      || currentView.data.stationId !== stationId
+      || !ownsActiveTab(sessionAtStart.id)) return;
+
+  const latest = ensureSession();
+  if (result.code === 'connected') {
+    if (latest.connected_station !== stationId) {
+      updateSession({ connected_station: stationId });
+      window.dispatchEvent(new CustomEvent('fringe:station', {
+        detail: { station: stationId },
+      }));
+    }
+    if (!wasConnected || priorStatusCode === 'busy' || priorStatusCode === 'status_unavailable') {
+      void screenModule(stationId, {
+        enter: false,
+        via: `revalidate_${trigger}`,
+        entryStatus: result,
+        skipConnectionRevalidation: true,
+      });
+    }
+    return;
+  }
+
+  if (result.code === 'available') {
+    if (latest.connected_station === stationId) {
+      updateSession({ connected_station: null });
+      window.dispatchEvent(new CustomEvent('fringe:station', {
+        detail: { station: null },
+      }));
+    }
+    if (wasConnected || priorStatusCode === 'busy' || priorStatusCode === 'connected') {
+      void screenModule(stationId, {
+        enter: false,
+        via: `revalidate_${trigger}`,
+        entryStatus: result,
+        skipConnectionRevalidation: true,
+      });
+    }
+    return;
+  }
+
+  // A network/auth failure is not BUSY. Replace only a stale BUSY message;
+  // an existing CONNECTED display remains intact until the server can answer.
+  if (priorStatusCode === 'busy') {
+    void screenModule(stationId, {
+      enter: false,
+      via: `revalidate_${trigger}`,
+      entryStatus: {
+        code: result.code === 'offline' ? 'offline' : 'status_unavailable',
+        stationId,
+      },
+      skipConnectionRevalidation: true,
+    });
+  }
+}
+
+function scheduleVisibleStationRevalidation(trigger) {
+  if (document.visibilityState === 'hidden') return;
+  setTimeout(() => { void revalidateVisibleModuleConnection(trigger); }, 0);
+}
+
+window.addEventListener('pageshow', () => scheduleVisibleStationRevalidation('pageshow'));
+window.addEventListener('focus', () => scheduleVisibleStationRevalidation('focus'));
+window.addEventListener('online', () => scheduleVisibleStationRevalidation('online'));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    scheduleVisibleStationRevalidation('visibility');
   }
 });
 
@@ -3436,15 +3531,58 @@ function stationConnectionFeedback(stationId, entryStatus = null) {
       'THE CONNECTION HAS ENDED. CONNECT AGAIN AT THE WORK.',
     );
   }
-  if (['connection_error', 'readback_failed', 'session_unavailable',
-    'previous_close_failed', 'claim_rejected', 'invalid_session',
-    'conflict', 'connection_timeout'].includes(entryStatus.code)) {
+  if (entryStatus.code === 'available') {
+    return tr(
+      '이전 상태가 더 이상 확인되지 않습니다. 다시 연결해 현재 상태를 확인하세요.',
+      'THE PREVIOUS STATUS IS NO LONGER ACTIVE. CONNECT AGAIN TO CHECK THE WORK.',
+    );
+  }
+  if (['offline', 'status_unavailable', 'connection_error',
+    'connection_timeout'].includes(entryStatus.code)) {
+    return tr(
+      '연결 상태를 확인할 수 없습니다. 네트워크를 확인하고 다시 시도해주세요.',
+      'THE CONNECTION COULD NOT BE CHECKED. CHECK THE NETWORK AND TRY AGAIN.',
+    );
+  }
+  if (['readback_failed', 'session_unavailable', 'previous_close_failed',
+    'claim_rejected', 'invalid_session', 'conflict'].includes(entryStatus.code)) {
     return tr(
       '연결되지 않았습니다. 다시 연결하거나 스태프에게 현재 설치된 시작 방법을 확인해주세요.',
       'NOT CONNECTED. TRY AGAIN OR ASK STAFF WHICH START METHOD IS CURRENTLY INSTALLED.',
     );
   }
   return '';
+}
+
+async function requestStationConnection(
+  stationId,
+  { panel, button, feedback, via = 'work_number' },
+) {
+  if (stationConnectionUiInFlight) return false;
+  stationConnectionUiInFlight = true;
+  const attempt = ++stationConnectionUiAttempt;
+  // A manual retry supersedes any read-only foreground check that may still
+  // be in flight. Only this claim's response may decide CONNECTED or BUSY.
+  stationStatusRevalidationGeneration += 1;
+  panel.dataset.state = 'connecting';
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  feedback.classList.remove('is-busy');
+  feedback.textContent = tr('연결 중', 'CONNECTING');
+
+  try {
+    await screenModule(stationId, { enter: true, via });
+    return true;
+  } finally {
+    if (attempt === stationConnectionUiAttempt) {
+      stationConnectionUiInFlight = false;
+      if (button.isConnected) {
+        panel.dataset.state = '';
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    }
+  }
 }
 
 async function playPatternSuccessTransition(panel, button, stationId) {
@@ -3541,6 +3679,7 @@ async function playPatternSuccessTransition(panel, button, stationId) {
 
 function stationConnectionPanel(stationId, entryStatus = null) {
   const module = MODULES[stationId];
+  const reconnect = ['busy', 'connected'].includes(entryStatus?.code);
   const feedbackId = `station-connection-feedback-${stationId}`;
   const feedback = el('p', {
     id: feedbackId,
@@ -3552,26 +3691,32 @@ function stationConnectionPanel(stationId, entryStatus = null) {
     class: 'station-connection-panel',
     'data-station': stationId,
     'aria-label': tr(`${stationId} ${module.ko} 연결`, `Connect to ${stationId} ${module.en}`),
+  });
+  if (entryStatus?.code === 'connected') {
+    panel.append(el('div', { class: 'connected-banner' },
+      el('span', {}, tr('● 연결됨', '● CONNECTED')),
+      el('span', {}, tr('작품을 시작하세요', 'START THE WORK')),
+    ));
+  }
+  const button = el('button', {
+    class: 'primary-action direct-station-entry',
+    type: 'button',
+    'aria-describedby': feedbackId,
   },
-    el('button', {
-      class: 'primary-action direct-station-entry',
-      type: 'button',
-      'aria-describedby': feedbackId,
-      onclick: async (event) => {
-        if (panel.dataset.state === 'connecting') return;
-        panel.dataset.state = 'connecting';
-        event.currentTarget.disabled = true;
-        event.currentTarget.setAttribute('aria-busy', 'true');
-        feedback.classList.remove('is-busy');
-        feedback.textContent = tr('연결 중', 'CONNECTING');
-        await screenModule(stationId, { enter: true, via: 'work_number' });
-      },
-    },
-      tr(`${stationId} ${module.ko} 연결`, `CONNECT TO ${stationId} ${module.en}`),
-      el('span', { 'aria-hidden': 'true' }, '→'),
-    ),
-    feedback,
+    reconnect
+      ? tr('다시 연결', 'CONNECT AGAIN')
+      : tr(`${stationId} ${module.ko} 연결`, `CONNECT TO ${stationId} ${module.en}`),
+    el('span', { 'aria-hidden': 'true' }, '→'),
   );
+  button.addEventListener('click', () => {
+    void requestStationConnection(stationId, {
+      panel,
+      button,
+      feedback,
+      via: reconnect ? 'connect_again' : 'work_number',
+    });
+  });
+  panel.append(button, feedback);
   return panel;
 }
 
@@ -4041,7 +4186,10 @@ async function screenModule(stationId, options = {}) {
   const freshSession = ensureSession();
   const connected = freshSession.connected_station === stationId;
   const recordVisited = stationId === '04' && getCompletedStations(freshSession).includes('04');
-  rememberView('module', { stationId, options: { ...options, enter: false } });
+  rememberView('module', {
+    stationId,
+    options: { ...options, enter: false, entryStatus },
+  });
   applySessionColor(freshSession.color);
   logEvent('module_page_view', { via, connected }, stationId);
 
@@ -4081,10 +4229,10 @@ async function screenModule(stationId, options = {}) {
             screenArrival();
           }, 'local-only-connect'),
         ),
-      ) : connected ? el('div', { class: 'connected-banner' },
-        el('span', {}, tr('● 연결됨', '● CONNECTED')),
-        el('span', {}, tr('작품을 시작하세요', 'START THE WORK')),
-      ) : stationConnectionPanel(stationId, entryStatus),
+      ) : connected ? stationConnectionPanel(stationId, {
+        code: 'connected',
+        stationId,
+      }) : stationConnectionPanel(stationId, entryStatus),
       el('section', { class: 'module-info-block module-quick-steps' },
         el('span', { class: 'micro-label' }, tr('작동법', 'HOW TO PLAY')),
         el('h2', {}, tr('작동법', 'HOW TO PLAY')),
@@ -4125,6 +4273,12 @@ async function screenModule(stationId, options = {}) {
     primaryButton('HOME', () => { void returnHomeFromStation(stationId); }),
   ] : []);
   startModuleCapturePolling(stationId);
+  if (!options.enter
+      && !options.skipConnectionRevalidation
+      && !TEST_MODE
+      && ['01', '02', '03'].includes(stationId)) {
+    scheduleVisibleStationRevalidation('screen_entry');
+  }
 }
 
 function screenMySpecimen({ returnTo = null } = {}) {

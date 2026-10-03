@@ -2,7 +2,7 @@
 // The review-stage public title is imported from config.js so a later title
 // decision changes in one place. Other Melbourne copy lives here.
 
-import { PUBLIC_TITLE } from './config.js?v=melbourne-onsite-v14-20261002';
+import { PUBLIC_TITLE } from './config.js?v=melbourne-onsite-v15-20261003';
 
 export const MELBOURNE = {
   edition: 'melbourne-2026',
